@@ -1,0 +1,91 @@
+# Upstart Delivery Platform
+
+Full-stack delivery platform: **Spring Boot backend** (JWT auth, orders, partnerships, assignment engine), **Angular web admin**, and **React Native (Expo) mobile** app.
+
+## Quick start (Docker)
+
+Requires Docker with the Compose plugin.
+
+```bash
+docker compose up --build
+```
+
+This starts:
+
+| Service  | URL                                   |
+| -------- | ------------------------------------- |
+| MySQL    | `localhost:3306` (db `upstart_db_new`) |
+| Backend  | `http://localhost:8080`               |
+| Web      | `http://localhost:4200`               |
+
+On first startup the backend auto-creates the schema and seeds a full demo dataset:
+
+- **Super Admin** account:
+
+```
+username: admin
+password: REDACTED_ADMIN_PASSWORD
+```
+
+- **Staff admins** (3): `opsadmin` / `contentadmin` / `supportmod` — emails `ops.admin@upstart.local`, `content.admin@upstart.local`, `support.mod@upstart.local`, password `Upstart@2026!`
+- **Demo business dataset** when empty: 7 customers, 3 vendor owners, 2 delivery owners, 5 vendor companies, 4 delivery companies, 8 drivers, 24 products (linked to the vendor companies), 36 orders, 6 partnerships.
+- Demo user passwords use `Upstart@2026!` (e.g. vendor owner `naimabarka`).
+
+> Change `admin`'s credentials in production by setting `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
+
+Optional overrides (create a `.env` beside `docker-compose.yml` or export):
+
+```bash
+MYSQL_ROOT_PASSWORD=root
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=REDACTED_ADMIN_PASSWORD
+JWT_SECRET=REDACTED_JWT_SECRET
+```
+
+The web app is built with the API base baked in as `http://localhost:8080/api` (`upstart-web-frontend/src/app/config.ts`).
+
+## Local development
+
+### Backend (Java 17+, Maven wrapper included)
+
+```bash
+cd upstart-backend
+cp .env.example .env          # set DB + ADMIN_* values
+.\mvnw.cmd spring-boot:run    # *nix: ./mvnw spring-boot:run
+```
+
+Tests: `.\mvnw.cmd test`
+
+### Web (Node 22+, Angular 20)
+
+```bash
+cd upstart-web-frontend
+npm install
+npm start                     # http://localhost:4200
+```
+
+Production build: `npm run build` (outputs to `dist/del/browser`).
+
+### Mobile (Expo)
+
+```bash
+cd upstart-mobile
+npm install
+npx expo start
+```
+
+The API base defaults to `http://10.0.2.2:8080/api` (Android emulator loopback). On a physical device, point it at your machine's LAN IP:
+
+```bash
+cp .env.example .env          # then edit EXPO_PUBLIC_API_URL
+EXPO_PUBLIC_API_URL=http://192.168.x.x:8080/api
+```
+
+## API
+
+- Base URL: `http://localhost:8080/api`
+- Auth: `POST /api/auth/login`
+- Register (customer): `POST /api/users/register`
+- Token-based auth via `Authorization: Bearer <jwt>`; tokens are keyed by JTI for revocation/blacklisting.
+- Platform dashboard (Super Admin): `GET /api/dashboard/overview` returns live KPIs (customers, orders, revenue, per-status order counts, companies, owners, drivers, products, admins, partnerships).
+- Per-domain stats: stats/count + statistics endpoints under `/api/orders`, `/api/customer-users`, `/api/driver-persons`, `/api/delivery-owners`, `/api/delivery-companies`, `/api/vendor-owners`, `/api/vendor-companies`, `/api/products`, `/api/admins`, `/api/super-admins` (Super Admin).
