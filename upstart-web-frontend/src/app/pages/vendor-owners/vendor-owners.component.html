@@ -1,0 +1,643 @@
+<div class="vendor-owners-container">
+  <!-- Header Section -->
+  <div class="vendor-owners-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="page-title">
+          <i class="bi bi-shop"></i>
+          Vendor Owners Management
+        </h1>
+        <p class="page-subtitle">Manage vendor business owners and their retail operations</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="exportData()">
+          <i class="bi bi-download"></i>
+          Export Data
+        </button>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="bi bi-plus-lg"></i>
+          Add Vendor Owner
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card total">
+      <div class="stat-icon">
+        <i class="bi bi-people-fill"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total Owners</p>
+      </div>
+    </div>
+    
+    <div class="stat-card verified">
+      <div class="stat-icon">
+        <i class="bi bi-shield-check"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.verified }}</h3>
+        <p>Verified Owners</p>
+      </div>
+    </div>
+    
+    <div class="stat-card active">
+      <div class="stat-icon">
+        <i class="bi bi-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Active Owners</p>
+      </div>
+    </div>
+    
+    <div class="stat-card companies">
+      <div class="stat-icon">
+        <i class="bi bi-buildings"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.totalCompanies }}</h3>
+        <p>Total Companies</p>
+      </div>
+    </div>
+    
+    <div class="stat-card revenue">
+      <div class="stat-icon">
+        <i class="bi bi-currency-dollar"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.totalRevenue) }}</h3>
+        <p>Total Revenue</p>
+      </div>
+    </div>
+    
+    <div class="stat-card experience">
+      <div class="stat-icon">
+        <i class="bi bi-graph-up"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.avgExperience }}y</h3>
+        <p>Avg Experience</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-bar">
+      <i class="bi bi-search"></i>
+      <input 
+        type="text" 
+        placeholder="Search by name, email, username, or national ID..." 
+        [(ngModel)]="searchTerm" 
+        (input)="onSearch(searchTerm)">
+    </div>
+    
+    <div class="filters">
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilter(statusFilter)">
+        <option value="all">All Status</option>
+        <option value="enabled">Active</option>
+        <option value="disabled">Inactive</option>
+      </select>
+      
+      <select [(ngModel)]="verificationFilter" (change)="onVerificationFilter(verificationFilter)">
+        <option value="all">All Verification</option>
+        <option value="verified">Verified</option>
+        <option value="unverified">Unverified</option>
+      </select>
+      
+      <select [(ngModel)]="experienceFilter" (change)="onExperienceFilter(experienceFilter)">
+        <option *ngFor="let range of experienceRanges" [value]="range.value">
+          {{ range.label }}
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Vendor Owners Table -->
+  <div class="table-section">
+    <div class="table-container">
+      <table class="vendor-owners-table">
+        <thead>
+          <tr>
+            <th></th>
+            <th (click)="onSort('firstName')" class="sortable">
+              Owner Name
+              <i class="bi bi-arrow-down-up" [class.bi-arrow-up-short]="sortBy === 'firstName' && sortDirection === 'asc'" [class.bi-arrow-down-short]="sortBy === 'firstName' && sortDirection === 'desc'"></i>
+            </th>
+            <th (click)="onSort('email')" class="sortable">
+              Contact Info
+              <i class="bi bi-arrow-down-up" [class.bi-arrow-up-short]="sortBy === 'email' && sortDirection === 'asc'" [class.bi-arrow-down-short]="sortBy === 'email' && sortDirection === 'desc'"></i>
+            </th>
+            <th (click)="onSort('businessExperienceYears')" class="sortable">
+              Experience
+              <i class="bi bi-arrow-down-up" [class.bi-arrow-up-short]="sortBy === 'businessExperienceYears' && sortDirection === 'asc'" [class.bi-arrow-down-short]="sortBy === 'businessExperienceYears' && sortDirection === 'desc'"></i>
+            </th>
+            <th>Verification</th>
+            <th (click)="onSort('totalCompanies')" class="sortable">
+              Companies
+              <i class="bi bi-arrow-down-up" [class.bi-arrow-up-short]="sortBy === 'totalCompanies' && sortDirection === 'asc'" [class.bi-arrow-down-short]="sortBy === 'totalCompanies' && sortDirection === 'desc'"></i>
+            </th>
+            <th (click)="onSort('totalRevenue')" class="sortable">
+              Revenue
+              <i class="bi bi-arrow-down-up" [class.bi-arrow-up-short]="sortBy === 'totalRevenue' && sortDirection === 'asc'" [class.bi-arrow-down-short]="sortBy === 'totalRevenue' && sortDirection === 'desc'"></i>
+            </th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngFor="let owner of filteredVendorOwners">
+            <!-- Main Row -->
+            <tr class="main-row" [class.expanded]="isRowExpanded(owner.id)">
+              <td>
+                <button class="expand-btn" (click)="toggleRowExpansion(owner.id)">
+                  <i class="bi" [class.bi-chevron-down]="!isRowExpanded(owner.id)" [class.bi-chevron-up]="isRowExpanded(owner.id)"></i>
+                </button>
+              </td>
+              <td>
+                <div class="owner-info">
+                  <div class="owner-avatar">
+                    {{ owner.firstName.charAt(0) }}{{ owner.lastName.charAt(0) }}
+                  </div>
+                  <div class="owner-details">
+                    <h4>{{ getFullName(owner) }}</h4>
+                    <p>{{ '@' + owner.username }}</p>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="contact-info">
+                  <p><i class="bi bi-envelope"></i> {{ owner.email }}</p>
+                  <p *ngIf="owner.phoneNumber"><i class="bi bi-telephone"></i> {{ owner.phoneNumber }}</p>
+                </div>
+              </td>
+              <td>
+                <div class="experience-info">
+                  <div class="experience-badge" [class]="getExperienceBadgeClass(owner.businessExperienceYears)">
+                    {{ owner.businessExperienceYears }} years
+                  </div>
+                  <p class="experience-level">{{ getExperienceLevel(owner.businessExperienceYears) }}</p>
+                </div>
+              </td>
+              <td>
+                <div class="verification-badge" [class]="getVerificationBadge(owner)">
+                  <i class="bi" [class.bi-shield-check]="owner.isVerifiedOwner" [class.bi-shield-x]="!owner.isVerifiedOwner"></i>
+                  {{ owner.isVerifiedOwner ? 'Verified' : 'Unverified' }}
+                </div>
+              </td>
+              <td>
+                <div class="companies-info">
+                  <div class="companies-count" (click)="openCompaniesModal(owner)">
+                    <span class="count">{{ owner.totalCompanies || 0 }}</span>
+                    <span class="label">Companies</span>
+                  </div>
+                  <div class="products-count">
+                    <span class="count">{{ owner.totalProductsManaged || 0 }}</span>
+                    <span class="label">Products</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="revenue-info">
+                  <div class="revenue-amount">{{ formatCurrency(owner.totalRevenue || 0) }}</div>
+                  <div class="revenue-trend">
+                    <i class="fas fa-arrow-up text-success"></i>
+                    <span>+12.5%</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="status-badge" [class]="getStatusBadge(owner)">
+                  <i class="fas" [class.fa-check-circle]="owner.isEnabled" 
+                     [class.fa-times-circle]="!owner.isEnabled"></i>
+                  {{ owner.isEnabled ? 'Active' : 'Inactive' }}
+                </div>
+              </td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-action view" (click)="openDetailsModal(owner)" title="View Details">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn-action edit" (click)="openEditModal(owner)" title="Edit">
+                    <i class="bi bi-pencil-square"></i>
+                  </button>
+                  <button class="btn-action toggle" 
+                          (click)="toggleOwnerStatus(owner)" 
+                          [title]="owner.isEnabled ? 'Deactivate' : 'Activate'">
+                    <i class="bi" [class.bi-toggle-on]="owner.isEnabled" [class.bi-toggle-off]="!owner.isEnabled"></i>
+                  </button>
+                  <button class="btn-action delete" (click)="openDeleteModal(owner)" title="Delete">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+            
+            <!-- Expanded Details Row -->
+            <tr class="details-row" *ngIf="isRowExpanded(owner.id)">
+              <td colspan="9">
+                <div class="expanded-content">
+                  <div class="details-grid">
+                    <div class="detail-section">
+                      <h5><i class="fas fa-id-card"></i> Personal Information</h5>
+                      <div class="detail-items">
+                        <div class="detail-item">
+                          <span class="label">National ID:</span>
+                          <span class="value">{{ owner.nationalId }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Date of Birth:</span>
+                          <span class="value">{{ owner.dateOfBirth || 'Not provided' }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Address:</span>
+                          <span class="value">{{ owner.address || 'Not provided' }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Emergency Contact:</span>
+                          <span class="value">{{ owner.emergencyContact || 'Not provided' }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                      <h5><i class="fas fa-briefcase"></i> Business Information</h5>
+                      <div class="detail-items">
+                        <div class="detail-item">
+                          <span class="label">Business License:</span>
+                          <span class="value">{{ owner.businessLicenseNumber || 'Not provided' }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Preferred Categories:</span>
+                          <span class="value">{{ owner.preferredBusinessCategories || 'Not specified' }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Max Companies:</span>
+                          <span class="value">{{ owner.maxCompaniesAllowed }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Member Since:</span>
+                          <span class="value">{{ formatDate(owner.createdAt) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                      <h5><i class="fas fa-chart-bar"></i> Performance Metrics</h5>
+                      <div class="detail-items">
+                        <div class="detail-item">
+                          <span class="label">Total Products:</span>
+                          <span class="value">{{ owner.totalProductsManaged || 0 }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Total Revenue:</span>
+                          <span class="value">{{ formatCurrency(owner.totalRevenue || 0) }}</span>
+                        </div>
+                        <div class="detail-item">
+                          <span class="label">Last Updated:</span>
+                          <span class="value">{{ formatDate(owner.updatedAt) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+        </tbody>
+      </table>
+      
+      <!-- Empty State -->
+      <div class="empty-state" *ngIf="filteredVendorOwners.length === 0">
+        <div class="empty-icon">
+          <i class="fas fa-store"></i>
+        </div>
+        <h3>No vendor owners found</h3>
+        <p>Try adjusting your search criteria or add a new vendor owner.</p>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="fas fa-plus"></i>
+          Add First Vendor Owner
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Vendor Owner Modal -->
+<div class="modal-overlay" *ngIf="showAddModal || showEditModal" (click)="closeModal()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-store"></i>
+        {{ showAddModal ? 'Add New Vendor Owner' : 'Edit Vendor Owner' }}
+      </h3>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form class="owner-form">
+        <div class="form-section">
+          <h4><i class="fas fa-user"></i> Personal Information</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="firstName">First Name *</label>
+              <input type="text" id="firstName" [(ngModel)]="ownerForm.firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name *</label>
+              <input type="text" id="lastName" [(ngModel)]="ownerForm.lastName" name="lastName" required>
+            </div>
+            <div class="form-group">
+              <label for="username">Username *</label>
+              <input type="text" id="username" [(ngModel)]="ownerForm.username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input type="email" id="email" [(ngModel)]="ownerForm.email" name="email" required>
+            </div>
+            <div class="form-group">
+              <label for="phoneNumber">Phone Number</label>
+              <input type="tel" id="phoneNumber" [(ngModel)]="ownerForm.phoneNumber" name="phoneNumber">
+            </div>
+            <div class="form-group">
+              <label for="nationalId">National ID *</label>
+              <input type="text" id="nationalId" [(ngModel)]="ownerForm.nationalId" name="nationalId" required>
+            </div>
+            <div class="form-group">
+              <label for="dateOfBirth">Date of Birth</label>
+              <input type="date" id="dateOfBirth" [(ngModel)]="ownerForm.dateOfBirth" name="dateOfBirth">
+            </div>
+            <div class="form-group">
+              <label for="emergencyContact">Emergency Contact</label>
+              <input type="tel" id="emergencyContact" [(ngModel)]="ownerForm.emergencyContact" name="emergencyContact">
+            </div>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="address">Address</label>
+            <textarea id="address" [(ngModel)]="ownerForm.address" name="address" rows="3"></textarea>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h4><i class="fas fa-briefcase"></i> Business Information</h4>
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="businessExperienceYears">Business Experience (Years) *</label>
+              <input type="number" id="businessExperienceYears" [(ngModel)]="ownerForm.businessExperienceYears" name="businessExperienceYears" min="0" required>
+            </div>
+            <div class="form-group">
+              <label for="businessLicenseNumber">Business License Number</label>
+              <input type="text" id="businessLicenseNumber" [(ngModel)]="ownerForm.businessLicenseNumber" name="businessLicenseNumber">
+            </div>
+            <div class="form-group">
+              <label for="maxCompaniesAllowed">Max Companies Allowed *</label>
+              <input type="number" id="maxCompaniesAllowed" [(ngModel)]="ownerForm.maxCompaniesAllowed" name="maxCompaniesAllowed" min="1" max="20" required>
+            </div>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="preferredBusinessCategories">Preferred Business Categories</label>
+            <textarea id="preferredBusinessCategories" [(ngModel)]="ownerForm.preferredBusinessCategories" name="preferredBusinessCategories" rows="2" placeholder="e.g., Electronics, Fashion, Home & Garden"></textarea>
+          </div>
+        </div>
+        
+        <div class="form-section">
+          <h4><i class="fas fa-cog"></i> Account Settings</h4>
+          <div class="form-grid">
+            <div class="form-group" *ngIf="showAddModal">
+              <label for="password">Password *</label>
+              <input type="password" id="password" [(ngModel)]="ownerForm.password" name="password" required>
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="ownerForm.isEnabled" name="isEnabled">
+                <span class="checkmark"></span>
+                Account Enabled
+              </label>
+            </div>
+            <div class="form-group checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="ownerForm.isVerifiedOwner" name="isVerifiedOwner">
+                <span class="checkmark"></span>
+                Verified Owner
+              </label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+        Cancel
+      </button>
+      <button class="btn btn-primary" (click)="saveOwner()">
+        <i class="fas fa-save"></i>
+        {{ showAddModal ? 'Add Owner' : 'Update Owner' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModal()">
+  <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-exclamation-triangle"></i>
+        Confirm Deletion
+      </h3>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p>Are you sure you want to delete <strong>{{ getFullName(selectedOwner!) }}</strong>?</p>
+      <p class="warning-text">
+        <i class="fas fa-warning"></i>
+        This action cannot be undone. All associated data will be permanently removed.
+      </p>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+        Cancel
+      </button>
+      <button class="btn btn-danger" (click)="deleteOwner()">
+        <i class="fas fa-trash"></i>
+        Delete Owner
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Owner Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModal()">
+  <div class="modal-content details-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-user-circle"></i>
+        Vendor Owner Details
+      </h3>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedOwner">
+      <div class="owner-profile">
+        <div class="profile-header">
+          <div class="profile-avatar">
+            {{ selectedOwner.firstName.charAt(0) }}{{ selectedOwner.lastName.charAt(0) }}
+          </div>
+          <div class="profile-info">
+            <h4>{{ getFullName(selectedOwner) }}</h4>
+            <p>{{ '@' + selectedOwner.username }}</p>
+            <div class="profile-badges">
+              <span class="badge" [class]="getStatusBadge(selectedOwner)">
+                {{ selectedOwner.isEnabled ? 'Active' : 'Inactive' }}
+              </span>
+              <span class="badge" [class]="getVerificationBadge(selectedOwner)">
+                {{ selectedOwner.isVerifiedOwner ? 'Verified' : 'Unverified' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="profile-details">
+          <div class="detail-section">
+            <h5><i class="fas fa-id-card"></i> Personal Information</h5>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Email:</span>
+                <span class="value">{{ selectedOwner.email }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Phone:</span>
+                <span class="value">{{ selectedOwner.phoneNumber || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">National ID:</span>
+                <span class="value">{{ selectedOwner.nationalId }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Date of Birth:</span>
+                <span class="value">{{ selectedOwner.dateOfBirth || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <span class="label">Address:</span>
+                <span class="value">{{ selectedOwner.address || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Emergency Contact:</span>
+                <span class="value">{{ selectedOwner.emergencyContact || 'Not provided' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="detail-section">
+            <h5><i class="fas fa-briefcase"></i> Business Information</h5>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Experience:</span>
+                <span class="value">{{ selectedOwner.businessExperienceYears }} years</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Business License:</span>
+                <span class="value">{{ selectedOwner.businessLicenseNumber || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Max Companies:</span>
+                <span class="value">{{ selectedOwner.maxCompaniesAllowed }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <span class="label">Preferred Categories:</span>
+                <span class="value">{{ selectedOwner.preferredBusinessCategories || 'Not specified' }}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="detail-section">
+            <h5><i class="fas fa-chart-bar"></i> Performance Metrics</h5>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="label">Total Companies:</span>
+                <span class="value">{{ selectedOwner.totalCompanies || 0 }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Total Products:</span>
+                <span class="value">{{ selectedOwner.totalProductsManaged || 0 }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Total Revenue:</span>
+                <span class="value">{{ formatCurrency(selectedOwner.totalRevenue || 0) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Member Since:</span>
+                <span class="value">{{ formatDate(selectedOwner.createdAt) }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="label">Last Updated:</span>
+                <span class="value">{{ formatDate(selectedOwner.updatedAt) }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+        Close
+      </button>
+      <button class="btn btn-primary" (click)="openEditModal(selectedOwner!)">
+        <i class="fas fa-edit"></i>
+        Edit Owner
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Companies Modal -->
+<div class="modal-overlay" *ngIf="showCompaniesModal" (click)="closeModal()">
+  <div class="modal-content companies-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>
+        <i class="fas fa-building"></i>
+        Vendor Companies
+      </h3>
+      <button class="close-btn" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="companies-placeholder">
+        <div class="placeholder-icon">
+          <i class="fas fa-building"></i>
+        </div>
+        <h4>Companies Management</h4>
+        <p>This feature will display and manage vendor companies associated with {{ selectedOwner?.firstName }} {{ selectedOwner?.lastName }}.</p>
+        <p class="note">Feature coming soon...</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModal()">
+        <i class="fas fa-times"></i>
+        Close
+      </button>
+    </div>
+  </div>
+</div>

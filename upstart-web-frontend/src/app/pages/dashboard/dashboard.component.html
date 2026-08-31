@@ -1,0 +1,74 @@
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="dashboard-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <span class="title-icon">📊</span>
+        Dashboard
+      </h1>
+      <p class="greeting">
+        {{ greeting }}, <strong>{{ displayName }}</strong> — {{ roleLabel }}
+      </p>
+    </div>
+    <div class="header-right" *ngIf="currentUser">
+      <span class="role-chip">{{ roleLabel }}</span>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="errorMessage">
+    <span class="error-icon">⚠️</span>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <!-- Main content -->
+  <ng-container *ngIf="!loading && !errorMessage">
+    <!-- Order / revenue KPIs -->
+    <section class="card-section">
+      <h2 class="section-title">Business Overview</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of kpiCards" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Entity counts -->
+    <section class="card-section">
+      <h2 class="section-title">Platform</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of entityCards" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detail metrics -->
+    <section class="card-section">
+      <h2 class="section-title">Live Metrics</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of detailMetrics" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>

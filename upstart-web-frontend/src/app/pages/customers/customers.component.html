@@ -1,0 +1,744 @@
+<div class="customers-container">
+  <!-- Header Section -->
+  <div class="customers-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="page-title">
+          <i class="fas fa-users"></i>
+          Customer Management
+        </h1>
+        <p class="page-subtitle">Manage your customer base and relationships</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="exportData()">
+          <i class="fas fa-download"></i>
+          Export Data
+        </button>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="fas fa-plus"></i>
+          Add Customer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-icon">
+          <i class="fas fa-users"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.total }}</h3>
+          <p>Total Customers</p>
+        </div>
+      </div>
+      
+      <div class="stat-card enabled">
+        <div class="stat-icon">
+          <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.enabled }}</h3>
+          <p>Enabled Customers</p>
+        </div>
+      </div>
+      
+      <div class="stat-card disabled">
+        <div class="stat-icon">
+          <i class="fas fa-user-times"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.disabled }}</h3>
+          <p>Disabled Customers</p>
+        </div>
+      </div>
+      
+      <div class="stat-card premium">
+        <div class="stat-icon">
+          <i class="fas fa-star"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.premium }}</h3>
+          <p>Premium Customers</p>
+        </div>
+      </div>
+      
+      <div class="stat-card revenue">
+        <div class="stat-icon">
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ formatCurrency(stats.totalRevenue) }}</h3>
+          <p>Total Revenue</p>
+        </div>
+      </div>
+      
+      <div class="stat-card loyalty">
+        <div class="stat-icon">
+          <i class="fas fa-gift"></i>
+        </div>
+        <div class="stat-content">
+          <h3>{{ stats.totalLoyaltyPoints }}</h3>
+          <p>Total Loyalty Points</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-bar">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Search customers by name, username or email..." 
+        [(ngModel)]="searchTerm"
+        (input)="onSearch(searchTerm)">
+    </div>
+    
+    <div class="filters">
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilter(statusFilter)">
+        <option value="all">All Status</option>
+        <option value="enabled">Enabled</option>
+        <option value="disabled">Disabled</option>
+      </select>
+      
+      <select [(ngModel)]="roleFilter" (change)="onRoleFilter(roleFilter)">
+        <option value="all">All Roles</option>
+        <option value="CLIENT">Client</option>
+        <option value="ADMIN">Admin</option>
+        <option value="MANAGER">Manager</option>
+      </select>
+      
+      <select [(ngModel)]="premiumFilter" (change)="onPremiumFilter(premiumFilter)">
+        <option value="all">All Customers</option>
+        <option value="premium">Premium Only</option>
+        <option value="regular">Regular Only</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Customers Table -->
+  <div class="table-section">
+    <div class="table-container">
+      <table class="customers-table">
+        <thead>
+          <tr>
+            <th (click)="onSort('firstName')" class="sortable">
+              Customer
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('email')" class="sortable">
+              Contact Info
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('role')" class="sortable">
+              Role
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('isEnabled')" class="sortable">
+              Status
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('loyaltyPoints')" class="sortable">
+              Loyalty Points
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('totalOrders')" class="sortable">
+              Orders
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('totalSpent')" class="sortable">
+              Total Spent
+              <i class="fas fa-sort"></i>
+            </th>
+            <th (click)="onSort('createdAt')" class="sortable">
+              Registration Date
+              <i class="fas fa-sort"></i>
+            </th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let customer of filteredCustomers" class="customer-row">
+            <td>
+              <div class="customer-info">
+                <div class="customer-avatar">
+                  {{ getRoleIcon(customer.role) }}
+                </div>
+                <div class="customer-details">
+                  <h4>{{ getFullName(customer) }}</h4>
+                  <p>{{ '@' + customer.username }} • ID: #{{ customer.id }}</p>
+                  <span *ngIf="customer.isPremium" class="premium-badge">
+                    <i class="fas fa-star"></i> Premium
+                  </span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="contact-info">
+                <p><i class="fas fa-envelope"></i> {{ customer.email }}</p>
+                <p *ngIf="customer.phoneNumber"><i class="fas fa-phone"></i> {{ customer.phoneNumber }}</p>
+                <p *ngIf="customer.defaultAddress"><i class="fas fa-map-marker-alt"></i> {{ customer.defaultAddress }}</p>
+              </div>
+            </td>
+            <td>
+              <div class="role-badge" [class]="customer.role.toLowerCase()">
+                {{ customer.role | titlecase }}
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class]="getStatusClass(customer.isEnabled)">
+                {{ customer.isEnabled ? 'Enabled' : 'Disabled' }}
+              </span>
+            </td>
+            <td>
+              <div class="loyalty-info">
+                <strong>{{ customer.loyaltyPoints }}</strong>
+                <small>points</small>
+              </div>
+            </td>
+            <td>
+              <div class="orders-info">
+                <strong>{{ customer.totalOrders || 0 }}</strong>
+                <small *ngIf="(customer.totalOrders || 0) > 0">orders</small>
+              </div>
+            </td>
+            <td>
+              <strong class="revenue-amount">{{ formatCurrency(customer.totalSpent) }}</strong>
+            </td>
+            <td>
+              <span class="date-text">{{ formatDate(customer.createdAt) }}</span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon view" (click)="openDetailsModal(customer)" title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-icon toggle" (click)="toggleCustomerStatus(customer)" title="Toggle Status">
+                  <i class="fas fa-toggle-{{ customer.isEnabled ? 'on' : 'off' }}"></i>
+                </button>
+                <button class="btn-icon edit" (click)="openEditModal(customer)" title="Edit Customer">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon delete" (click)="openDeleteModal(customer)" title="Delete Customer">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div *ngIf="filteredCustomers.length === 0" class="empty-state">
+      <div class="empty-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <h3>No Customers Found</h3>
+      <p>No customers match your current filters. Try adjusting your search criteria or add a new customer.</p>
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="fas fa-plus"></i>
+        Add First Customer
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div *ngIf="showAddModal" class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-user-plus"></i> Add New Customer</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form class="customer-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="username">Username *</label>
+            <input 
+              id="username"
+              type="text" 
+              [(ngModel)]="customerForm.username" 
+              name="username"
+              placeholder="Enter username"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input 
+              id="email"
+              type="email" 
+              [(ngModel)]="customerForm.email" 
+              name="email"
+              placeholder="Enter email address"
+              required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="firstName">First Name *</label>
+            <input 
+              id="firstName"
+              type="text" 
+              [(ngModel)]="customerForm.firstName" 
+              name="firstName"
+              placeholder="Enter first name"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="lastName">Last Name *</label>
+            <input 
+              id="lastName"
+              type="text" 
+              [(ngModel)]="customerForm.lastName" 
+              name="lastName"
+              placeholder="Enter last name"
+              required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="phoneNumber">Phone Number</label>
+            <input 
+              id="phoneNumber"
+              type="tel" 
+              [(ngModel)]="customerForm.phoneNumber" 
+              name="phoneNumber"
+              placeholder="Enter phone number">
+          </div>
+          
+          <div class="form-group">
+            <label for="dateOfBirth">Date of Birth</label>
+            <input 
+              id="dateOfBirth"
+              type="date" 
+              [(ngModel)]="customerForm.dateOfBirth" 
+              name="dateOfBirth">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="defaultAddress">Default Address</label>
+          <textarea 
+            id="defaultAddress"
+            [(ngModel)]="customerForm.defaultAddress" 
+            name="defaultAddress"
+            placeholder="Enter default address"
+            rows="2"></textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <select id="gender" [(ngModel)]="customerForm.gender" name="gender">
+              <option value="">Select Gender</option>
+              <option *ngFor="let gender of genders" [value]="gender">{{ gender }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="preferredPaymentMethod">Preferred Payment Method</label>
+            <select id="preferredPaymentMethod" [(ngModel)]="customerForm.preferredPaymentMethod" name="preferredPaymentMethod">
+              <option value="">Select Payment Method</option>
+              <option *ngFor="let method of paymentMethods" [value]="method">{{ method }}</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="role">Role</label>
+            <select id="role" [(ngModel)]="customerForm.role" name="role">
+              <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="loyaltyPoints">Loyalty Points</label>
+            <input 
+              id="loyaltyPoints"
+              type="number" 
+              [(ngModel)]="customerForm.loyaltyPoints" 
+              name="loyaltyPoints"
+              placeholder="Enter loyalty points"
+              min="0">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <div class="checkbox-group">
+              <input 
+                id="isEnabled"
+                type="checkbox" 
+                [(ngModel)]="customerForm.isEnabled" 
+                name="isEnabled">
+              <label for="isEnabled">Account Enabled</label>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div class="checkbox-group">
+              <input 
+                id="isPremium"
+                type="checkbox" 
+                [(ngModel)]="customerForm.isPremium" 
+                name="isPremium">
+              <label for="isPremium">Premium Customer</label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveCustomer()">Add Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div *ngIf="showEditModal" class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-user-edit"></i> Edit Customer</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form class="customer-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editUsername">Username *</label>
+            <input 
+              id="editUsername"
+              type="text" 
+              [(ngModel)]="customerForm.username" 
+              name="username"
+              placeholder="Enter username"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="editEmail">Email *</label>
+            <input 
+              id="editEmail"
+              type="email" 
+              [(ngModel)]="customerForm.email" 
+              name="email"
+              placeholder="Enter email address"
+              required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editFirstName">First Name *</label>
+            <input 
+              id="editFirstName"
+              type="text" 
+              [(ngModel)]="customerForm.firstName" 
+              name="firstName"
+              placeholder="Enter first name"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="editLastName">Last Name *</label>
+            <input 
+              id="editLastName"
+              type="text" 
+              [(ngModel)]="customerForm.lastName" 
+              name="lastName"
+              placeholder="Enter last name"
+              required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editPhoneNumber">Phone Number</label>
+            <input 
+              id="editPhoneNumber"
+              type="tel" 
+              [(ngModel)]="customerForm.phoneNumber" 
+              name="phoneNumber"
+              placeholder="Enter phone number">
+          </div>
+          
+          <div class="form-group">
+            <label for="editDateOfBirth">Date of Birth</label>
+            <input 
+              id="editDateOfBirth"
+              type="date" 
+              [(ngModel)]="customerForm.dateOfBirth" 
+              name="dateOfBirth">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="editDefaultAddress">Default Address</label>
+          <textarea 
+            id="editDefaultAddress"
+            [(ngModel)]="customerForm.defaultAddress" 
+            name="defaultAddress"
+            placeholder="Enter default address"
+            rows="2"></textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editGender">Gender</label>
+            <select id="editGender" [(ngModel)]="customerForm.gender" name="gender">
+              <option value="">Select Gender</option>
+              <option *ngFor="let gender of genders" [value]="gender">{{ gender }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="editPreferredPaymentMethod">Preferred Payment Method</label>
+            <select id="editPreferredPaymentMethod" [(ngModel)]="customerForm.preferredPaymentMethod" name="preferredPaymentMethod">
+              <option value="">Select Payment Method</option>
+              <option *ngFor="let method of paymentMethods" [value]="method">{{ method }}</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editRole">Role</label>
+            <select id="editRole" [(ngModel)]="customerForm.role" name="role">
+              <option *ngFor="let role of roles" [value]="role">{{ role }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="editLoyaltyPoints">Loyalty Points</label>
+            <input 
+              id="editLoyaltyPoints"
+              type="number" 
+              [(ngModel)]="customerForm.loyaltyPoints" 
+              name="loyaltyPoints"
+              placeholder="Enter loyalty points"
+              min="0">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <div class="checkbox-group">
+              <input 
+                id="editIsEnabled"
+                type="checkbox" 
+                [(ngModel)]="customerForm.isEnabled" 
+                name="isEnabled">
+              <label for="editIsEnabled">Account Enabled</label>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <div class="checkbox-group">
+              <input 
+                id="editIsPremium"
+                type="checkbox" 
+                [(ngModel)]="customerForm.isPremium" 
+                name="isPremium">
+              <label for="editIsPremium">Premium Customer</label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveCustomer()">Update Customer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Details Modal -->
+<div *ngIf="showDetailsModal" class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content details-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-user"></i> Customer Details</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedCustomer">
+      <div class="details-grid">
+        <div class="detail-section">
+          <h3><i class="fas fa-user"></i> Personal Information</h3>
+          <div class="detail-item">
+            <label>Full Name:</label>
+            <span>{{ getFullName(selectedCustomer) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Username:</label>
+            <span>{{ selectedCustomer.username }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Email:</label>
+            <span>{{ selectedCustomer.email }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Phone:</label>
+            <span>{{ selectedCustomer.phoneNumber || 'Not provided' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Date of Birth:</label>
+            <span>{{ selectedCustomer.dateOfBirth || 'Not provided' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Gender:</label>
+            <span>{{ selectedCustomer.gender || 'Not specified' }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3><i class="fas fa-cog"></i> Account Information</h3>
+          <div class="detail-item">
+            <label>Customer ID:</label>
+            <span>#{{ selectedCustomer.id }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Role:</label>
+            <span class="role-badge" [class]="selectedCustomer.role.toLowerCase()">{{ selectedCustomer.role }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span class="status-badge" [class]="getStatusClass(selectedCustomer.isEnabled)">{{ selectedCustomer.isEnabled ? 'Enabled' : 'Disabled' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Premium Member:</label>
+            <span class="premium-status" [class.premium]="selectedCustomer.isPremium">{{ selectedCustomer.isPremium ? 'Yes' : 'No' }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Registration Date:</label>
+            <span>{{ formatDate(selectedCustomer.createdAt) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Last Updated:</label>
+            <span>{{ formatDate(selectedCustomer.updatedAt) }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3><i class="fas fa-shopping-cart"></i> Purchase Information</h3>
+          <div class="detail-item">
+            <label>Total Orders:</label>
+            <span class="highlight">{{ selectedCustomer.totalOrders }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Total Spent:</label>
+            <span class="highlight">{{ formatCurrency(selectedCustomer.totalSpent) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Loyalty Points:</label>
+            <span class="highlight">{{ selectedCustomer.loyaltyPoints }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Preferred Payment:</label>
+            <span>{{ selectedCustomer.preferredPaymentMethod || 'Not set' }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section full-width">
+          <h3><i class="fas fa-map-marker-alt"></i> Address Information</h3>
+          <div class="detail-item">
+            <label>Default Address:</label>
+            <span>{{ selectedCustomer.defaultAddress || 'No address provided' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Close</button>
+      <button class="btn btn-primary" (click)="openAnalyticsModal(selectedCustomer!)" *ngIf="selectedCustomer">
+        <i class="fas fa-chart-bar"></i> View Analytics
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Customer Analytics Modal -->
+<div *ngIf="showAnalyticsModal" class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content analytics-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-chart-bar"></i> Customer Analytics</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedCustomer">
+      <div class="analytics-content">
+        <h3>Analytics for {{ getFullName(selectedCustomer) }}</h3>
+        <p class="analytics-placeholder">
+          <i class="fas fa-chart-line"></i>
+          Customer analytics and insights will be displayed here.
+          This includes purchase history, behavior patterns, and recommendations.
+        </p>
+        
+        <div class="analytics-stats">
+          <div class="analytics-stat">
+            <div class="stat-value">{{ selectedCustomer.totalOrders }}</div>
+            <div class="stat-label">Total Orders</div>
+          </div>
+          <div class="analytics-stat">
+            <div class="stat-value">{{ formatCurrency(selectedCustomer.totalSpent) }}</div>
+            <div class="stat-label">Total Spent</div>
+          </div>
+          <div class="analytics-stat">
+            <div class="stat-value">{{ selectedCustomer.loyaltyPoints }}</div>
+            <div class="stat-label">Loyalty Points</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div *ngIf="showDeleteModal" class="modal-overlay" (click)="closeModals()">
+  <div class="modal-content delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-exclamation-triangle"></i> Confirm Delete</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p>Are you sure you want to delete <strong>{{ getFullName(selectedCustomer!) }}</strong>?</p>
+      <p class="warning-text">This action cannot be undone.</p>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteCustomer()">Delete Customer</button>
+    </div>
+  </div>
+</div>

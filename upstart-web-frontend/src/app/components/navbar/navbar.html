@@ -1,0 +1,217 @@
+<nav class="navbar" [class.loading]="isLoading">
+  <!-- Sidebar Toggle -->
+  <button class="navbar-toggle" 
+          (click)="toggleSidebar()" 
+          aria-label="Toggle sidebar">
+    <span class="hamburger-icon">
+      <span></span>
+      <span></span>
+      <span></span>
+    </span>
+  </button>
+
+  <!-- Left Section: Logo & Brand -->
+  <div class="navbar-left">
+    <a class="navbar-logo" (click)="navigateToHome()" role="button" tabindex="0">
+      <div class="navbar-logo-icon" [class.spinning]="isLoading">🏢</div>
+      <span class="navbar-brand">{{ companyName }}</span>
+    </a>
+  </div>
+
+  <!-- Center Section: Enhanced Search -->
+  <div class="navbar-center">
+    <div class="search-container" 
+         [class.focused]="isSearchFocused"
+         [class.has-results]="searchResults.length > 0">
+      <div class="search-icon" aria-hidden="true">🔍</div>
+      <input type="text" 
+             class="search-input"
+             placeholder="{{ searchPlaceholder }}"
+             [(ngModel)]="searchQuery"
+             (focus)="onSearchFocus()"
+             (blur)="onSearchBlur()"
+             (input)="onSearchInput()"
+             (keydown)="onSearchKeydown($event)"
+             [attr.aria-label]="'Search ' + searchPlaceholder"
+             autocomplete="off"
+             role="combobox"
+             [attr.aria-expanded]="searchResults.length > 0"
+             aria-autocomplete="list">
+      <button class="search-clear" 
+              *ngIf="searchQuery" 
+              (click)="clearSearch()"
+              title="Clear search"
+              aria-label="Clear search">
+        ✕
+      </button>
+      
+      <!-- Search Results Dropdown -->
+      <div class="search-results" *ngIf="searchResults.length > 0" role="listbox">
+        <div class="search-result" 
+             *ngFor="let result of searchResults; let i = index"
+             (click)="selectSearchResult(result)"
+             [class.highlighted]="i === selectedResultIndex"
+             role="option"
+             [attr.aria-selected]="i === selectedResultIndex">
+          <div class="result-icon">{{ result.icon }}</div>
+          <div class="result-content">
+            <div class="result-title">{{ result.title }}</div>
+            <div class="result-description">{{ result.description }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Section: Enhanced Actions -->
+  <div class="navbar-right">
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="navbar-action theme-toggle" 
+              (click)="toggleNightMode()" 
+              [class.night-mode]="isNightMode"
+              [class.auto-mode]="currentTheme === 'auto'"
+              [title]="getThemeTooltip()"
+              [attr.aria-label]="getThemeTooltip()">
+        <span class="theme-icon">{{ getThemeIcon() }}</span>
+        <span class="theme-indicator" *ngIf="currentTheme === 'auto'"></span>
+      </button>
+    </div>
+
+
+
+    <!-- Messages -->
+    <div class="dropdown messages-dropdown">
+      <button class="navbar-action" 
+              title="Messages"
+              aria-label="Messages"
+              (click)="toggleMessagesDropdown($event)"
+              [attr.aria-expanded]="isMessagesDropdownOpen">
+        <span class="action-icon">📧</span>
+        <span class="badge" *ngIf="unreadMessagesCount > 0">{{ unreadMessagesCount }}</span>
+      </button>
+      <div class="dropdown-content messages-content"
+           [class.show]="isMessagesDropdownOpen">
+        <div class="dropdown-header">
+          <h3>Messages</h3>
+          <button class="mark-all-read" 
+                  (click)="markAllMessagesRead()"
+                  *ngIf="unreadMessagesCount > 0">
+            Mark all read
+          </button>
+        </div>
+        <div class="messages-list">
+          <a *ngFor="let msg of messages" 
+             (click)="openMessage(msg)"
+             [class.unread]="!msg.read"
+             class="message-item">
+            <div class="message-avatar">{{ msg.sender.charAt(0) }}</div>
+            <div class="message-content">
+              <div class="message-sender">{{ msg.sender }}</div>
+              <div class="message-text">{{ msg.content }}</div>
+              <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
+            </div>
+          </a>
+        </div>
+        <div class="dropdown-footer">
+          <a (click)="viewAllMessages()" class="view-all">View all messages</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notifications -->
+    <div class="dropdown notifications-dropdown">
+      <button class="navbar-action" 
+              title="Notifications"
+              aria-label="Notifications"
+              (click)="toggleNotificationsDropdown($event)"
+              [attr.aria-expanded]="isNotificationsDropdownOpen">
+        <span class="action-icon">🔔</span>
+        <span class="badge" *ngIf="unreadNotificationsCount > 0">{{ unreadNotificationsCount }}</span>
+      </button>
+      <div class="dropdown-content notifications-content"
+           [class.show]="isNotificationsDropdownOpen">
+        <div class="dropdown-header">
+          <h3>Notifications</h3>
+          <button class="mark-all-read" 
+                  (click)="markAllNotificationsRead()"
+                  *ngIf="unreadNotificationsCount > 0">
+            Mark all read
+          </button>
+        </div>
+        <div class="notifications-list">
+          <a *ngFor="let notif of notifications" 
+             (click)="openNotification(notif)"
+             [class.unread]="!notif.read"
+             class="notification-item">
+            <div class="notification-icon">{{ notif.icon }}</div>
+            <div class="notification-content">
+              <div class="notification-title">{{ notif.title }}</div>
+              <div class="notification-text">{{ notif.content }}</div>
+              <div class="notification-time">{{ formatTime(notif.timestamp) }}</div>
+            </div>
+          </a>
+        </div>
+        <div class="dropdown-footer">
+          <a (click)="viewAllNotifications()" class="view-all">View all notifications</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- User Profile -->
+    <div class="dropdown user-dropdown">
+      <div class="navbar-user" 
+           title="User menu"
+           aria-label="User menu"
+           (click)="toggleUserDropdown($event)"
+           [attr.aria-expanded]="isUserDropdownOpen"
+           style="cursor: pointer;">
+        <div class="navbar-user-avatar">
+          <img *ngIf="user.avatar; else userInitials" 
+               [src]="user.avatar" 
+               [alt]="user.name + ' avatar'">
+          <ng-template #userInitials>{{ getUserInitials() }}</ng-template>
+        </div>
+        <div class="navbar-user-info">
+          <div class="navbar-user-name">{{ user.name }}</div>
+          <div class="navbar-user-role">{{ user.role }}</div>
+        </div>
+        <span class="navbar-user-dropdown">▼</span>
+      </div>
+      <div class="dropdown-content user-content"
+           [class.show]="isUserDropdownOpen">
+        <div class="user-profile-header">
+          <div class="profile-avatar">{{ getUserInitials() }}</div>
+          <div class="profile-info">
+            <div class="profile-name">{{ user.name }}</div>
+            <div class="profile-email">{{ user.email }}</div>
+          </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <a (click)="navigateToProfile()" class="dropdown-item">
+          <span class="item-icon">👤</span>
+          <span class="item-text">Profile</span>
+        </a>
+        <a (click)="navigateToSettings()" class="dropdown-item">
+          <span class="item-icon">⚙️</span>
+          <span class="item-text">Settings</span>
+        </a>
+        <a (click)="navigateToHelp()" class="dropdown-item">
+          <span class="item-icon">❓</span>
+          <span class="item-text">Help & Support</span>
+        </a>
+        <div class="dropdown-divider"></div>
+        <a (click)="logout()" class="dropdown-item logout">
+          <span class="item-icon">🚪</span>
+          <span class="item-text">Sign Out</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Menu Overlay -->
+  <div class="mobile-menu-overlay" 
+       *ngIf="isMobileMenuOpen" 
+       (click)="closeMobileMenu()"
+       [@fadeInOut]></div>
+</nav>

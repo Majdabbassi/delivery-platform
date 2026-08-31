@@ -1,0 +1,28 @@
+{
+  "properties": [
+    {
+      "name": "jwt.secret",
+      "type": "java.lang.String",
+      "description": "Secret key used for JWT token signing and verification. Should be at least 256 bits (32 characters) for HS256.",
+      "defaultValue": "REDACTED_JWT_SECRET"
+    },
+    {
+      "name": "jwt.expiration",
+      "type": "java.lang.Long",
+      "description": "JWT access token expiration time in milliseconds.",
+      "defaultValue": 86400000
+    },
+    {
+      "name": "jwt.refresh.expiration",
+      "type": "java.lang.Long",
+      "description": "JWT refresh token expiration time in milliseconds.",
+      "defaultValue": 604800000
+    },
+    {
+      "name": "jwt.issuer",
+      "type": "java.lang.String",
+      "description": "JWT token issuer identifier.",
+      "defaultValue": "upstart-backend"
+    }
+  ]
+}

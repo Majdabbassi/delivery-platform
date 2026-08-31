@@ -1,0 +1,146 @@
+<div class="messagerie-container">
+  <!-- Left Sidebar - Contacts List -->
+  <div class="contacts-sidebar">
+    <!-- Tabs -->
+    <div class="tabs">
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'Chat'"
+        (click)="setActiveTab('Chat')">
+        Chat
+      </button>
+      <button 
+        class="tab" 
+        [class.active]="activeTab === 'Contacts'"
+        (click)="setActiveTab('Contacts')">
+        Contacts
+      </button>
+    </div>
+
+    <!-- Contacts List -->
+    <div class="contacts-list">
+      <div 
+        *ngFor="let contact of contacts" 
+        class="contact-item"
+        [class.selected]="selectedContact.id === contact.id"
+        (click)="selectContact(contact)">
+        <div class="contact-avatar">
+          <div class="avatar-circle">
+            {{ contact.avatar }}
+          </div>
+          <div class="online-indicator" *ngIf="contact.isOnline"></div>
+        </div>
+        <div class="contact-info">
+          <div class="contact-name">{{ contact.name }}</div>
+          <div class="contact-message">{{ contact.lastMessage }}</div>
+        </div>
+        <div class="contact-meta">
+          <div class="contact-time">{{ contact.time }}</div>
+          <div class="unread-badge" *ngIf="contact.unreadCount > 0">
+            {{ contact.unreadCount }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Chat Area -->
+  <div class="chat-area">
+    <!-- Chat Header -->
+    <div class="chat-header">
+      <div class="contact-info">
+        <div class="contact-avatar">
+          <div class="avatar-circle">
+            {{ selectedContact.avatar }}
+          </div>
+          <div class="online-indicator" *ngIf="selectedContact.isOnline"></div>
+        </div>
+        <div class="contact-details">
+          <div class="contact-name">{{ selectedContact.name }}</div>
+          <div class="contact-status" *ngIf="selectedContact.isOnline">active</div>
+        </div>
+      </div>
+      <div class="chat-actions">
+        <button class="action-btn" title="Call">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+          </svg>
+        </button>
+        <button class="action-btn" title="Video Call">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="23 7 16 12 23 17 23 7"></polygon>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+        </button>
+        <button class="action-btn" title="Archive">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="21 8 21 21 3 21 3 8"></polyline>
+            <rect x="1" y="3" width="22" height="5"></rect>
+            <line x1="10" y1="12" x2="14" y2="12"></line>
+          </svg>
+        </button>
+        <button class="action-btn" title="Delete">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+        <button class="action-btn" title="Info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V5a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+        <button class="action-btn" title="More">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="1"></circle>
+            <circle cx="19" cy="12" r="1"></circle>
+            <circle cx="5" cy="12" r="1"></circle>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages Area -->
+    <div class="messages-area">
+      <div *ngFor="let message of messages" class="message" [class.sent]="message.isSent" [class.received]="!message.isSent">
+        <div class="message-avatar" *ngIf="!message.isSent">
+          <div class="avatar-circle small">
+            {{ message.avatar }}
+          </div>
+        </div>
+        <div class="message-content">
+          <div class="message-bubble">
+            {{ message.text }}
+          </div>
+          <div class="message-time">
+            {{ message.timestamp }}
+          </div>
+        </div>
+        <div class="message-avatar" *ngIf="message.isSent">
+          <div class="avatar-circle small">
+            {{ message.avatar }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Message Input -->
+    <div class="message-input-area">
+      <div class="input-container">
+        <input 
+          type="text" 
+          [(ngModel)]="currentMessage"
+          (keyup.enter)="sendMessage()"
+          placeholder="Type a message..."
+          class="message-input">
+        <button class="send-btn" (click)="sendMessage()" [disabled]="!currentMessage.trim()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

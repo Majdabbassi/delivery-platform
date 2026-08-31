@@ -1,0 +1,142 @@
+# Security Configuration
+security:
+  jwt:
+    secret: ${JWT_SECRET:mySecretKey}
+    issuer: ${JWT_ISSUER:upstart-backend}
+    audience: ${JWT_AUDIENCE:upstart-frontend}
+    expiration: ${JWT_EXPIRATION:86400000} # 24 hours in milliseconds
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000} # 7 days in milliseconds
+    
+  rate-limiting:
+    max-attempts: ${RATE_LIMIT_MAX_ATTEMPTS:5}
+    lockout-duration-minutes: ${RATE_LIMIT_LOCKOUT_DURATION:15}
+    cleanup-interval-minutes: ${RATE_LIMIT_CLEANUP_INTERVAL:60}
+    
+  password:
+    min-length: ${PASSWORD_MIN_LENGTH:8}
+    max-length: ${PASSWORD_MAX_LENGTH:128}
+    require-uppercase: ${PASSWORD_REQUIRE_UPPERCASE:true}
+    require-lowercase: ${PASSWORD_REQUIRE_LOWERCASE:true}
+    require-digits: ${PASSWORD_REQUIRE_DIGITS:true}
+    require-special-chars: ${PASSWORD_REQUIRE_SPECIAL_CHARS:true}
+    
+  cors:
+    allowed-origins:
+      - ${CORS_ALLOWED_ORIGIN_1:http://localhost:3000}
+      - ${CORS_ALLOWED_ORIGIN_2:http://localhost:8080}
+      - ${CORS_ALLOWED_ORIGIN_3:https://yourdomain.com}
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - PATCH
+      - DELETE
+      - OPTIONS
+    allowed-headers:
+      - Authorization
+      - Content-Type
+      - X-Requested-With
+      - Accept
+      - Origin
+      - Access-Control-Request-Method
+      - Access-Control-Request-Headers
+    exposed-headers:
+      - Authorization
+    allow-credentials: true
+    max-age: 3600
+    
+  headers:
+    content-security-policy: |
+      default-src 'self';
+      script-src 'self';
+      style-src 'self';
+      img-src 'self' data: https:;
+      font-src 'self';
+      connect-src 'self';
+      frame-ancestors 'none';
+      object-src 'none';
+      base-uri 'self';
+    referrer-policy: strict-origin-when-cross-origin
+    x-content-type-options: nosniff
+    x-frame-options: DENY
+    x-xss-protection: "1; mode=block"
+    permissions-policy: "geolocation=(), microphone=(), camera=()"
+    
+  audit:
+    enabled: ${AUDIT_ENABLED:true}
+    log-level: ${AUDIT_LOG_LEVEL:INFO}
+    batch-size: ${AUDIT_BATCH_SIZE:100}
+    flush-interval-seconds: ${AUDIT_FLUSH_INTERVAL:30}
+    
+  session:
+    timeout-minutes: ${SESSION_TIMEOUT:30}
+    max-concurrent-sessions: ${MAX_CONCURRENT_SESSIONS:1}
+    
+  encryption:
+    algorithm: ${ENCRYPTION_ALGORITHM:AES}
+    key-size: ${ENCRYPTION_KEY_SIZE:256}
+    
+# Logging configuration for security events
+logging:
+  level:
+    com.upstart.backend.service.AuditLogService: ${AUDIT_LOG_LEVEL:INFO}
+    com.upstart.backend.service.RateLimitingService: INFO
+    com.upstart.backend.service.TokenBlacklistService: INFO
+    com.upstart.backend.filter.JwtAuthenticationFilter: INFO
+    org.springframework.security: WARN
+    
+# Management endpoints security
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      roles: ADMIN
+  security:
+    enabled: true
+    
+# Server security configuration
+server:
+  error:
+    include-stacktrace: never
+    include-message: never
+  servlet:
+    session:
+      timeout: ${SESSION_TIMEOUT:30m}
+      cookie:
+        secure: ${COOKIE_SECURE:true}
+        http-only: ${COOKIE_HTTP_ONLY:true}
+        same-site: strict
+        
+# Database security (if using H2 for development)
+spring:
+  h2:
+    console:
+      enabled: ${H2_CONSOLE_ENABLED:false}
+      settings:
+        web-allow-others: false
+  datasource:
+    url: ${DATABASE_URL:jdbc:h2:mem:testdb}
+    username: ${DATABASE_USERNAME:sa}
+    password: ${DATABASE_PASSWORD:}
+  jpa:
+    show-sql: ${JPA_SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: false
+        
+# Additional security properties
+app:
+  security:
+    enable-csrf: ${ENABLE_CSRF:false}
+    enable-frame-options: ${ENABLE_FRAME_OPTIONS:true}
+    enable-content-type-options: ${ENABLE_CONTENT_TYPE_OPTIONS:true}
+    enable-xss-protection: ${ENABLE_XSS_PROTECTION:true}
+    enable-hsts: ${ENABLE_HSTS:true}
+    hsts-max-age: ${HSTS_MAX_AGE:31536000}
+    hsts-include-subdomains: ${HSTS_INCLUDE_SUBDOMAINS:true}
+    hsts-preload: ${HSTS_PRELOAD:true}

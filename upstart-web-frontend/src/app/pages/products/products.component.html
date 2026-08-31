@@ -1,0 +1,401 @@
+<div class="products-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-content">
+      <h1 class="page-title">Products Management</h1>
+      <p class="page-subtitle">Manage your product inventory and catalog</p>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-secondary" (click)="exportData()">
+        <i class="fas fa-download"></i> Export
+      </button>
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="fas fa-plus"></i> Add Product
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fas fa-boxes"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total Products</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Active Products</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon warning">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.lowStock }}</h3>
+        <p>Low Stock</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon danger">
+        <i class="fas fa-times-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.outOfStock }}</h3>
+        <p>Out of Stock</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon success">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.totalValue) }}</h3>
+        <p>Total Inventory Value</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Search products by name, SKU, or brand..." 
+        [(ngModel)]="searchTerm"
+        (input)="onSearch(searchTerm)"
+      >
+    </div>
+    
+    <div class="filters">
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilter(statusFilter)" class="filter-select">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="discontinued">Discontinued</option>
+      </select>
+      
+      <select [(ngModel)]="categoryFilter" (change)="onCategoryFilter(categoryFilter)" class="filter-select">
+        <option value="all">All Categories</option>
+        <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Products Table -->
+  <div class="table-container">
+    <table class="products-table">
+      <thead>
+        <tr>
+          <th (click)="onSort('name')" class="sortable">
+            Product Name
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'name' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'name' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('sku')" class="sortable">
+            SKU
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'sku' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'sku' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('category')" class="sortable">
+            Category
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'category' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'category' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('brand')" class="sortable">
+            Brand
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'brand' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'brand' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('price')" class="sortable">
+            Price
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'price' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'price' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('stockQuantity')" class="sortable">
+            Stock
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'stockQuantity' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'stockQuantity' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('status')" class="sortable">
+            Status
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'status' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'status' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('lastUpdated')" class="sortable">
+            Last Updated
+            <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'lastUpdated' && sortDirection === 'asc'" 
+               [class.fa-sort-down]="sortBy === 'lastUpdated' && sortDirection === 'desc'"></i>
+          </th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of filteredProducts" class="product-row">
+          <td class="product-info">
+            <div class="product-details">
+              <span class="product-name">{{ product.name }}</span>
+              <span class="product-description">{{ product.description }}</span>
+            </div>
+          </td>
+          <td class="sku">{{ product.sku }}</td>
+          <td class="category">
+            <span class="category-badge">
+              {{ getCategoryIcon(product.category) }} {{ product.category }}
+            </span>
+          </td>
+          <td class="brand">{{ product.brand }}</td>
+          <td class="price">
+            <div class="price-info">
+              <span class="selling-price">{{ formatCurrency(product.price) }}</span>
+              <span class="cost-price">Cost: {{ formatCurrency(product.costPrice) }}</span>
+            </div>
+          </td>
+          <td class="stock">
+            <div class="stock-info">
+              <span class="stock-quantity" [class]="getStockStatusClass(product)">{{ product.stockQuantity }}</span>
+              <span class="stock-status">{{ getStockStatusText(product) }}</span>
+            </div>
+          </td>
+          <td class="status">
+            <span class="status-badge" [class]="getStatusClass(product.status)">{{ product.status }}</span>
+          </td>
+          <td class="date">{{ formatDate(product.lastUpdated) }}</td>
+          <td class="actions">
+            <button class="btn-icon btn-edit" (click)="openEditModal(product)" title="Edit">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn-icon btn-delete" (click)="openDeleteModal(product)" title="Delete">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <div *ngIf="filteredProducts.length === 0" class="no-data">
+      <i class="fas fa-box-open"></i>
+      <h3>No products found</h3>
+      <p>Try adjusting your search criteria or add a new product.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal-overlay" *ngIf="showAddModal" (click)="closeModals()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add New Product</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form class="product-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productName">Product Name *</label>
+            <input type="text" id="productName" [(ngModel)]="productForm.name" name="productName" required>
+          </div>
+          <div class="form-group">
+            <label for="productSku">SKU *</label>
+            <div class="sku-input">
+              <input type="text" id="productSku" [(ngModel)]="productForm.sku" name="productSku" required>
+              <button type="button" class="btn-generate" (click)="generateSKU()" title="Generate SKU">
+                <i class="fas fa-magic"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="productDescription">Description</label>
+          <textarea id="productDescription" [(ngModel)]="productForm.description" name="productDescription" rows="3"></textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productCategory">Category *</label>
+            <select id="productCategory" [(ngModel)]="productForm.category" name="productCategory" required>
+              <option value="">Select Category</option>
+              <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="productBrand">Brand *</label>
+            <input type="text" id="productBrand" [(ngModel)]="productForm.brand" name="productBrand" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productPrice">Selling Price *</label>
+            <input type="number" id="productPrice" [(ngModel)]="productForm.price" name="productPrice" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="productCostPrice">Cost Price *</label>
+            <input type="number" id="productCostPrice" [(ngModel)]="productForm.costPrice" name="productCostPrice" step="0.01" min="0" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productStock">Stock Quantity *</label>
+            <input type="number" id="productStock" [(ngModel)]="productForm.stockQuantity" name="productStock" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="productMinStock">Minimum Stock Level *</label>
+            <input type="number" id="productMinStock" [(ngModel)]="productForm.minStockLevel" name="productMinStock" min="0" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="productWeight">Weight (kg)</label>
+            <input type="number" id="productWeight" [(ngModel)]="productForm.weight" name="productWeight" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label for="productDimensions">Dimensions</label>
+            <input type="text" id="productDimensions" [(ngModel)]="productForm.dimensions" name="productDimensions" placeholder="L x W x H">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="productStatus">Status *</label>
+          <select id="productStatus" [(ngModel)]="productForm.status" name="productStatus" required>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="discontinued">Discontinued</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveProduct()">Add Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeModals()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Product</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <form class="product-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editProductName">Product Name *</label>
+            <input type="text" id="editProductName" [(ngModel)]="productForm.name" name="editProductName" required>
+          </div>
+          <div class="form-group">
+            <label for="editProductSku">SKU *</label>
+            <input type="text" id="editProductSku" [(ngModel)]="productForm.sku" name="editProductSku" required>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="editProductDescription">Description</label>
+          <textarea id="editProductDescription" [(ngModel)]="productForm.description" name="editProductDescription" rows="3"></textarea>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editProductCategory">Category *</label>
+            <select id="editProductCategory" [(ngModel)]="productForm.category" name="editProductCategory" required>
+              <option value="">Select Category</option>
+              <option *ngFor="let category of categories" [value]="category">{{ category }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="editProductBrand">Brand *</label>
+            <input type="text" id="editProductBrand" [(ngModel)]="productForm.brand" name="editProductBrand" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editProductPrice">Selling Price *</label>
+            <input type="number" id="editProductPrice" [(ngModel)]="productForm.price" name="editProductPrice" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="editProductCostPrice">Cost Price *</label>
+            <input type="number" id="editProductCostPrice" [(ngModel)]="productForm.costPrice" name="editProductCostPrice" step="0.01" min="0" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editProductStock">Stock Quantity *</label>
+            <input type="number" id="editProductStock" [(ngModel)]="productForm.stockQuantity" name="editProductStock" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="editProductMinStock">Minimum Stock Level *</label>
+            <input type="number" id="editProductMinStock" [(ngModel)]="productForm.minStockLevel" name="editProductMinStock" min="0" required>
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="editProductWeight">Weight (kg)</label>
+            <input type="number" id="editProductWeight" [(ngModel)]="productForm.weight" name="editProductWeight" step="0.01" min="0">
+          </div>
+          <div class="form-group">
+            <label for="editProductDimensions">Dimensions</label>
+            <input type="text" id="editProductDimensions" [(ngModel)]="productForm.dimensions" name="editProductDimensions" placeholder="L x W x H">
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label for="editProductStatus">Status *</label>
+          <select id="editProductStatus" [(ngModel)]="productForm.status" name="editProductStatus" required>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="discontinued">Discontinued</option>
+          </select>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveProduct()">Update Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModals()">
+  <div class="modal modal-small" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Confirm Delete</h2>
+      <button class="close-btn" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="delete-confirmation">
+        <i class="fas fa-exclamation-triangle warning-icon"></i>
+        <p>Are you sure you want to delete <strong>{{ selectedProduct?.name }}</strong>?</p>
+        <p class="warning-text">This action cannot be undone.</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteProduct()">Delete Product</button>
+    </div>
+  </div>
+</div>

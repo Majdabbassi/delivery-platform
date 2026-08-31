@@ -1,0 +1,188 @@
+<div class="notifications-container">
+  <!-- Header Section -->
+  <div class="notifications-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="page-title">
+          <span class="title-icon">🔔</span>
+          Notifications
+        </h1>
+      </div>
+      <div class="notification-stats">
+        <span class="stat-item">
+          <span class="stat-number">{{ unreadCount }}</span>
+          <span class="stat-label">Unread</span>
+        </span>
+        <span class="stat-divider">•</span>
+        <span class="stat-item">
+          <span class="stat-number">{{ totalCount }}</span>
+          <span class="stat-label">Total</span>
+        </span>
+      </div>
+      <div class="header-actions">
+        <button class="action-btn secondary" (click)="markAllAsRead()" [disabled]="unreadCount === 0">
+          <span class="btn-icon">✓</span>
+          Mark All Read
+        </button>
+        <button class="action-btn danger" (click)="clearAllRead()">
+          <span class="btn-icon">🗑️</span>
+          Clear Read
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="filters-content">
+      <!-- Search -->
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            class="search-input" 
+            placeholder="Search notifications..."
+            [(ngModel)]="searchQuery"
+            (input)="onSearchChange()">
+          <button 
+            class="clear-search" 
+            *ngIf="searchQuery" 
+            (click)="searchQuery = ''; onSearchChange()">
+            ✕
+          </button>
+        </div>
+      </div>
+
+      <!-- Filter Dropdowns -->
+      <div class="filter-dropdowns">
+        <!-- Category Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Category</label>
+          <select class="filter-select" [(ngModel)]="selectedCategory" (change)="onCategoryChange(selectedCategory)">
+            <option *ngFor="let category of categories" [value]="category.value">
+              {{ category.icon }} {{ category.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Type</label>
+          <select class="filter-select" [(ngModel)]="selectedType" (change)="onTypeChange(selectedType)">
+            <option *ngFor="let type of types" [value]="type.value">
+              {{ type.icon }} {{ type.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="filter-group">
+          <label class="filter-label">Priority</label>
+          <select class="filter-select" [(ngModel)]="selectedPriority" (change)="onPriorityChange(selectedPriority)">
+            <option *ngFor="let priority of priorities" [value]="priority.value">
+              {{ priority.icon }} {{ priority.label }}
+            </option>
+          </select>
+        </div>
+
+        <!-- Unread Toggle -->
+        <div class="filter-group">
+          <label class="toggle-container">
+            <input 
+              type="checkbox" 
+              class="toggle-input" 
+              [(ngModel)]="showUnreadOnly" 
+              (change)="onUnreadToggle()">
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Unread Only</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Notifications List -->
+  <div class="notifications-content">
+    <div class="notifications-list" *ngIf="filteredNotifications.length > 0; else noNotifications">
+      <div 
+        class="notification-item" 
+        *ngFor="let notification of filteredNotifications"
+        [class.unread]="!notification.read"
+        [ngClass]="[getNotificationTypeClass(notification.type), getPriorityClass(notification.priority)]">
+        
+        <!-- Notification Icon -->
+        <div class="notification-icon">
+          <span class="icon-emoji">{{ notification.icon }}</span>
+          <div class="priority-indicator" [ngClass]="getPriorityClass(notification.priority)"></div>
+        </div>
+
+        <!-- Notification Content -->
+        <div class="notification-content">
+          <div class="notification-header">
+            <h3 class="notification-title">{{ notification.title }}</h3>
+            <div class="notification-meta">
+              <span class="notification-time">{{ formatTime(notification.timestamp) }}</span>
+              <span class="notification-category">{{ notification.category }}</span>
+            </div>
+          </div>
+          <p class="notification-text">{{ notification.content }}</p>
+          <div class="notification-tags">
+            <span class="tag type-tag" [ngClass]="getNotificationTypeClass(notification.type)">
+              {{ notification.type }}
+            </span>
+            <span class="tag priority-tag" [ngClass]="getPriorityClass(notification.priority)">
+              {{ notification.priority }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Notification Actions -->
+        <div class="notification-actions">
+          <button 
+            class="action-btn-small" 
+            *ngIf="!notification.read" 
+            (click)="markAsRead(notification)"
+            title="Mark as read">
+            ✓
+          </button>
+          <button 
+            class="action-btn-small" 
+            *ngIf="notification.read" 
+            (click)="markAsUnread(notification)"
+            title="Mark as unread">
+            ↻
+          </button>
+          <button 
+            class="action-btn-small danger" 
+            (click)="deleteNotification(notification)"
+            title="Delete notification">
+            🗑️
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- No Notifications State -->
+    <ng-template #noNotifications>
+      <div class="empty-state">
+        <div class="empty-icon">🔔</div>
+        <h3 class="empty-title">No notifications found</h3>
+        <p class="empty-description">
+          <span *ngIf="searchQuery || selectedCategory !== 'all' || selectedType !== 'all' || selectedPriority !== 'all' || showUnreadOnly">
+            Try adjusting your filters to see more notifications.
+          </span>
+          <span *ngIf="!searchQuery && selectedCategory === 'all' && selectedType === 'all' && selectedPriority === 'all' && !showUnreadOnly">
+            You're all caught up! No notifications at the moment.
+          </span>
+        </p>
+        <button 
+          class="action-btn primary" 
+          *ngIf="searchQuery || selectedCategory !== 'all' || selectedType !== 'all' || selectedPriority !== 'all' || showUnreadOnly"
+          (click)="searchQuery = ''; selectedCategory = 'all'; selectedType = 'all'; selectedPriority = 'all'; showUnreadOnly = false; applyFilters()">
+          Clear Filters
+        </button>
+      </div>
+    </ng-template>
+  </div>
+</div>

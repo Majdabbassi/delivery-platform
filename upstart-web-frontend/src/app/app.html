@@ -1,0 +1,12 @@
+<div class="app-layout">
+  <!-- Show sidebar and navbar only for authenticated users -->
+  <app-sidebar *ngIf="isAuthenticated && !isLoginPage"></app-sidebar>
+  <div class="content-area" [class.full-width]="!isAuthenticated || isLoginPage">
+    <app-navbar *ngIf="isAuthenticated && !isLoginPage"></app-navbar>
+    <main class="main-content" [class.login-content]="!isAuthenticated || isLoginPage">
+      <div class="content-container">
+        <router-outlet></router-outlet>
+      </div>
+    </main>
+  </div>
+</div>

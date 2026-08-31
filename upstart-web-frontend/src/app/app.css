@@ -1,0 +1,326 @@
+/* ========================================
+   MODERN APP LAYOUT - Professional Design
+   ======================================== */
+
+/* App Root Layout */
+app-root {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: var(--bg-primary);
+}
+
+/* Main App Layout Container */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Sidebar positioned on left - Full Height */
+app-sidebar {
+  position: relative;
+  z-index: 100;
+  flex-shrink: 0;
+  height: 100vh;
+  transition: all var(--transition-normal);
+}
+
+/* Right Content Area (Navbar + Main Content) */
+.content-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-secondary);
+}
+
+/* Navbar positioned at top of content area */
+app-navbar {
+  position: relative;
+  z-index: 50;
+  flex-shrink: 0;
+  width: 100%;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+/* Main Content Area with Modern Styling */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg-primary);
+  position: relative;
+  margin: var(--space-md);
+  margin-top: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-primary);
+  transition: all var(--transition-normal);
+}
+
+/* Content Container with Smooth Scrolling */
+.content-container {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-xl);
+  background: var(--bg-elevated);
+  position: relative;
+}
+
+/* Router Outlet Container */
+router-outlet + * {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  animation: fadeIn var(--transition-normal) ease-out;
+}
+
+/* Page Transition Effects */
+.page-enter {
+  animation: slideUp var(--transition-normal) ease-out;
+}
+
+.page-leave {
+  animation: fadeOut var(--transition-fast) ease-in;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Modern Glass Effect for Elevated Elements */
+.glass-effect {
+  background: var(--bg-overlay);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-accent);
+}
+
+/* Floating Action Elements */
+.floating-element {
+  position: relative;
+  transition: all var(--transition-normal);
+}
+
+.floating-element:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+/* Content Grid System */
+.content-grid {
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.content-grid-2 {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+}
+
+.content-grid-3 {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Tablet Styles */
+@media (max-width: 1024px) {
+  .main-content {
+    margin: var(--space-sm);
+    margin-top: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  }
+  
+  .content-container {
+    padding: var(--space-lg);
+  }
+  
+  .content-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: var(--space-md);
+  }
+}
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  app-sidebar {
+    order: 2;
+    height: auto;
+    z-index: 200;
+  }
+  
+  .content-area {
+    order: 1;
+    flex: 1;
+  }
+  
+  .main-content {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+  
+  .content-container {
+    padding: var(--space-md);
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-sm);
+  }
+}
+
+/* Small Mobile Styles */
+@media (max-width: 480px) {
+  .content-container {
+    padding: var(--space-sm);
+  }
+  
+  .floating-element:hover {
+    transform: none; /* Disable hover effects on touch devices */
+  }
+}
+
+/* ========================================
+   AUTHENTICATION LAYOUT STYLES
+   ======================================== */
+
+/* Full width layout when sidebar/navbar are hidden */
+.content-area.full-width {
+  width: 100%;
+  margin: 0;
+}
+
+/* Login page specific styles */
+.main-content.login-content {
+  margin: 0;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  background: transparent;
+  overflow: auto;
+}
+
+/* Hide scrollbars on login page */
+.main-content.login-content::-webkit-scrollbar {
+  display: none;
+}
+
+.main-content.login-content {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Ensure login page takes full viewport */
+.app-layout:has(.login-content) {
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Responsive adjustments for authentication pages */
+@media (max-width: 768px) {
+  .content-area.full-width {
+    height: 100vh;
+  }
+  
+  .main-content.login-content {
+    height: 100vh;
+  }
+}
+
+/* ========================================
+   LOADING STATES
+   ======================================== */
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--bg-overlay);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--accent-light);
+  border-top: 3px solid var(--accent-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* ========================================
+   ACCESSIBILITY ENHANCEMENTS
+   ======================================== */
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .floating-element:hover {
+    transform: none;
+  }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .main-content {
+    border: 2px solid var(--text-primary);
+  }
+  
+  .glass-effect {
+    background: var(--bg-elevated);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* Focus Management */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  z-index: 1000;
+  transition: top var(--transition-fast);
+}
+
+.skip-link:focus {
+  top: 6px;
+}

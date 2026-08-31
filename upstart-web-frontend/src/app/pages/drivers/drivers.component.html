@@ -1,0 +1,711 @@
+<div class="drivers-container">
+  <!-- Header Section -->
+  <div class="drivers-header">
+    <div class="header-content">
+      <div class="header-text">
+        <h1 class="page-title">
+          <i class="fas fa-user-tie"></i>
+          Drivers Management
+        </h1>
+        <p class="page-subtitle">Manage delivery drivers, vehicles, and performance tracking</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary" (click)="exportData()">
+          <i class="fas fa-download"></i>
+          Export Data
+        </button>
+        <button class="btn btn-primary" (click)="openAddModal()">
+          <i class="fas fa-plus"></i>
+          Add Driver
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Statistics Section -->
+  <div class="statistics-section">
+    <div class="stat-card total">
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total Drivers</p>
+      </div>
+    </div>
+    <div class="stat-card active">
+      <div class="stat-icon">
+        <i class="fas fa-user-check"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Active Drivers</p>
+      </div>
+    </div>
+    <div class="stat-card available">
+      <div class="stat-icon">
+        <i class="fas fa-circle" style="color: #28a745;"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.available }}</h3>
+        <p>Available Now</p>
+      </div>
+    </div>
+    <div class="stat-card busy">
+      <div class="stat-icon">
+        <i class="fas fa-circle" style="color: #ffc107;"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.busy }}</h3>
+        <p>On Delivery</p>
+      </div>
+    </div>
+    <div class="stat-card deliveries">
+      <div class="stat-icon">
+        <i class="fas fa-shipping-fast"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.totalDeliveries | number }}</h3>
+        <p>Total Deliveries</p>
+      </div>
+    </div>
+    <div class="stat-card earnings">
+      <div class="stat-icon">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.totalEarnings) }}</h3>
+        <p>Total Earnings</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="filters-section">
+    <div class="search-bar">
+      <i class="fas fa-search"></i>
+      <input type="text" 
+             placeholder="Search drivers by name, email, username, or plate number..." 
+             [(ngModel)]="searchTerm" 
+             (input)="onSearch(searchTerm)">
+    </div>
+    <div class="filters">
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilter(statusFilter)">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <select [(ngModel)]="availabilityFilter" (change)="onAvailabilityFilter(availabilityFilter)">
+        <option value="all">All Availability</option>
+        <option value="available">Available</option>
+        <option value="busy">On Delivery</option>
+      </select>
+      <select [(ngModel)]="vehicleTypeFilter" (change)="onVehicleTypeFilter(vehicleTypeFilter)">
+        <option *ngFor="let type of vehicleTypes" [value]="type.value">{{ type.label }}</option>
+      </select>
+
+    </div>
+  </div>
+
+  <!-- Table Section -->
+  <div class="table-container">
+    <table class="drivers-table">
+      <thead>
+        <tr>
+          <th (click)="onSort('firstName')" class="sortable">
+            Driver Info
+            <i class="fas fa-sort" *ngIf="sortBy !== 'firstName'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'firstName' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'firstName' && sortDirection === 'desc'"></i>
+          </th>
+          <th>Contact & Location</th>
+          <th (click)="onSort('vehicleType')" class="sortable">
+            Vehicle Info
+            <i class="fas fa-sort" *ngIf="sortBy !== 'vehicleType'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'vehicleType' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'vehicleType' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('rating')" class="sortable">
+            Performance
+            <i class="fas fa-sort" *ngIf="sortBy !== 'rating'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'rating' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'rating' && sortDirection === 'desc'"></i>
+          </th>
+
+          <th (click)="onSort('joinDate')" class="sortable">
+            Join Date
+            <i class="fas fa-sort" *ngIf="sortBy !== 'joinDate'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'joinDate' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'joinDate' && sortDirection === 'desc'"></i>
+          </th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let driver of filteredDrivers" [class]="getStatusClass(driver)">
+          <td class="driver-info">
+            <div class="driver-avatar">
+              <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="driver-details">
+              <h4>{{ driver.firstName }} {{ driver.lastName }}</h4>
+              <p>{{ '@' + driver.username }}</p>
+              <span class="driver-id">ID: {{ driver.nationalId }}</span>
+            </div>
+          </td>
+          <td class="contact-info">
+            <div class="contact-item">
+              <i class="fas fa-envelope"></i>
+              <span>{{ driver.email }}</span>
+            </div>
+            <div class="contact-item" *ngIf="driver.phoneNumber">
+              <i class="fas fa-phone"></i>
+              <span>{{ driver.phoneNumber }}</span>
+            </div>
+
+          </td>
+          <td class="vehicle-info">
+            <div class="vehicle-type">
+              <i [class]="getVehicleIcon(driver.vehicleType)"></i>
+              <span>{{ driver.vehicleType }}</span>
+            </div>
+            <div class="vehicle-details" *ngIf="driver.vehiclePlateNumber">
+              <strong>{{ driver.vehiclePlateNumber }}</strong>
+            </div>
+            <div class="vehicle-model" *ngIf="driver.vehicleModel">
+              {{ driver.vehicleModel }}
+            </div>
+          </td>
+          <td class="performance-info">
+            <div class="rating">
+              <span *ngFor="let star of getRatingStars(driver.rating)" [class]="star"></span>
+              <span class="rating-value">({{ driver.rating }})</span>
+            </div>
+            <div class="delivery-stats">
+              <span class="deliveries">{{ driver.totalDeliveries }} deliveries</span>
+              <span class="success-rate">{{ getSuccessRate(driver) | number:'1.1-1' }}% success</span>
+            </div>
+            <div class="earnings">
+              {{ formatCurrency(driver.totalEarnings) }}
+            </div>
+          </td>
+
+          <td class="join-date">
+            {{ formatDate(driver.joinDate) }}
+
+          </td>
+          <td class="status">
+            <span class="status-badge" [class]="getStatusClass(driver)">
+              {{ driver.isVerified ? (driver.isAvailable ? 'Available' : 'On Delivery') : 'Inactive' }}
+            </span>
+            <div class="availability-toggle" *ngIf="driver.isVerified">
+              <button class="btn-toggle" 
+                      (click)="toggleDriverAvailability(driver)"
+                      [class.available]="driver.isAvailable"
+                      title="Toggle Availability">
+                <i class="fas fa-circle"></i>
+              </button>
+            </div>
+          </td>
+          <td class="actions">
+            <div class="action-buttons">
+              <button class="btn-action view" (click)="openDetailsModal(driver)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+              <button class="btn-action performance" (click)="openPerformanceModal(driver)" title="View Performance">
+                <i class="fas fa-chart-line"></i>
+              </button>
+              <button class="btn-action edit" (click)="openEditModal(driver)" title="Edit">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="btn-action toggle" 
+                      (click)="toggleDriverStatus(driver)" 
+                      [title]="driver.isVerified ? 'Deactivate' : 'Activate'">
+                <i class="fas" [class.fa-user-slash]="driver.isVerified" [class.fa-user-check]="!driver.isVerified"></i>
+              </button>
+              <button class="btn-action delete" (click)="openDeleteModal(driver)" title="Delete">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Empty State -->
+  <div class="empty-state" *ngIf="filteredDrivers.length === 0">
+    <i class="fas fa-user-tie"></i>
+    <h3>No drivers found</h3>
+    <p>No drivers match your current search criteria.</p>
+    <button class="btn btn-primary" (click)="openAddModal()">
+      <i class="fas fa-plus"></i>
+      Add First Driver
+    </button>
+  </div>
+</div>
+
+<!-- Add Driver Modal -->
+<div class="modal-overlay" *ngIf="showAddModal" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-plus"></i> Add New Driver</h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form class="driver-form">
+        <!-- Personal Information -->
+        <div class="form-section">
+          <h3>Personal Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="username">Username *</label>
+              <input type="text" id="username" [(ngModel)]="driverForm.username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="email">Email *</label>
+              <input type="email" id="email" [(ngModel)]="driverForm.email" name="email" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="firstName">First Name *</label>
+              <input type="text" id="firstName" [(ngModel)]="driverForm.firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name *</label>
+              <input type="text" id="lastName" [(ngModel)]="driverForm.lastName" name="lastName" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="phoneNumber">Phone Number</label>
+              <input type="tel" id="phoneNumber" [(ngModel)]="driverForm.phoneNumber" name="phoneNumber">
+            </div>
+            <div class="form-group">
+              <label for="nationalId">National ID *</label>
+              <input type="text" id="nationalId" [(ngModel)]="driverForm.nationalId" name="nationalId" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="dateOfBirth">Date of Birth</label>
+              <input type="date" id="dateOfBirth" [(ngModel)]="driverForm.dateOfBirth" name="dateOfBirth">
+            </div>
+            <div class="form-group">
+              <label for="emergencyContact">Emergency Contact</label>
+              <input type="tel" id="emergencyContact" [(ngModel)]="driverForm.emergencyContact" name="emergencyContact">
+            </div>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="address">Address</label>
+            <textarea id="address" [(ngModel)]="driverForm.address" name="address" rows="2"></textarea>
+          </div>
+        </div>
+        
+        <!-- License & Vehicle Information -->
+        <div class="form-section">
+          <h3>License & Vehicle Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="licenseNumber">Driving License Number *</label>
+              <input type="text" id="licenseNumber" [(ngModel)]="driverForm.licenseNumber" name="licenseNumber" required>
+            </div>
+            <div class="form-group">
+              <label for="licenseExpiryDate">License Expiry Date *</label>
+              <input type="date" id="licenseExpiryDate" [(ngModel)]="driverForm.licenseExpiryDate" name="licenseExpiryDate" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="vehicleType">Vehicle Type *</label>
+              <select id="vehicleType" [(ngModel)]="driverForm.vehicleType" name="vehicleType" required>
+                <option value="MOTORCYCLE">Motorcycle</option>
+                <option value="CAR">Car</option>
+                <option value="VAN">Van</option>
+                <option value="TRUCK">Truck</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="vehiclePlateNumber">Vehicle Plate Number</label>
+              <input type="text" id="vehiclePlateNumber" [(ngModel)]="driverForm.vehiclePlateNumber" name="vehiclePlateNumber">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="vehicleModel">Vehicle Model</label>
+              <input type="text" id="vehicleModel" [(ngModel)]="driverForm.vehicleModel" name="vehicleModel">
+            </div>
+
+          </div>
+          
+          <div class="form-row">
+
+          </div>
+        </div>
+        
+        <!-- Work Information -->
+        <div class="form-section">
+          <h3>Work Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="insuranceNumber">Insurance Number</label>
+              <input type="text" id="insuranceNumber" [(ngModel)]="driverForm.insuranceNumber" name="insuranceNumber">
+            </div>
+            <div class="form-group">
+              <label for="notes">Notes</label>
+              <input type="text" id="notes" [(ngModel)]="driverForm.notes" name="notes" placeholder="Additional notes">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="bankAccountInfo">Bank Account Info</label>
+              <input type="text" id="bankAccountInfo" [(ngModel)]="driverForm.bankAccountInfo" name="bankAccountInfo">
+            </div>
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="driverForm.isAvailable" name="isAvailable">
+                <span>Available for deliveries</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveDriver()">
+        <i class="fas fa-save"></i>
+        Add Driver
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Driver Modal -->
+<div class="modal-overlay" *ngIf="showEditModal" (click)="closeModals()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-edit"></i> Edit Driver</h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form class="driver-form">
+        <!-- Same form structure as Add Modal -->
+        <!-- Personal Information -->
+        <div class="form-section">
+          <h3>Personal Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editUsername">Username *</label>
+              <input type="text" id="editUsername" [(ngModel)]="driverForm.username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="editEmail">Email *</label>
+              <input type="email" id="editEmail" [(ngModel)]="driverForm.email" name="email" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editFirstName">First Name *</label>
+              <input type="text" id="editFirstName" [(ngModel)]="driverForm.firstName" name="firstName" required>
+            </div>
+            <div class="form-group">
+              <label for="editLastName">Last Name *</label>
+              <input type="text" id="editLastName" [(ngModel)]="driverForm.lastName" name="lastName" required>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editPhoneNumber">Phone Number</label>
+              <input type="tel" id="editPhoneNumber" [(ngModel)]="driverForm.phoneNumber" name="phoneNumber">
+            </div>
+            <div class="form-group">
+              <label for="editNationalId">National ID *</label>
+              <input type="text" id="editNationalId" [(ngModel)]="driverForm.nationalId" name="nationalId" required>
+            </div>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="editAddress">Address</label>
+            <textarea id="editAddress" [(ngModel)]="driverForm.address" name="address" rows="2"></textarea>
+          </div>
+        </div>
+        
+        <!-- Status Controls -->
+        <div class="form-section">
+          <h3>Status & Availability</h3>
+          <div class="status-controls">
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="driverForm.isVerified" name="isVerified">
+              <span>Driver is verified</span>
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" [(ngModel)]="driverForm.isAvailable" name="isAvailable">
+              <span>Available for deliveries</span>
+            </label>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-primary" (click)="saveDriver()">
+        <i class="fas fa-save"></i>
+        Update Driver
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Driver Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModals()">
+  <div class="modal-content large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-user"></i> Driver Details</h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedDriver">
+      <div class="details-grid">
+        <div class="detail-section">
+          <h3>Personal Information</h3>
+          <div class="detail-item">
+            <label>Full Name:</label>
+            <span>{{ selectedDriver.firstName }} {{ selectedDriver.lastName }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Username:</label>
+            <span>{{ '@' + selectedDriver.username }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Email:</label>
+            <span>{{ selectedDriver.email }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedDriver.phoneNumber">
+            <label>Phone:</label>
+            <span>{{ selectedDriver.phoneNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <label>National ID:</label>
+            <span>{{ selectedDriver.nationalId }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedDriver.address">
+            <label>Address:</label>
+            <span>{{ selectedDriver.address }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3>License & Vehicle</h3>
+          <div class="detail-item">
+            <label>License Number:</label>
+            <span>{{ selectedDriver.licenseNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <label>License Expiry:</label>
+            <span>{{ formatDate(selectedDriver.licenseExpiryDate) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Vehicle Type:</label>
+            <span>
+              <i [class]="getVehicleIcon(selectedDriver.vehicleType)"></i>
+              {{ selectedDriver.vehicleType }}
+            </span>
+          </div>
+          <div class="detail-item" *ngIf="selectedDriver.vehiclePlateNumber">
+            <label>Plate Number:</label>
+            <span>{{ selectedDriver.vehiclePlateNumber }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedDriver.vehicleModel">
+            <label>Vehicle:</label>
+            <span>{{ selectedDriver.vehicleModel }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3>Performance & Status</h3>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span class="status-badge" [class]="getStatusClass(selectedDriver)">
+              {{ selectedDriver.isVerified ? (selectedDriver.isAvailable ? 'Available' : 'On Delivery') : 'Inactive' }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>Rating:</label>
+            <span class="rating-display">
+              <span *ngFor="let star of getRatingStars(selectedDriver.rating)" [class]="star"></span>
+              ({{ selectedDriver.rating }})
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>Total Deliveries:</label>
+            <span>{{ selectedDriver.totalDeliveries }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Success Rate:</label>
+            <span>{{ getSuccessRate(selectedDriver) | number:'1.1-1' }}%</span>
+          </div>
+          <div class="detail-item">
+            <label>Total Earnings:</label>
+            <span>{{ formatCurrency(selectedDriver.totalEarnings) }}</span>
+          </div>
+
+        </div>
+        
+        <div class="detail-section">
+          <h3>Work Information</h3>
+          <div class="detail-item" *ngIf="selectedDriver.insuranceNumber">
+            <label>Insurance Number:</label>
+            <span>{{ selectedDriver.insuranceNumber }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedDriver.bankAccountInfo">
+            <label>Bank Account Info:</label>
+            <span>{{ selectedDriver.bankAccountInfo }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedDriver.notes">
+            <label>Notes:</label>
+            <span>{{ selectedDriver.notes }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Join Date:</label>
+            <span>{{ formatDate(selectedDriver.joinDate) }}</span>
+          </div>
+
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Close</button>
+      <button class="btn btn-primary" (click)="openEditModal(selectedDriver!)" *ngIf="selectedDriver">
+        <i class="fas fa-edit"></i>
+        Edit Driver
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Performance Modal -->
+<div class="modal-overlay" *ngIf="showPerformanceModal" (click)="closeModals()">
+  <div class="modal-content large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-chart-line"></i> Driver Performance</h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedDriver">
+      <div class="performance-header">
+        <div class="driver-info">
+          <h3>{{ selectedDriver.firstName }} {{ selectedDriver.lastName }}</h3>
+          <p>{{ '@' + selectedDriver.username }}</p>
+        </div>
+        <div class="overall-rating">
+          <div class="rating-stars">
+            <span *ngFor="let star of getRatingStars(selectedDriver.rating)" [class]="star"></span>
+          </div>
+          <span class="rating-value">{{ selectedDriver.rating }}/5.0</span>
+        </div>
+      </div>
+      
+      <div class="performance-stats">
+        <div class="stat-item">
+          <div class="stat-icon">
+            <i class="fas fa-shipping-fast"></i>
+          </div>
+          <div class="stat-content">
+            <h4>{{ selectedDriver.totalDeliveries }}</h4>
+            <p>Total Deliveries</p>
+          </div>
+        </div>
+        
+
+        
+        <div class="stat-item">
+          <div class="stat-icon">
+            <i class="fas fa-percentage"></i>
+          </div>
+          <div class="stat-content">
+            <h4>{{ getSuccessRate(selectedDriver) | number:'1.1-1' }}%</h4>
+            <p>Success Rate</p>
+          </div>
+        </div>
+        
+        <div class="stat-item">
+          <div class="stat-icon">
+            <i class="fas fa-dollar-sign"></i>
+          </div>
+          <div class="stat-content">
+            <h4>{{ formatCurrency(selectedDriver.totalEarnings) }}</h4>
+            <p>Total Earnings</p>
+          </div>
+        </div>
+      </div>
+      
+      <div class="performance-chart">
+        <h4>Performance Analytics</h4>
+        <p class="chart-placeholder">Performance charts and analytics would be displayed here.</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModals()">
+  <div class="modal-content small" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2><i class="fas fa-exclamation-triangle"></i> Confirm Deletion</h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedDriver">
+      <div class="warning-message">
+        <p>Are you sure you want to delete the driver:</p>
+        <div class="driver-to-delete">
+          <strong>{{ selectedDriver.firstName }} {{ selectedDriver.lastName }}</strong>
+          <span>({{ '@' + selectedDriver.username }})</span>
+        </div>
+        <p class="warning-text">
+          <i class="fas fa-exclamation-triangle"></i>
+          This action cannot be undone. All driver data and delivery history will be permanently removed.
+        </p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">Cancel</button>
+      <button class="btn btn-danger" (click)="deleteDriver()">
+        <i class="fas fa-trash"></i>
+        Delete Driver
+      </button>
+    </div>
+  </div>
+</div>

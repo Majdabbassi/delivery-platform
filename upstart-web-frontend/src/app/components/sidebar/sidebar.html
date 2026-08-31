@@ -1,0 +1,43 @@
+<aside class="sidebar" [class.collapsed]="isCollapsed">
+  <!-- Modern User Profile Section -->
+  <div class="sidebar-header">
+    <div class="user-profile">
+      <div class="user-avatar">
+        <span>{{ getUserInitials() }}</span>
+        <div class="user-status" *ngIf="currentUser"></div>
+      </div>
+      <div class="user-info">
+        <h3 class="user-name">{{ userDisplayName || 'Guest User' }}</h3>
+        <p class="user-role">{{ userRole || 'Not Authenticated' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simple Scrollable Navigation Menu -->
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      <li class="nav-item" *ngFor="let item of menuItems">
+        <a [routerLink]="item.route"
+           class="nav-link"
+           routerLinkActive="active">
+          <i class="nav-icon">{{ item.icon }}</i>
+          <span class="nav-text">{{ item.label }}</span>
+          <span *ngIf="item.badge" class="nav-badge">{{ item.badge }}</span>
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Quick Actions -->
+  <div class="sidebar-actions">
+    <h4 class="actions-title">Quick Actions</h4>
+    <div class="action-buttons">
+      <button class="action-btn" *ngFor="let action of quickActions" 
+              (click)="executeAction(action.id)" 
+              [title]="action.tooltip">
+        <span class="action-icon">{{ action.icon }}</span>
+        <span class="action-label">{{ action.label }}</span>
+      </button>
+    </div>
+  </div>
+</aside>
