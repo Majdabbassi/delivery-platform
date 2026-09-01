@@ -1,7 +1,6 @@
 package com.upstart.backend.service;
 
 import com.upstart.backend.entity.Order;
-import com.upstart.backend.repository.AdminRepository;
 import com.upstart.backend.repository.CustomerUserRepository;
 import com.upstart.backend.repository.DeliveryCompanyRepository;
 import com.upstart.backend.repository.DeliveryOwnerRepository;
@@ -47,9 +46,6 @@ public class DashboardService {
     private ProductRepository productRepository;
 
     @Autowired
-    private AdminRepository adminRepository;
-
-    @Autowired
     private PartnershipRepository partnershipRepository;
 
     @Transactional(readOnly = true)
@@ -68,7 +64,6 @@ public class DashboardService {
         overview.put("deliveryOwners", deliveryOwnerRepository.count());
         overview.put("drivers", driverPersonRepository.count());
         overview.put("products", productRepository.count());
-        overview.put("admins", adminRepository.count());
         overview.put("partnerships", partnershipRepository.count());
         return overview;
     }

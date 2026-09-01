@@ -46,7 +46,7 @@ export interface RegisterRequest {
   firstName: string;
   lastName: string;
   phoneNumber?: string;
-  role: UserRole;
+  role?: UserRole;
 }
 
 @Injectable({
@@ -54,7 +54,9 @@ export interface RegisterRequest {
 })
 export class AuthService {
   private readonly baseUrl = `${API_BASE_URL}/auth`;
+  private readonly userBaseUrl = `${API_BASE_URL}/users`;
   private readonly tokenKey = 'authToken';
+  private readonly refreshTokenKey = 'refreshToken';
   private readonly userKey = 'currentUser';
   
   private currentUserSubject = new BehaviorSubject<User | null>(this.getCurrentUserFromStorage());
@@ -76,7 +78,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.baseUrl}/login`, credentials, { headers })
       .pipe(
         tap(response => {
-          this.setAuthData(response.accessToken, response.user);
+          this.setAuthData(response.accessToken, response.refreshToken, response.user);
         })
       );
   }
@@ -87,9 +89,10 @@ export class AuthService {
   }
 
   refreshToken(): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, {}).pipe(
+    const refreshToken = this.getRefreshToken();
+    return this.http.post<LoginResponse>(`${this.baseUrl}/refresh`, { refreshToken }).pipe(
       tap(response => {
-        this.setAuthData(response.accessToken, response.user);
+        this.setAuthData(response.accessToken, response.refreshToken, response.user);
       })
     );
   }
@@ -108,6 +111,12 @@ export class AuthService {
     this.logoutUser().subscribe({ error: () => undefined });
   }
 
+  // Registration - creates a CLIENT account via the public users endpoint.
+  register(userData: RegisterRequest): Observable<User> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post<User>(`${this.userBaseUrl}/register`, userData, { headers });
+  }
+
   // Clears local session data without calling the server.
   // Safe to use when the token is missing/expired (avoids interceptor recursion).
   clearLocalSession(): void {
@@ -121,6 +130,10 @@ export class AuthService {
   // Token management
   getToken(): string | null {
     return localStorage.getItem(this.tokenKey);
+  }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.refreshTokenKey);
   }
 
   getCurrentUser(): User | null {
@@ -218,20 +231,17 @@ export class AuthService {
   }
 
   // Private helper methods
-  private setAuthData(token: string, user: User): void {
-    console.log('Setting auth data - Token:', token);
-    console.log('Setting auth data - User:', user);
+  private setAuthData(token: string, refreshToken: string, user: User): void {
     localStorage.setItem(this.tokenKey, token);
+    localStorage.setItem(this.refreshTokenKey, refreshToken);
     localStorage.setItem(this.userKey, JSON.stringify(user));
-    console.log('Token stored in localStorage:', localStorage.getItem(this.tokenKey));
-    console.log('User stored in localStorage:', localStorage.getItem(this.userKey));
     this.currentUserSubject.next(user);
     this.isAuthenticatedSubject.next(true);
-    console.log('Auth state updated - isAuthenticated:', this.isAuthenticatedSubject.value);
   }
 
   private clearAuthData(): void {
     localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
     localStorage.removeItem(this.userKey);
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);

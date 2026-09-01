@@ -1,319 +1,129 @@
 <div class="profile-container">
-  <!-- Profile Header -->
-  <div class="profile-header">
-    <div class="header-content">
-      <div class="profile-avatar-section">
-        <div class="avatar-container">
-          <div class="user-avatar">
-            <span class="avatar-text">{{ getUserInitials() }}</span>
-          </div>
-          <button class="avatar-upload-btn" (click)="uploadAvatar()" title="Change Avatar">
-            📷
-          </button>
-        </div>
-        <div class="profile-basic-info">
-          <h1 class="profile-name">{{ user.name }}</h1>
-          <p class="profile-role">{{ user.role }} • {{ user.department }}</p>
-          <p class="profile-location">📍 {{ user.location }}</p>
-        </div>
-      </div>
-      <div class="profile-actions">
-        <button class="action-btn secondary" *ngIf="!isEditing" (click)="startEditing()">
-          <span class="btn-icon">✏️</span>
-          Edit Profile
-        </button>
-        <button class="action-btn primary" *ngIf="isEditing" (click)="saveProfile()">
-          <span class="btn-icon">💾</span>
-          Save Changes
-        </button>
-        <button class="action-btn secondary" *ngIf="isEditing" (click)="cancelEditing()">
-          <span class="btn-icon">❌</span>
-          Cancel
-        </button>
-      </div>
-    </div>
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading profile...</p>
   </div>
 
-  <!-- Profile Navigation Tabs -->
-  <div class="profile-tabs">
-    <button 
-      class="tab-btn" 
-      [class.active]="activeTab === 'profile'"
-      (click)="setActiveTab('profile')">
-      👤 Profile
-    </button>
-    <button 
-      class="tab-btn" 
-      [class.active]="activeTab === 'settings'"
-      (click)="setActiveTab('settings')">
-      ⚙️ Settings
-    </button>
-    <button 
-      class="tab-btn" 
-      [class.active]="activeTab === 'privacy'"
-      (click)="setActiveTab('privacy')">
-      🔒 Privacy
-    </button>
-    <button 
-      class="tab-btn" 
-      [class.active]="activeTab === 'security'"
-      (click)="setActiveTab('security')">
-      🛡️ Security
-    </button>
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="error">
+    <span class="error-icon">⚠️</span>
+    <span>{{ error }}</span>
   </div>
 
-  <!-- Profile Content -->
-  <div class="profile-content">
-    <!-- Profile Tab -->
-    <div class="tab-content" *ngIf="activeTab === 'profile'">
-      <div class="content-grid">
-        <!-- Personal Information -->
-        <div class="info-card">
-          <h3 class="card-title">Personal Information</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <label class="info-label">Full Name</label>
-              <input 
-                *ngIf="isEditing" 
-                type="text" 
-                class="info-input" 
-                [(ngModel)]="editedUser.name">
-              <span *ngIf="!isEditing" class="info-value">{{ user.name }}</span>
+  <ng-container *ngIf="!loading && user">
+    <!-- Profile Header -->
+    <div class="profile-header">
+      <div class="header-content">
+        <div class="profile-avatar-section">
+          <div class="avatar-container">
+            <div class="user-avatar">
+              <span class="avatar-text">{{ getUserInitials() }}</span>
             </div>
-            <div class="info-item">
-              <label class="info-label">Email</label>
-              <input 
-                *ngIf="isEditing" 
-                type="email" 
-                class="info-input" 
-                [(ngModel)]="editedUser.email">
-              <span *ngIf="!isEditing" class="info-value">{{ user.email }}</span>
+          </div>
+          <div class="profile-basic-info">
+            <h1 class="profile-name">{{ fullName }}</h1>
+            <p class="profile-role">{{ roleLabel }}</p>
+            <p class="profile-email">✉️ {{ user.email }}</p>
+          </div>
+        </div>
+        <div class="profile-status">
+          <span class="status-badge" [class.enabled]="user.isEnabled">
+            {{ user.isEnabled ? 'Active' : 'Disabled' }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Profile Navigation Tabs -->
+    <div class="profile-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">
+        👤 Profile
+      </button>
+      <button class="tab-btn" [class.active]="activeTab === 'security'" (click)="setActiveTab('security')">
+        🛡️ Security
+      </button>
+    </div>
+
+    <!-- Profile Content -->
+    <div class="profile-content">
+      <!-- Profile Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'profile'">
+        <div class="content-grid">
+          <!-- Account Information -->
+          <div class="info-card">
+            <h3 class="card-title">Account Information</h3>
+            <div class="info-grid">
+              <div class="info-item">
+                <label class="info-label">Username</label>
+                <span class="info-value">{{ user.username }}</span>
+              </div>
+              <div class="info-item">
+                <label class="info-label">Full Name</label>
+                <span class="info-value">{{ fullName }}</span>
+              </div>
+              <div class="info-item">
+                <label class="info-label">Email</label>
+                <span class="info-value">{{ user.email }}</span>
+              </div>
+              <div class="info-item">
+                <label class="info-label">Phone</label>
+                <span class="info-value">{{ user.phoneNumber || 'Not provided' }}</span>
+              </div>
+              <div class="info-item">
+                <label class="info-label">Role</label>
+                <span class="info-value">{{ roleLabel }}</span>
+              </div>
+              <div class="info-item">
+                <label class="info-label">Member Since</label>
+                <span class="info-value">{{ formatJoinDate() }}</span>
+              </div>
             </div>
-            <div class="info-item">
-              <label class="info-label">Phone</label>
-              <input 
-                *ngIf="isEditing" 
-                type="tel" 
-                class="info-input" 
-                [(ngModel)]="editedUser.phone">
-              <span *ngIf="!isEditing" class="info-value">{{ user.phone }}</span>
-            </div>
-            <div class="info-item">
-              <label class="info-label">Location</label>
-              <input 
-                *ngIf="isEditing" 
-                type="text" 
-                class="info-input" 
-                [(ngModel)]="editedUser.location">
-              <span *ngIf="!isEditing" class="info-value">{{ user.location }}</span>
+          </div>
+
+          <!-- Account Status -->
+          <div class="info-card">
+            <h3 class="card-title">Account Status</h3>
+            <div class="status-list">
+              <div class="status-item">
+                <div class="status-info">
+                  <span class="status-title">Account Status</span>
+                  <span class="status-description">Whether your account is currently active</span>
+                </div>
+                <span class="status-badge" [class.enabled]="user.isEnabled">
+                  {{ user.isEnabled ? 'Active' : 'Disabled' }}
+                </span>
+              </div>
+              <div class="status-item">
+                <div class="status-info">
+                  <span class="status-title">Account ID</span>
+                  <span class="status-description">Your unique user identifier</span>
+                </div>
+                <span class="status-value">#{{ user.id }}</span>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- Professional Information -->
-        <div class="info-card">
-          <h3 class="card-title">Professional Information</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <label class="info-label">Role</label>
-              <input 
-                *ngIf="isEditing" 
-                type="text" 
-                class="info-input" 
-                [(ngModel)]="editedUser.role">
-              <span *ngIf="!isEditing" class="info-value">{{ user.role }}</span>
-            </div>
-            <div class="info-item">
-              <label class="info-label">Department</label>
-              <input 
-                *ngIf="isEditing" 
-                type="text" 
-                class="info-input" 
-                [(ngModel)]="editedUser.department">
-              <span *ngIf="!isEditing" class="info-value">{{ user.department }}</span>
-            </div>
-            <div class="info-item full-width">
-              <label class="info-label">Join Date</label>
-              <span class="info-value">{{ formatJoinDate() }}</span>
+      <!-- Security Tab -->
+      <div class="tab-content" *ngIf="activeTab === 'security'">
+        <div class="content-grid">
+          <!-- Data Management -->
+          <div class="info-card">
+            <h3 class="card-title">Data Management</h3>
+            <div class="security-actions">
+              <button class="security-btn" (click)="exportData()">
+                <span class="btn-icon">📥</span>
+                <div class="btn-content">
+                  <span class="btn-title">Export My Data</span>
+                  <span class="btn-description">Download a copy of your account information</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
       </div>
     </div>
-
-    <!-- Settings Tab -->
-    <div class="tab-content" *ngIf="activeTab === 'settings'">
-      <div class="content-grid">
-        <!-- Language & Region -->
-        <div class="info-card">
-          <h3 class="card-title">Language & Region</h3>
-          <div class="info-grid">
-            <div class="info-item">
-              <label class="info-label">Language</label>
-              <select class="info-select" [(ngModel)]="user.language">
-                <option *ngFor="let lang of languages" [value]="lang.code">
-                  {{ lang.name }}
-                </option>
-              </select>
-            </div>
-            <div class="info-item">
-              <label class="info-label">Timezone</label>
-              <select class="info-select" [(ngModel)]="user.timezone">
-                <option *ngFor="let tz of timezones" [value]="tz.value">
-                  {{ tz.label }}
-                </option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Notification Preferences -->
-        <div class="info-card">
-          <h3 class="card-title">Notification Preferences</h3>
-          <div class="toggle-list">
-            <div class="toggle-item">
-              <div class="toggle-info">
-                <span class="toggle-title">Email Notifications</span>
-                <span class="toggle-description">Receive notifications via email</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="user.notifications.email">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="toggle-item">
-              <div class="toggle-info">
-                <span class="toggle-title">Push Notifications</span>
-                <span class="toggle-description">Receive push notifications in browser</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="user.notifications.push">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="toggle-item">
-              <div class="toggle-info">
-                <span class="toggle-title">SMS Notifications</span>
-                <span class="toggle-description">Receive notifications via SMS</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="user.notifications.sms">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Privacy Tab -->
-    <div class="tab-content" *ngIf="activeTab === 'privacy'">
-      <div class="content-grid">
-        <!-- Profile Visibility -->
-        <div class="info-card">
-          <h3 class="card-title">Profile Visibility</h3>
-          <div class="radio-group">
-            <label class="radio-item">
-              <input type="radio" name="visibility" value="public" [(ngModel)]="user.privacy.profileVisibility">
-              <span class="radio-custom"></span>
-              <div class="radio-content">
-                <span class="radio-title">🌍 Public</span>
-                <span class="radio-description">Anyone can see your profile</span>
-              </div>
-            </label>
-            <label class="radio-item">
-              <input type="radio" name="visibility" value="contacts" [(ngModel)]="user.privacy.profileVisibility">
-              <span class="radio-custom"></span>
-              <div class="radio-content">
-                <span class="radio-title">👥 Contacts Only</span>
-                <span class="radio-description">Only your contacts can see your profile</span>
-              </div>
-            </label>
-            <label class="radio-item">
-              <input type="radio" name="visibility" value="private" [(ngModel)]="user.privacy.profileVisibility">
-              <span class="radio-custom"></span>
-              <div class="radio-content">
-                <span class="radio-title">🔒 Private</span>
-                <span class="radio-description">Only you can see your profile</span>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Contact Information Visibility -->
-        <div class="info-card">
-          <h3 class="card-title">Contact Information</h3>
-          <div class="toggle-list">
-            <div class="toggle-item">
-              <div class="toggle-info">
-                <span class="toggle-title">Show Email Address</span>
-                <span class="toggle-description">Allow others to see your email</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="user.privacy.showEmail">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-            <div class="toggle-item">
-              <div class="toggle-info">
-                <span class="toggle-title">Show Phone Number</span>
-                <span class="toggle-description">Allow others to see your phone</span>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" [(ngModel)]="user.privacy.showPhone">
-                <span class="toggle-slider"></span>
-              </label>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Security Tab -->
-    <div class="tab-content" *ngIf="activeTab === 'security'">
-      <div class="content-grid">
-        <!-- Password & Authentication -->
-        <div class="info-card">
-          <h3 class="card-title">Password & Authentication</h3>
-          <div class="security-actions">
-            <button class="security-btn" (click)="changePassword()">
-              <span class="btn-icon">🔑</span>
-              <div class="btn-content">
-                <span class="btn-title">Change Password</span>
-                <span class="btn-description">Update your account password</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Data Management -->
-        <div class="info-card">
-          <h3 class="card-title">Data Management</h3>
-          <div class="security-actions">
-            <button class="security-btn" (click)="exportData()">
-              <span class="btn-icon">📥</span>
-              <div class="btn-content">
-                <span class="btn-title">Export Data</span>
-                <span class="btn-description">Download a copy of your data</span>
-              </div>
-            </button>
-          </div>
-        </div>
-
-        <!-- Danger Zone -->
-        <div class="info-card danger-zone">
-          <h3 class="card-title">Danger Zone</h3>
-          <div class="security-actions">
-            <button class="security-btn danger" (click)="deleteAccount()">
-              <span class="btn-icon">🗑️</span>
-              <div class="btn-content">
-                <span class="btn-title">Delete Account</span>
-                <span class="btn-description">Permanently delete your account and all data</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  </ng-container>
 </div>

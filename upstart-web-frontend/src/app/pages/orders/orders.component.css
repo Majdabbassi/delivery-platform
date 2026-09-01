@@ -401,6 +401,16 @@
   background: #ffe0b2;
 }
 
+.btn-action.track {
+  background: #e8f5e9;
+  color: #2e7d32;
+  text-decoration: none;
+}
+
+.btn-action.track:hover {
+  background: #c8e6c9;
+}
+
 .btn-action.cancel {
   background: #ffebee;
   color: #c62828;

@@ -4,6 +4,7 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { AuthService } from './auth.service';
 import { API_BASE_URL } from '../config';
+import { OrderRealtimeEvent } from './realtime.service';
 
 // Enums
 export enum OrderStatus {
@@ -220,20 +221,68 @@ export class OrderService {
 
   // Order CRUD Operations
   createOrder(orderData: CreateOrderDTO): Observable<OrderDTO> {
-    return this.http.post<OrderDTO>(this.baseUrl, orderData);
+    // The backend accepts the Order entity shape (nested references), not flat ids.
+    const payload: any = {
+      vendorCompany: orderData.vendorCompanyId ? { id: orderData.vendorCompanyId } : undefined,
+      customerUser: orderData.customerUserId ? { id: orderData.customerUserId } : {},
+      pickupAddress: orderData.pickupAddress,
+      deliveryAddress: orderData.deliveryAddress,
+      pickupLatitude: orderData.pickupLatitude,
+      pickupLongitude: orderData.pickupLongitude,
+      deliveryLatitude: orderData.deliveryLatitude,
+      deliveryLongitude: orderData.deliveryLongitude,
+      description: orderData.description,
+      orderAmount: orderData.orderValue,
+      deliveryFee: orderData.deliveryFee ?? 0,
+      priority: orderData.priority || OrderPriority.NORMAL,
+      specialInstructions: orderData.specialInstructions,
+      scheduledPickupTime: orderData.scheduledPickupTime,
+      estimatedDeliveryTime: orderData.estimatedDeliveryTime,
+      notes: orderData.notes
+    };
+    return this.http.post<OrderDTO>(this.baseUrl, payload).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
+  }
+
+  getMyOrders(): Observable<OrderDTO[]> {
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/my`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getOrderById(id: number): Observable<OrderDTO> {
-    return this.http.get<OrderDTO>(`${this.baseUrl}/${id}`);
+    return this.http.get<OrderDTO>(`${this.baseUrl}/${id}`).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   getOrderByOrderNumber(orderNumber: string): Observable<OrderDTO> {
-    return this.http.get<OrderDTO>(`${this.baseUrl}/order-number/${orderNumber}`);
+    return this.http.get<OrderDTO>(`${this.baseUrl}/order-number/${orderNumber}`).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   getOrderByTrackingNumber(trackingNumber: string): Observable<OrderDTO> {
-    // Public tracking - no auth required
-    return this.http.get<OrderDTO>(`${this.baseUrl}/tracking/${trackingNumber}`);
+    // Auth-aware tracking - the interceptor attaches the JWT when signed in
+    return this.http.get<OrderDTO>(`${this.baseUrl}/tracking/${trackingNumber}`).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
+  }
+
+  getTrackingEvent(orderId: number): Observable<OrderRealtimeEvent | null> {
+    return this.http.get<OrderRealtimeEvent>(`${API_BASE_URL}/tracking/orders/${orderId}/location`, {
+      observe: 'response'
+    }).pipe(
+      map(response => response.body)
+    );
+  }
+
+  updateOrderLocation(orderId: number, latitude: number, longitude: number, speedKmh?: number): Observable<OrderDTO> {
+    const body = { latitude, longitude, ...(speedKmh != null ? { speedKmh } : {}) };
+    return this.http.post<OrderDTO>(`${API_BASE_URL}/tracking/orders/${orderId}/location`, body).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   getAllOrders(page: number = 0, size: number = 20): Observable<PaginatedResponse<OrderDTO>> {
@@ -243,11 +292,18 @@ export class OrderService {
     
     return this.http.get<PaginatedResponse<OrderDTO>>(this.baseUrl, {
       params
-    });
+    }).pipe(
+      map(response => ({
+        ...response,
+        content: response.content.map((o: any) => this.mapOrderEntity(o))
+      }))
+    );
   }
 
   updateOrder(id: number, orderData: UpdateOrderDTO): Observable<OrderDTO> {
-    return this.http.put<OrderDTO>(`${this.baseUrl}/${id}`, orderData);
+    return this.http.put<OrderDTO>(`${this.baseUrl}/${id}`, orderData).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   deleteOrder(id: number): Observable<void> {
@@ -259,64 +315,97 @@ export class OrderService {
     const params = new HttpParams().set('status', status);
     return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/status`, null, {
       params
-    });
+    }).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   assignDeliveryCompany(id: number, deliveryCompanyId: number): Observable<OrderDTO> {
     const params = new HttpParams().set('deliveryCompanyId', deliveryCompanyId.toString());
     return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/assign-delivery-company`, null, {
       params
-    });
+    }).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   assignPartnership(id: number, partnershipId: number): Observable<OrderDTO> {
     const params = new HttpParams().set('partnershipId', partnershipId.toString());
     return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/assign-partnership`, null, {
       params
-    });
+    }).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
-  addRatingAndReview(id: number, ratingData: OrderRatingDTO): Observable<OrderDTO> {
-    return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/rating`, ratingData);
+  addRatingAndReview(id: number, rating: number, review?: string): Observable<OrderDTO> {
+    let params = new HttpParams()
+      .set('rating', rating.toString());
+    if (review) {
+      params = params.set('review', review);
+    }
+    return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/rating`, null, {
+      params
+    }).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   // Alias for backward compatibility
-  addOrderRating(id: number, ratingData: OrderRatingDTO): Observable<OrderDTO> {
-    return this.addRatingAndReview(id, ratingData);
+  addOrderRating(id: number, rating: number, review?: string): Observable<OrderDTO> {
+    return this.addRatingAndReview(id, rating, review);
   }
 
   cancelOrder(id: number, cancellationReason?: string): Observable<OrderDTO> {
-    const body = cancellationReason ? { cancellationReason } : {};
-    return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/cancel`, body);
+    const params = new HttpParams().set('cancellationReason', cancellationReason || 'User requested cancellation');
+    return this.http.patch<OrderDTO>(`${this.baseUrl}/${id}/cancel`, null, {
+      params
+    }).pipe(
+      map(raw => this.mapOrderEntity(raw))
+    );
   }
 
   // Query & Filtering Operations
   getOrdersByVendorCompany(vendorCompanyId: number): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/vendor-company/${vendorCompanyId}`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/vendor-company/${vendorCompanyId}`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getOrdersByDeliveryCompany(deliveryCompanyId: number): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/delivery-company/${deliveryCompanyId}`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/delivery-company/${deliveryCompanyId}`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getOrdersByPartnership(partnershipId: number): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/partnership/${partnershipId}`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/partnership/${partnershipId}`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getOrdersByStatus(status: OrderStatus): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/status/${status}`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/status/${status}`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getPendingUnassignedOrders(): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/pending-unassigned`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/pending-unassigned`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getOverdueOrders(): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/overdue`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/overdue`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   getActiveUrgentOrders(): Observable<OrderDTO[]> {
-    return this.http.get<OrderDTO[]>(`${this.baseUrl}/urgent`);
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/urgent`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
   }
 
   // Alias for backward compatibility
@@ -413,9 +502,89 @@ export class OrderService {
 
   // Real-time updates (implement WebSocket or polling as needed)
   refreshOrders(): void {
-    this.getAllOrders().subscribe(response => {
-      this.ordersSubject.next(response.content);
-    });
+    const user = this.authService.getCurrentUser();
+    if (user?.role === 'SUPER_ADMIN') {
+      this.getAllOrders().subscribe(response => {
+        this.ordersSubject.next(response.content);
+      });
+    } else {
+      this.getMyOrders().subscribe(orders => {
+        this.ordersSubject.next(orders);
+      });
+    }
+  }
+
+  // Maps the backend Order entity JSON into the flat UI model used by the templates.
+  public mapOrderEntity(raw: any): OrderDTO {
+    if (!raw) return raw;
+    const numberOr = (v: any): number | undefined =>
+      (v === null || v === undefined) ? undefined : Number(v);
+    const numberOrZero = (v: any): number =>
+      (v === null || v === undefined) ? 0 : Number(v);
+
+    const vendor = raw.vendorCompany || {};
+    const delivery = raw.deliveryCompany || {};
+    const customer = raw.customerUser || {};
+    const driver = raw.driverPerson || {};
+
+    const status = raw.status as OrderStatus;
+    const completedStatuses = [OrderStatus.COMPLETED, OrderStatus.DELIVERED, OrderStatus.CANCELLED];
+    const isOverdue = raw.isOverdue === true || (
+      raw.estimatedDeliveryTime != null &&
+      !completedStatuses.includes(status) &&
+      new Date(raw.estimatedDeliveryTime).getTime() < Date.now()
+    );
+
+    return {
+      id: raw.id,
+      orderNumber: raw.orderNumber,
+      trackingNumber: raw.trackingNumber,
+      vendorCompanyId: vendor.id,
+      vendorCompanyName: vendor.companyName,
+      deliveryCompanyId: delivery.id,
+      deliveryCompanyName: delivery.companyName,
+      partnershipId: raw.partnership ? raw.partnership.id : undefined,
+      customerUserId: customer.id,
+      customerName: [customer.firstName, customer.lastName].filter(Boolean).join(' ') || customer.username || '',
+      customerPhone: customer.phoneNumber || '',
+      customerEmail: customer.email || '',
+      driverPersonId: raw.driverPersonId ?? driver.id,
+      driverName: [driver.firstName, driver.lastName].filter(Boolean).join(' ') || '',
+      driverPhone: driver.phoneNumber || '',
+      pickupAddress: raw.pickupAddress,
+      deliveryAddress: raw.deliveryAddress,
+      pickupLatitude: numberOr(raw.pickupLatitude),
+      pickupLongitude: numberOr(raw.pickupLongitude),
+      deliveryLatitude: numberOr(raw.deliveryLatitude),
+      deliveryLongitude: numberOr(raw.deliveryLongitude),
+      description: raw.description,
+      orderValue: numberOrZero(raw.orderAmount),
+      deliveryFee: numberOrZero(raw.deliveryFee),
+      totalAmount: numberOrZero(raw.totalAmount),
+      estimatedDistance: numberOr(raw.distanceKm),
+      estimatedDurationMinutes: undefined,
+      status,
+      priority: (raw.priority as OrderPriority) || OrderPriority.NORMAL,
+      orderDate: raw.createdAt,
+      scheduledPickupTime: raw.scheduledPickupTime,
+      actualPickupTime: raw.actualPickupTime,
+      estimatedDeliveryTime: raw.estimatedDeliveryTime,
+      actualDeliveryTime: raw.actualDeliveryTime,
+      createdAt: raw.createdAt,
+      updatedAt: raw.updatedAt,
+      customerRating: numberOr(raw.rating),
+      customerReview: raw.review,
+      specialInstructions: raw.specialInstructions,
+      cancellationReason: raw.cancellationReason,
+      notes: raw.notes,
+      isOverdue,
+      isAssigned: !!raw.driverPersonId || !!driver.id,
+      isCompleted: status === OrderStatus.COMPLETED || status === OrderStatus.DELIVERED,
+      isCancelled: status === OrderStatus.CANCELLED,
+      durationMinutes: undefined,
+      statusDisplayName: this.getStatusDisplayName(status),
+      priorityDisplayName: this.getPriorityDisplayName((raw.priority as OrderPriority) || OrderPriority.NORMAL)
+    };
   }
 
   // Error handling helper

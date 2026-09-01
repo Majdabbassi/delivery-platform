@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
+import { RealtimeService, OrderRealtimeEvent } from '../../services/realtime.service';
 
 interface Notification {
   id: number;
@@ -18,97 +20,10 @@ interface Notification {
   templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.css'
 })
-export class NotificationsComponent implements OnInit {
-  notifications: Notification[] = [
-    {
-      id: 1,
-      title: 'New Order Received',
-      content: 'Order #12345 has been received and is being processed. Customer: John Smith, Total: $299.99',
-      icon: '📦',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 5),
-      type: 'success',
-      category: 'order',
-      priority: 'medium'
-    },
-    {
-      id: 2,
-      title: 'System Maintenance Scheduled',
-      content: 'Scheduled maintenance will occur tonight at midnight. Expected downtime: 2 hours. Please save your work.',
-      icon: '🔧',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 45),
-      type: 'warning',
-      category: 'system',
-      priority: 'high'
-    },
-    {
-      id: 3,
-      title: 'Daily Backup Complete',
-      content: 'Daily backup completed successfully. All data has been securely backed up to cloud storage.',
-      icon: '✅',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-      type: 'info',
-      category: 'system',
-      priority: 'low'
-    },
-    {
-      id: 4,
-      title: 'Security Alert',
-      content: 'Unusual login activity detected from IP 192.168.1.100. Please verify this was you.',
-      icon: '🔒',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
-      type: 'error',
-      category: 'security',
-      priority: 'urgent'
-    },
-    {
-      id: 5,
-      title: 'New Message from Support',
-      content: 'Your support ticket #789 has been updated. Our team has provided a solution to your issue.',
-      icon: '💬',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12),
-      type: 'info',
-      category: 'message',
-      priority: 'medium'
-    },
-    {
-      id: 6,
-      title: 'Payment Reminder',
-      content: 'Invoice #INV-2024-001 is due in 3 days. Amount: $1,250.00. Please process payment to avoid late fees.',
-      icon: '💳',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24),
-      type: 'warning',
-      category: 'reminder',
-      priority: 'high'
-    },
-    {
-      id: 7,
-      title: 'Software Update Available',
-      content: 'Version 2.1.0 is now available with new features and security improvements. Update recommended.',
-      icon: '🔄',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48),
-      type: 'info',
-      category: 'system',
-      priority: 'medium'
-    },
-    {
-      id: 8,
-      title: 'Order Shipped',
-      content: 'Order #12340 has been shipped via FedEx. Tracking number: 1234567890. Expected delivery: Tomorrow.',
-      icon: '🚚',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72),
-      type: 'success',
-      category: 'order',
-      priority: 'low'
-    }
-  ];
+export class NotificationsComponent implements OnInit, OnDestroy {
+  private realtimeSubscription: Subscription = new Subscription();
+  private notificationSequence = 1000;
+  notifications: Notification[] = [];
 
   filteredNotifications: Notification[] = [];
   selectedCategory: string = 'all';
@@ -121,7 +36,6 @@ export class NotificationsComponent implements OnInit {
     { value: 'all', label: 'All Categories', icon: '📋' },
     { value: 'system', label: 'System', icon: '⚙️' },
     { value: 'order', label: 'Orders', icon: '📦' },
-    { value: 'message', label: 'Messages', icon: '💬' },
     { value: 'reminder', label: 'Reminders', icon: '⏰' },
     { value: 'security', label: 'Security', icon: '🔒' }
   ];
@@ -142,8 +56,148 @@ export class NotificationsComponent implements OnInit {
     { value: 'urgent', label: 'Urgent', icon: '🔴' }
   ];
 
+  constructor(private realtimeService: RealtimeService) {}
+
   ngOnInit() {
+    this.realtimeSubscription = this.realtimeService.events$.subscribe(event => {
+      if (event) {
+        this.handleRealtimeEvent(event);
+      }
+    });
     this.applyFilters();
+  }
+
+  ngOnDestroy(): void {
+    this.realtimeSubscription.unsubscribe();
+  }
+
+  private handleRealtimeEvent(event: OrderRealtimeEvent): void {
+    const notification = this.buildNotification(event);
+    if (notification) {
+      this.notifications.unshift(notification);
+      if (this.notifications.length > 100) {
+        this.notifications.pop();
+      }
+      this.applyFilters();
+    }
+  }
+
+  private buildNotification(event: OrderRealtimeEvent): Notification | null {
+    const orderRef = event.orderNumber || '#' + event.orderId;
+    switch (event.type) {
+      case 'ORDER_CREATED':
+        return {
+          id: this.notificationSequence++,
+          title: `New Order Received: ${orderRef}`,
+          content: `Order ${orderRef} has been created and is being processed.`,
+          icon: '📦',
+          read: false,
+          timestamp: new Date(),
+          type: 'success',
+          category: 'order',
+          priority: 'medium'
+        };
+      case 'DRIVER_ASSIGNED':
+        return {
+          id: this.notificationSequence++,
+          title: `Driver Assigned: ${orderRef}`,
+          content: event.driverName
+            ? `Driver ${event.driverName} has been assigned to order ${orderRef}.`
+            : `A driver has been assigned to order ${orderRef}.`,
+          icon: '🚚',
+          read: false,
+          timestamp: new Date(),
+          type: 'info',
+          category: 'order',
+          priority: 'high'
+        };
+      case 'ORDER_STATUS_CHANGED':
+        return {
+          id: this.notificationSequence++,
+          title: `Order Status Updated: ${orderRef}`,
+          content: `Order ${orderRef} status is now ${event.status || 'updated'}.`,
+          icon: '🔄',
+          read: false,
+          timestamp: new Date(),
+          type: 'warning',
+          category: 'order',
+          priority: 'medium'
+        };
+      case 'ORDER_DELIVERED':
+        return {
+          id: this.notificationSequence++,
+          title: `Order Delivered: ${orderRef}`,
+          content: `Order ${orderRef} has been delivered successfully.`,
+          icon: '✅',
+          read: false,
+          timestamp: new Date(),
+          type: 'success',
+          category: 'order',
+          priority: 'medium'
+        };
+      case 'ORDER_CANCELLED':
+        return {
+          id: this.notificationSequence++,
+          title: `Order Cancelled: ${orderRef}`,
+          content: `Order ${orderRef} was cancelled.`,
+          icon: '🚫',
+          read: false,
+          timestamp: new Date(),
+          type: 'error',
+          category: 'order',
+          priority: 'high'
+        };
+      case 'BID_SUBMITTED':
+        return {
+          id: this.notificationSequence++,
+          title: `New Bid: ${orderRef}`,
+          content: `Order ${orderRef} received a new bid.`,
+          icon: '💼',
+          read: false,
+          timestamp: new Date(),
+          type: 'info',
+          category: 'order',
+          priority: 'medium'
+        };
+      case 'BID_ACCEPTED':
+        return {
+          id: this.notificationSequence++,
+          title: `Bid Accepted: ${orderRef}`,
+          content: `Your bid for order ${orderRef} was accepted.`,
+          icon: '🎉',
+          read: false,
+          timestamp: new Date(),
+          type: 'success',
+          category: 'order',
+          priority: 'high'
+        };
+      case 'BID_REJECTED':
+        return {
+          id: this.notificationSequence++,
+          title: `Bid Rejected: ${orderRef}`,
+          content: `Your bid for order ${orderRef} was rejected.`,
+          icon: '❌',
+          read: false,
+          timestamp: new Date(),
+          type: 'error',
+          category: 'order',
+          priority: 'medium'
+        };
+      case 'DRIVER_LOCATION_UPDATE':
+        return {
+          id: this.notificationSequence++,
+          title: `Location Update: ${orderRef}`,
+          content: `Driver location updated for order ${orderRef}.`,
+          icon: '📍',
+          read: false,
+          timestamp: new Date(),
+          type: 'info',
+          category: 'order',
+          priority: 'low'
+        };
+      default:
+        return null;
+    }
   }
 
   applyFilters() {

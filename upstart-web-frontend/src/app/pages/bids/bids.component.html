@@ -1,0 +1,139 @@
+<div class="bids-container">
+  <!-- Header -->
+  <div class="bids-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <span class="title-icon">💼</span>
+        Bid Inbox
+      </h1>
+      <p class="subtitle">Review bids from delivery companies and pick the best match for each order.</p>
+    </div>
+    <div class="header-right">
+      <span class="count-chip">{{ openBidCount }} open bidd{{ openBidCount === 1 ? '' : 's' }}</span>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="error">
+    <span class="error-icon">⚠️</span>
+    <span>{{ error }}</span>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading your orders...</p>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="!loading && orders.length === 0">
+    <span class="empty-icon">📭</span>
+    <p>No orders yet.</p>
+    <p class="empty-hint">Once your orders are listed, delivery companies can bid on them here.</p>
+  </div>
+
+  <!-- Main content -->
+  <ng-container *ngIf="!loading && orders.length > 0">
+    <div class="inbox-layout">
+      <!-- Orders list -->
+      <aside class="orders-panel">
+        <h2 class="panel-title">Orders</h2>
+        <div class="order-list">
+          <div
+            class="order-list-item"
+            *ngFor="let order of orders"
+            [class.active]="selectedOrderId === order.id"
+            [class.has-bids]="hasActiveBid(order.id)"
+            (click)="selectOrder(order.id)">
+            <div class="order-list-head">
+              <span class="order-list-id">#{{ order.orderNumber }}</span>
+              <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
+            </div>
+            <div class="order-list-route">
+              {{ order.pickupAddress }} → {{ order.deliveryAddress }}
+            </div>
+            <div class="order-list-meta">
+              <span>{{ formatCurrency(order.orderValue) }}</span>
+              <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span>
+              <span *ngIf="hasActiveBid(order.id)" class="open-dot" title="Has active bids"></span>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Bid details -->
+      <section class="details-panel">
+        <div class="loading-state small" *ngIf="loadingBids">
+          <div class="spinner"></div>
+          <p>Loading bids...</p>
+        </div>
+
+        <ng-container *ngIf="!loadingBids">
+          <div class="order-summary" *ngIf="selectedOrder">
+            <div class="order-summary-head">
+              <div>
+                <h2 class="panel-title">{{ selectedOrder.vendorCompanyName || 'Order' }} — #{{ selectedOrder.orderNumber }}</h2>
+                <p class="order-summary-route">{{ selectedOrder.pickupAddress }} → {{ selectedOrder.deliveryAddress }}</p>
+              </div>
+              <span class="status-badge" [class]="getStatusClass(selectedOrder.status)">{{ selectedOrder.status }}</span>
+            </div>
+          </div>
+
+          <div class="bid-list" *ngIf="selectedBids.length > 0">
+            <div class="bid-card" *ngFor="let bid of selectedBids">
+              <div class="bid-card-head">
+                <div>
+                  <span class="bid-amount">{{ formatCurrency(bid.bidAmount) }}</span>
+                  <span class="bid-company">Delivery company #{{ bid.deliveryCompanyId }}</span>
+                </div>
+                <span class="status-badge" [class]="bidClass(bid.status)">{{ bid.status }}</span>
+              </div>
+              <div class="bid-card-meta">
+                <span class="meta-item" *ngIf="bid.estimatedDeliveryTime">⏱ Est. {{ formatDate(bid.estimatedDeliveryTime) }}</span>
+                <span class="meta-item">📅 {{ formatDate(bid.submittedAt) }}</span>
+              </div>
+              <p class="bid-message" *ngIf="bid.message">“{{ bid.message }}”</p>
+              <p class="bid-response" *ngIf="bid.responseMessage">↩ {{ bid.responseMessage }}</p>
+
+              <div class="bid-actions" *ngIf="canRespond(bid)">
+                <input
+                  class="response-input"
+                  type="text"
+                  placeholder="Optional response message..."
+                  [(ngModel)]="responseMessages[bid.bidId]"
+                />
+                <button class="btn btn-accept" (click)="acceptBid(bid)">✔ Accept</button>
+                <button class="btn btn-reject" (click)="rejectBid(bid)">✘ Reject</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="empty-state small" *ngIf="selectedOrder && selectedBids.length === 0">
+            <span class="empty-icon">💤</span>
+            <p>No bids for this order yet.</p>
+            <p class="empty-hint">The order will appear in the delivery marketplace while no bids are submitted.</p>
+          </div>
+
+          <!-- Rankings -->
+          <div class="rankings-section" *ngIf="selectedRankings.length > 0">
+            <h2 class="panel-title">📊 Suggested Ranking</h2>
+            <div class="ranking-list">
+              <div class="ranking-item" *ngFor="let ranking of selectedRankings; let i = index">
+                <span class="ranking-pos">{{ i + 1 }}</span>
+                <div class="ranking-body">
+                  <div class="ranking-head">
+                    <span class="ranking-amount">{{ formatCurrency(ranking.bid.bidAmount) }}</span>
+                    <span class="ranking-score">{{ ranking.score.toFixed(2) }} score</span>
+                  </div>
+                  <ul class="ranking-reasons">
+                    <li *ngFor="let reason of ranking.reasons">{{ reason }}</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+      </section>
+    </div>
+  </ng-container>
+</div>

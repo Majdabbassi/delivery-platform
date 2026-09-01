@@ -1,17 +1,26 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { AuthService, User } from '../../services/auth.service';
+import { AuthService, User, UserRole } from '../../services/auth.service';
 import {
   DashboardService,
   DashboardOverview,
-  StatsMap
+  StatsMap,
+  AssignmentStatistics
 } from '../../services/dashboard.service';
+import { OrderService, OrderDTO, OrderStatus, OrderPriority } from '../../services/order.service';
 
 interface MetricCard {
   icon: string;
   label: string;
   value: number | string;
   color: string;
+}
+
+interface QuickLink {
+  icon: string;
+  label: string;
+  detail: string;
+  route: string;
 }
 
 @Component({
@@ -23,12 +32,14 @@ interface MetricCard {
 export class DashboardComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   private userSubscription: Subscription = new Subscription();
+  private orderSubscription: Subscription = new Subscription();
 
   overview: DashboardOverview | null = null;
   customerStats: StatsMap | null = null;
   driverStats: StatsMap | null = null;
   superAdminStats: StatsMap | null = null;
   productStats: StatsMap | null = null;
+  assignmentStats: AssignmentStatistics | null = null;
 
   loading = true;
   errorMessage = '';
@@ -37,9 +48,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
   entityCards: MetricCard[] = [];
   detailMetrics: MetricCard[] = [];
 
+  myOrders: OrderDTO[] = [];
+  myActivityCards: MetricCard[] = [];
+  quickLinks: QuickLink[] = [];
+
+  OrderStatus = OrderStatus;
+  OrderPriority = OrderPriority;
+
   constructor(
     private authService: AuthService,
-    private dashboardService: DashboardService
+    private dashboardService: DashboardService,
+    private orderService: OrderService
   ) {}
 
   ngOnInit(): void {
@@ -47,12 +66,23 @@ export class DashboardComponent implements OnInit, OnDestroy {
       this.currentUser = user;
     });
 
-    this.loadOverview();
-    this.loadDetailStats();
+    const user = this.authService.getCurrentUser();
+    if (user?.role === UserRole.SUPER_ADMIN) {
+      this.loadOverview();
+      this.loadDetailStats();
+      this.loadAssignmentStats();
+    } else {
+      this.loadMyActivity();
+    }
   }
 
   ngOnDestroy(): void {
     this.userSubscription.unsubscribe();
+    this.orderSubscription.unsubscribe();
+  }
+
+  get isSuperAdmin(): boolean {
+    return this.currentUser?.role === UserRole.SUPER_ADMIN;
   }
 
   get greeting(): string {
@@ -78,6 +108,88 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case 'DRIVER': return 'Driver';
       default: return 'Administrator';
     }
+  }
+
+  private loadMyActivity(): void {
+    this.buildQuickLinks();
+    this.orderSubscription.add(
+      this.orderService.getMyOrders().subscribe({
+        next: (orders) => {
+          this.myOrders = orders;
+          this.calculateMyActivity(orders);
+          this.loading = false;
+        },
+        error: () => {
+          this.errorMessage = 'Unable to load your activity. Please try again later.';
+          this.loading = false;
+        }
+      })
+    );
+  }
+
+  private calculateMyActivity(orders: OrderDTO[]): void {
+    const inProgress = orders.filter(o =>
+      [OrderStatus.ASSIGNED, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS,
+       OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT].includes(o.status)
+    ).length;
+    const completed = orders.filter(o =>
+      [OrderStatus.COMPLETED, OrderStatus.DELIVERED].includes(o.status)
+    ).length;
+
+    this.myActivityCards = [
+      { icon: '📋', label: 'Total Orders', value: orders.length, color: 'blue' },
+      { icon: '🚚', label: 'In Progress', value: inProgress, color: 'orange' },
+      { icon: '✅', label: 'Completed', value: completed, color: 'teal' },
+      { icon: '⏳', label: 'Pending', value: orders.filter(o => o.status === OrderStatus.PENDING).length, color: 'amber' },
+      { icon: '💵', label: 'Total Value', value: this.formatCurrency(orders.reduce((sum, o) => sum + (o.totalAmount || o.orderValue || 0), 0)), color: 'green' },
+      { icon: '❌', label: 'Cancelled', value: orders.filter(o => o.status === OrderStatus.CANCELLED).length, color: 'red' }
+    ];
+  }
+
+  private buildQuickLinks(): void {
+    const role = this.currentUser?.role;
+    switch (role) {
+      case UserRole.VENDOR_OWNER:
+        this.quickLinks = [
+          { icon: '🏢', label: 'My Companies', detail: 'Manage vendor companies', route: '/vendorcompanies' },
+          { icon: '📦', label: 'Products', detail: 'Manage your product catalog', route: '/products' },
+          { icon: '📋', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
+          { icon: '🤝', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
+        ];
+        break;
+      case UserRole.DELIVERY_OWNER:
+        this.quickLinks = [
+          { icon: '🚛', label: 'My Companies', detail: 'Manage delivery companies', route: '/deliverycompanies' },
+          { icon: '🚗', label: 'Drivers', detail: 'Manage your driver fleet', route: '/drivers' },
+          { icon: '📋', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
+          { icon: '🤝', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
+        ];
+        break;
+      case UserRole.CLIENT:
+        this.quickLinks = [
+          { icon: '📋', label: 'My Orders', detail: 'Track and manage your orders', route: '/orders' },
+          { icon: '🔍', label: 'Track Package', detail: 'Live location tracking', route: '/tracking' }
+        ];
+        break;
+      case UserRole.DRIVER:
+        this.quickLinks = [
+          { icon: '🧭', label: 'My Jobs', detail: 'Assigned delivery jobs & live updates', route: '/my-jobs' },
+          { icon: '🔍', label: 'Track Delivery', detail: 'Live location tracking', route: '/tracking' }
+        ];
+        break;
+      default:
+        this.quickLinks = [
+          { icon: '📋', label: 'Orders', detail: 'View orders', route: '/orders' },
+          { icon: '🔍', label: 'Track Package', detail: 'Live location tracking', route: '/tracking' }
+        ];
+    }
+  }
+
+  private loadAssignmentStats(): void {
+    this.dashboardService.getAssignmentStatistics().subscribe({
+      next: (stats) => this.assignmentStats = stats,
+      error: (error) => console.error('Failed to load assignment statistics:', error)
+    });
   }
 
   private loadOverview(): void {

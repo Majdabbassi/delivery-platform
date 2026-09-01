@@ -8,13 +8,20 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -24,10 +31,30 @@ public class OrderService {
     
     private final OrderRepository orderRepository;
     private final RealtimeTrackingService realtimeTrackingService;
-    
+    private final SecurityService securityService;
+    private final OrderAssignmentService orderAssignmentService;
+
+    @Value("${upstart.assignment.general.auto-assign-on-create:true}")
+    private boolean autoAssignOnCreate;
+
+    @Value("${upstart.orders.rate-limit.per-minute:20}")
+    private int orderCreateLimitPerMinute;
+
+    private final ConcurrentHashMap<String, Deque<Long>> orderCreateTimestamps = new ConcurrentHashMap<>();
+
     // Create operations
     public Order createOrder(Order order) {
+        User currentUser = securityService.getCurrentUser();
+        assertOrderCreateRateLimit(currentUser.getUsername());
         log.info("Creating new order for vendor company: {}", order.getVendorCompany().getId());
+
+        // Tenant binding: a CLIENT may only create orders for themselves,
+        // and a VENDOR_OWNER may only create orders for their own company.
+        if (currentUser.getRole() == User.Role.CLIENT) {
+            order.setCustomerUser(securityService.getCurrentCustomerUser());
+        } else if (currentUser.getRole() == User.Role.VENDOR_OWNER) {
+            securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId());
+        }
         
         // Generate order number if not provided
         if (order.getOrderNumber() == null || order.getOrderNumber().isEmpty()) {
@@ -60,7 +87,79 @@ public class OrderService {
         
         realtimeTrackingService.broadcastOrderCreated(savedOrder);
         
+        // Auto-assign to the best delivery option when enabled.
+        if (autoAssignOnCreate && savedOrder.getStatus() == Order.OrderStatus.PENDING) {
+            OrderAssignmentService.OrderAssignmentResult result =
+                    orderAssignmentService.assignOrder(savedOrder.getId());
+            if (result.isSuccessful()) {
+                realtimeTrackingService.broadcastDriverAssigned(result.getOrder());
+                return result.getOrder();
+            }
+            log.warn("Auto-assignment for order {} did not succeed: {}", savedOrder.getId(), result.getMessage());
+        }
+        
         return savedOrder;
+    }
+
+    /**
+     * Fixed-window per-user rate limit on order creation. Throws 429 when the
+     * user exceeds the configured number of orders within a minute.
+     */
+    private void assertOrderCreateRateLimit(String username) {
+        if (orderCreateLimitPerMinute <= 0) {
+            return; // disabled
+        }
+        long now = System.currentTimeMillis();
+        long windowStart = now - 60_000L;
+        Deque<Long> timestamps = orderCreateTimestamps.computeIfAbsent(username, k -> new ArrayDeque<>());
+        synchronized (timestamps) {
+            while (!timestamps.isEmpty() && timestamps.peekFirst() < windowStart) {
+                timestamps.removeFirst();
+            }
+            if (timestamps.size() >= orderCreateLimitPerMinute) {
+                throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS,
+                        "Order creation rate limit exceeded. Please try again later.");
+            }
+            timestamps.addLast(now);
+        }
+    }
+
+    /**
+     * Explicitly runs the assignment engine for an order. The order must be
+     * PENDING. Returns the (possibly re-assigned) order.
+     */
+    public Order autoAssignOrder(Long orderId) {
+        Order order = getOrderById(orderId);
+        assertCanEditOrder(order);
+        OrderAssignmentService.OrderAssignmentResult result =
+                orderAssignmentService.assignOrder(orderId);
+        if (result.isSuccessful()) {
+            realtimeTrackingService.broadcastDriverAssigned(result.getOrder());
+            return result.getOrder();
+        }
+        throw new IllegalStateException("Order could not be assigned: " + result.getMessage());
+    }
+
+    /**
+     * Reassigns an already-assigned order. Requires ownership of the order.
+     */
+    public Order reassignOrder(Long orderId, String reason) {
+        Order order = getOrderById(orderId);
+        assertCanEditOrder(order);
+        OrderAssignmentService.OrderAssignmentResult result =
+                orderAssignmentService.reassignOrder(orderId, reason);
+        if (result.isSuccessful()) {
+            realtimeTrackingService.broadcastDriverAssigned(result.getOrder());
+            return result.getOrder();
+        }
+        throw new IllegalStateException("Order could not be reassigned: " + result.getMessage());
+    }
+
+    /**
+     * Returns global assignment statistics (super admin scope).
+     */
+    public OrderAssignmentService.AssignmentStatistics getAssignmentStatistics() {
+        return orderAssignmentService.getAssignmentStatistics();
     }
     
     // Read operations
@@ -97,6 +196,7 @@ public class OrderService {
         log.info("Updating order with ID: {}", id);
         
         Order existingOrder = getOrderById(id);
+        assertCanEditOrder(existingOrder);
         
         // Update fields
         if (orderDetails.getPickupAddress() != null) {
@@ -171,6 +271,7 @@ public class OrderService {
         log.info("Updating order status for ID: {} to: {}", id, status);
         
         Order order = getOrderById(id);
+        assertCanUpdateStatus(order);
         order.setStatus(status);
         
         // Set timestamps based on status
@@ -214,6 +315,7 @@ public class OrderService {
         log.info("Assigning delivery company {} to order {}", deliveryCompany.getId(), orderId);
         
         Order order = getOrderById(orderId);
+        assertCanEditOrder(order);
         order.setDeliveryCompany(deliveryCompany);
         
         if (order.getStatus() == Order.OrderStatus.PENDING) {
@@ -246,6 +348,7 @@ public class OrderService {
         log.info("Assigning partnership {} to order {}", partnership.getId(), orderId);
         
         Order order = getOrderById(orderId);
+        assertCanEditOrder(order);
         order.setPartnership(partnership);
         order.setDeliveryCompany(partnership.getDeliveryCompany());
         
@@ -265,6 +368,7 @@ public class OrderService {
         log.info("Adding rating {} and review to order {}", rating, orderId);
         
         Order order = getOrderById(orderId);
+        assertCanEditOrder(order);
         
         if (!order.isCompleted()) {
             throw new IllegalStateException("Cannot rate an order that is not completed");
@@ -283,6 +387,7 @@ public class OrderService {
         log.info("Cancelling order {} with reason: {}", orderId, cancellationReason);
         
         Order order = getOrderById(orderId);
+        assertCanEditOrder(order);
         
         if (order.isCompleted() || order.isCancelled()) {
             throw new IllegalStateException("Cannot cancel an order that is already completed or cancelled");
@@ -319,6 +424,16 @@ public class OrderService {
         log.debug("Fetching orders for delivery company: {}", deliveryCompany.getId());
         return orderRepository.findByDeliveryCompany(deliveryCompany);
     }
+
+    public List<Order> getOrdersByVendorOwner(VendorOwner owner) {
+        log.debug("Fetching orders for vendor owner: {}", owner.getId());
+        return orderRepository.findByVendorCompanyOwner(owner);
+    }
+
+    public List<Order> getOrdersByDeliveryOwner(DeliveryOwner owner) {
+        log.debug("Fetching orders for delivery owner: {}", owner.getId());
+        return orderRepository.findByDeliveryCompanyOwner(owner);
+    }
     
     public List<Order> getOrdersByCustomer(CustomerUser customer) {
         log.debug("Fetching orders for customer: {}", customer.getId());
@@ -353,6 +468,26 @@ public class OrderService {
     public List<Order> getActiveUrgentOrders() {
         log.debug("Fetching active urgent orders");
         return orderRepository.findActiveUrgentOrders();
+    }
+
+    public List<Order> getOrdersByStatusForOwner(Order.OrderStatus status) {
+        User currentUser = securityService.getCurrentUser();
+        switch (currentUser.getRole()) {
+            case VENDOR_OWNER:
+                return orderRepository.findByVendorCompanyOwnerAndStatus(securityService.getCurrentVendorOwner(), status);
+            case DELIVERY_OWNER:
+                return orderRepository.findByDeliveryCompanyOwnerAndStatus(securityService.getCurrentDeliveryOwner(), status);
+            default:
+                return orderRepository.findByStatus(status);
+        }
+    }
+
+    public List<Order> getOverdueOrdersForOwner() {
+        return securityService.filterOrdersForUser(getOverdueOrders());
+    }
+
+    public List<Order> getActiveUrgentOrdersForOwner() {
+        return securityService.filterOrdersForUser(getActiveUrgentOrders());
     }
     
     // Statistics operations
@@ -389,6 +524,93 @@ public class OrderService {
     
     public boolean existsByTrackingNumber(String trackingNumber) {
         return orderRepository.existsByTrackingNumber(trackingNumber);
+    }
+
+    /**
+     * Grants write access to an order for:
+     * <ul>
+     *   <li>the SUPER_ADMIN</li>
+     *   <li>the VENDOR_OWNER who owns the order's vendor company</li>
+     *   <li>the CLIENT who placed the order</li>
+     * </ul>
+     */
+    private void assertCanEditOrder(Order order) {        User currentUser = securityService.getCurrentUser();
+        if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.CLIENT
+                && order.getCustomerUser() != null
+                && currentUser.getId().equals(order.getCustomerUser().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.VENDOR_OWNER
+                && order.getVendorCompany() != null
+                && order.getVendorCompany().getOwner() != null
+                && currentUser.getId().equals(order.getVendorCompany().getOwner().getId())) {
+            return;
+        }
+        throw new AccessDeniedException("You do not have permission to modify this order");
+    }
+
+    /**
+     * Grants read access to an order for the SUPER_ADMIN, the vendor company
+     * owner, the delivery company owner, the customer who placed the order,
+     * and the driver assigned to the order.
+     */
+    public void assertCanReadOrder(Order order) {
+        User currentUser = securityService.getCurrentUser();
+        if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        Long userId = currentUser.getId();
+        if (currentUser.getRole() == User.Role.CLIENT
+                && order.getCustomerUser() != null
+                && userId.equals(order.getCustomerUser().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.DRIVER
+                && order.getDriverPerson() != null
+                && userId.equals(order.getDriverPerson().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.VENDOR_OWNER
+                && order.getVendorCompany() != null
+                && order.getVendorCompany().getOwner() != null
+                && userId.equals(order.getVendorCompany().getOwner().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.DELIVERY_OWNER
+                && order.getDeliveryCompany() != null
+                && order.getDeliveryCompany().getOwner() != null
+                && userId.equals(order.getDeliveryCompany().getOwner().getId())) {
+            return;
+        }
+        throw new AccessDeniedException("You do not have permission to view this order");
+    }
+
+    /**
+     * Grants status-update access to an order for the SUPER_ADMIN, the
+     * DELIVERY_OWNER who owns the order's delivery company, and the DRIVER
+     * assigned to the order.
+     */
+    private void assertCanUpdateStatus(Order order) {
+        User currentUser = securityService.getCurrentUser();
+        if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        Long userId = currentUser.getId();
+        if (currentUser.getRole() == User.Role.DRIVER
+                && order.getDriverPerson() != null
+                && userId.equals(order.getDriverPerson().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.DELIVERY_OWNER
+                && order.getDeliveryCompany() != null
+                && order.getDeliveryCompany().getOwner() != null
+                && userId.equals(order.getDeliveryCompany().getOwner().getId())) {
+            return;
+        }
+        throw new AccessDeniedException("You do not have permission to update this order's status");
     }
     
     private String generateOrderNumber() {

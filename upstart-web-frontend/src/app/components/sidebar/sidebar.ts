@@ -27,8 +27,9 @@ export class Sidebar implements OnInit, OnDestroy {
   private userSubscription: Subscription = new Subscription();
 
   private fullMenuItems: MenuItem[] = [
-    { icon: '🏠', label: 'Dashboard', route: '/dashboard', badge: null, roles: [UserRole.SUPER_ADMIN] },
+    { icon: '🏠', label: 'Dashboard', route: '/dashboard', badge: null, roles: null },
     { icon: '📋', label: 'Orders', route: '/orders', badge: null, roles: null },
+    { icon: '🧭', label: 'My Jobs', route: '/my-jobs', badge: null, roles: [UserRole.DRIVER] },
     { icon: '👥', label: 'Customers', route: '/customers', badge: null, roles: [UserRole.SUPER_ADMIN] },
     { icon: '🏢', label: 'Vendor Companies', route: '/vendorcompanies', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
     { icon: '🏪', label: 'Vendor Owners', route: '/vendorowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
@@ -36,29 +37,21 @@ export class Sidebar implements OnInit, OnDestroy {
     { icon: '🚚', label: 'Delivery Owners', route: '/deliveryowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
     { icon: '🚗', label: 'Drivers', route: '/drivers', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
     { icon: '📦', label: 'Products', route: '/products', badge: null, roles: null },
-    { icon: '🔐', label: 'Admins Management', route: '/admins', badge: null, roles: [UserRole.SUPER_ADMIN] },
-    { icon: '⚙️', label: 'Settings', route: '/settings', badge: null, roles: null },
+    { icon: '🤝', label: 'Partnerships', route: '/partnerships', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.DELIVERY_OWNER] },
+    { icon: '🛒', label: 'Marketplace', route: '/pool', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
+    { icon: '💼', label: 'Bid Inbox', route: '/bids', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
+    { icon: '📍', label: 'Tracking', route: '/tracking', badge: null, roles: null },
+    
     { icon: '👤', label: 'Profile', route: '/profile', badge: null, roles: null },
   ];
 
   menuItems: MenuItem[] = [];
-
-  quickActions = [
-    { id: 'new-project', icon: '➕', label: 'New Project', tooltip: 'Create a new project' },
-    { id: 'upload', icon: '📤', label: 'Upload', tooltip: 'Upload files' },
-    { id: 'export', icon: '📥', label: 'Export', tooltip: 'Export data' },
-    { id: 'backup', icon: '💾', label: 'Backup', tooltip: 'Create backup' }
-  ];
 
   constructor(
     private sidebarService: SidebarService,
     private authService: AuthService
   ) {
     this.applyRoleMenu(this.authService.getCurrentUser());
-  }
-
-  executeAction(actionId: string) {
-    console.log('Executing action:', actionId);
   }
 
   ngOnInit(): void {

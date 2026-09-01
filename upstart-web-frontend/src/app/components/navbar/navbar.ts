@@ -4,6 +4,7 @@ import { trigger, state, style, transition, animate } from '@angular/animations'
 import { SidebarService } from '../../services/sidebar.service';
 import { ThemeService, ThemeType } from '../../services/theme.service';
 import { AuthService } from '../../services/auth.service';
+import { RealtimeService, OrderRealtimeEvent } from '../../services/realtime.service';
 import { Subscription } from 'rxjs';
 
 interface SearchResult {
@@ -13,15 +14,6 @@ interface SearchResult {
   icon: string;
   route?: string;
   action?: () => void;
-}
-
-interface Message {
-  id: number;
-  sender: string;
-  content: string;
-  read: boolean;
-  timestamp: Date;
-  avatar?: string;
 }
 
 interface Notification {
@@ -71,7 +63,8 @@ export class Navbar implements OnInit, OnDestroy {
     private router: Router, 
     private sidebarService: SidebarService,
     private themeService: ThemeService,
-    private authService: AuthService
+    private authService: AuthService,
+    private realtimeService: RealtimeService
   ) {}
 
   // Core properties
@@ -84,10 +77,10 @@ export class Navbar implements OnInit, OnDestroy {
   // Subscriptions
   private themeSubscription: Subscription = new Subscription();
   private userSubscription: Subscription = new Subscription();
+  private eventSubscription: Subscription = new Subscription();
   
   // Dropdown states
   isLanguageDropdownOpen = false;
-  isMessagesDropdownOpen = false;
   isNotificationsDropdownOpen = false;
   isUserDropdownOpen = false;
   
@@ -127,67 +120,10 @@ export class Navbar implements OnInit, OnDestroy {
   selectedResultIndex = -1;
   private searchTimeout: any;
   
-  // Messages with enhanced data
-  messages: Message[] = [
-    {
-      id: 1,
-      sender: 'Alice Johnson',
-      content: 'The quarterly report is ready for review. Please check the analytics section.',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 15) // 15 minutes ago
-    },
-    {
-      id: 2,
-      sender: 'Bob Smith',
-      content: 'Team meeting scheduled for 3 PM today. Conference room B.',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 30) // 30 minutes ago
-    },
-    {
-      id: 3,
-      sender: 'Carol Davis',
-      content: 'New client onboarding process completed successfully.',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2) // 2 hours ago
-    }
-  ];
-  
-  // Enhanced notifications
-  notifications: Notification[] = [
-    {
-      id: 1,
-      title: 'New Order',
-      content: 'Order #12345 has been received and is being processed.',
-      icon: '📦',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-      type: 'success'
-    },
-    {
-      id: 2,
-      title: 'System Maintenance',
-      content: 'Scheduled maintenance will occur tonight at midnight.',
-      icon: '🔧',
-      read: false,
-      timestamp: new Date(Date.now() - 1000 * 60 * 45), // 45 minutes ago
-      type: 'warning'
-    },
-    {
-      id: 3,
-      title: 'Backup Complete',
-      content: 'Daily backup completed successfully.',
-      icon: '✅',
-      read: true,
-      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3), // 3 hours ago
-      type: 'info'
-    }
-  ];
+  // Enhanced notifications (dynamic, driven by realtime events)
+  notifications: Notification[] = [];
   
   // Computed properties
-  get unreadMessagesCount() {
-    return this.messages.filter(m => !m.read).length;
-  }
-  
   get unreadNotificationsCount() {
     return this.notifications.filter(n => !n.read).length;
   }
@@ -225,6 +161,13 @@ export class Navbar implements OnInit, OnDestroy {
     if (savedLanguage && this.languages.find(l => l.code === savedLanguage)) {
       this.currentLanguage = savedLanguage;
     }
+    
+    // Subscribe to realtime order events to build dynamic notifications
+    this.eventSubscription = this.realtimeService.events$.subscribe(event => {
+      if (event) {
+        this.addRealtimeNotification(event);
+      }
+    });
   }
   
   ngOnDestroy() {
@@ -233,6 +176,76 @@ export class Navbar implements OnInit, OnDestroy {
     }
     this.themeSubscription.unsubscribe();
     this.userSubscription.unsubscribe();
+    if (this.eventSubscription) {
+      this.eventSubscription.unsubscribe();
+    }
+  }
+
+  private addRealtimeNotification(event: OrderRealtimeEvent) {
+    const titleMap: Record<string, string> = {
+      'ORDER_CREATED': 'New Order',
+      'ORDER_STATUS_CHANGED': 'Order Update',
+      'DRIVER_ASSIGNED': 'Driver Assigned',
+      'DRIVER_LOCATION_UPDATE': 'Location Update',
+      'ORDER_DELIVERED': 'Order Delivered',
+      'BID_SUBMITTED': 'New Bid',
+      'BID_ACCEPTED': 'Bid Accepted',
+      'BID_REJECTED': 'Bid Rejected',
+      'ORDER_CANCELLED': 'Order Cancelled'
+    };
+    const iconMap: Record<string, string> = {
+      'ORDER_CREATED': '📦',
+      'ORDER_STATUS_CHANGED': '🔄',
+      'DRIVER_ASSIGNED': '🚚',
+      'DRIVER_LOCATION_UPDATE': '📍',
+      'ORDER_DELIVERED': '✅',
+      'BID_SUBMITTED': '💼',
+      'BID_ACCEPTED': '🎉',
+      'BID_REJECTED': '❌',
+      'ORDER_CANCELLED': '🚫'
+    };
+    const typeMap: Record<string, Notification['type']> = {
+      'ORDER_CREATED': 'success',
+      'ORDER_STATUS_CHANGED': 'info',
+      'DRIVER_ASSIGNED': 'info',
+      'DRIVER_LOCATION_UPDATE': 'info',
+      'ORDER_DELIVERED': 'success',
+      'BID_SUBMITTED': 'info',
+      'BID_ACCEPTED': 'success',
+      'BID_REJECTED': 'error',
+      'ORDER_CANCELLED': 'error'
+    };
+    const title = titleMap[event.type] || 'Order Update';
+    const content = event.orderNumber
+      ? `Order ${event.orderNumber} ${this.describeEvent(event)}`
+      : this.describeEvent(event);
+    this.notifications.unshift({
+      id: Date.now() + Math.random(),
+      title,
+      content,
+      icon: iconMap[event.type] || '🔔',
+      read: false,
+      timestamp: new Date(event.timestamp || Date.now()),
+      type: typeMap[event.type] || 'info'
+    });
+    if (this.notifications.length > 20) {
+      this.notifications.length = 20;
+    }
+  }
+
+  private describeEvent(event: OrderRealtimeEvent): string {
+    switch (event.type) {
+      case 'ORDER_CREATED': return 'has been created.';
+      case 'ORDER_STATUS_CHANGED': return `status changed${event.status ? ` to ${event.status}` : ''}.`;
+      case 'DRIVER_ASSIGNED': return `assigned to ${event.driverName || 'a driver'}.`;
+      case 'DRIVER_LOCATION_UPDATE': return 'driver location updated.';
+      case 'ORDER_DELIVERED': return 'has been delivered.';
+      case 'BID_SUBMITTED': return 'received a new bid.';
+      case 'BID_ACCEPTED': return 'bid was accepted.';
+      case 'BID_REJECTED': return 'bid was rejected.';
+      case 'ORDER_CANCELLED': return 'was cancelled.';
+      default: return 'received an update.';
+    }
   }
 
   private formatUserRole(role: string): string {
@@ -268,9 +281,6 @@ export class Navbar implements OnInit, OnDestroy {
     if (!target.closest('.language-dropdown')) {
       this.isLanguageDropdownOpen = false;
     }
-    if (!target.closest('.messages-dropdown')) {
-      this.isMessagesDropdownOpen = false;
-    }
     if (!target.closest('.notifications-dropdown')) {
       this.isNotificationsDropdownOpen = false;
     }
@@ -303,11 +313,6 @@ export class Navbar implements OnInit, OnDestroy {
     this.closeAllDropdowns();
   }
   
-  navigateToSettings() {
-    this.router.navigate(['/settings']);
-    this.closeAllDropdowns();
-  }
-  
   navigateToHelp() {
     this.router.navigate(['/help']);
     this.closeAllDropdowns();
@@ -315,7 +320,6 @@ export class Navbar implements OnInit, OnDestroy {
   
   closeAllDropdowns() {
     this.isLanguageDropdownOpen = false;
-    this.isMessagesDropdownOpen = false;
     this.isNotificationsDropdownOpen = false;
     this.isUserDropdownOpen = false;
   }
@@ -389,21 +393,30 @@ export class Navbar implements OnInit, OnDestroy {
       this.searchResults = [];
       return;
     }
-    
-    // Mock search results - replace with actual search logic
-    const mockResults: SearchResult[] = [
-      { id: '1', title: 'Dashboard', description: 'Main dashboard overview', icon: '📊', route: '/dashboard' },
-      { id: '2', title: 'Orders', description: 'Track and manage delivery orders', icon: '📋', route: '/orders' },
-      { id: '3', title: 'Customers', description: 'Manage customer accounts', icon: '👥', route: '/customers' },
-      { id: '4', title: 'Vendor Companies', description: 'View vendor companies', icon: '🏢', route: '/vendorcompanies' },
-      { id: '5', title: 'Settings', description: 'Application settings', icon: '⚙️', route: '/settings' }
+
+    // Search index built from the real, role-restricted app navigation pages
+    const navIndex: SearchResult[] = [
+      { id: 'dashboard', title: 'Dashboard', description: 'Overview of your activity', icon: '🏠', route: '/dashboard' },
+      { id: 'orders', title: 'Orders', description: 'Track and manage delivery orders', icon: '📋', route: '/orders' },
+      { id: 'customers', title: 'Customers', description: 'Manage customer accounts', icon: '👥', route: '/customers' },
+      { id: 'vendorcompanies', title: 'Vendor Companies', description: 'View vendor companies', icon: '🏢', route: '/vendorcompanies' },
+      { id: 'deliverycompanies', title: 'Delivery Companies', description: 'View delivery companies', icon: '🚛', route: '/deliverycompanies' },
+      { id: 'drivers', title: 'Drivers', description: 'Manage delivery drivers', icon: '🚗', route: '/drivers' },
+      { id: 'products', title: 'Products', description: 'Browse available products', icon: '📦', route: '/products' },
+      { id: 'partnerships', title: 'Partnerships', description: 'Vendor & delivery partnerships', icon: '🤝', route: '/partnerships' },
+      { id: 'pool', title: 'Marketplace', description: 'Browse and bid on available orders', icon: '🛒', route: '/pool' },
+      { id: 'bids', title: 'Bid Inbox', description: 'Review and manage received bids', icon: '💼', route: '/bids' },
+      { id: 'tracking', title: 'Tracking', description: 'Live order & driver tracking', icon: '📍', route: '/tracking' },
+      { id: 'profile', title: 'Profile', description: 'View your account information', icon: '👤', route: '/profile' },
+      { id: 'notifications', title: 'Notifications', description: 'View your notifications', icon: '🔔', route: '/notifications' }
     ];
-    
-    this.searchResults = mockResults.filter(result => 
-      result.title.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-      result.description.toLowerCase().includes(this.searchQuery.toLowerCase())
-    ).slice(0, 5); // Limit to 5 results
-    
+
+    const query = this.searchQuery.toLowerCase();
+    this.searchResults = navIndex.filter(result =>
+      result.title.toLowerCase().includes(query) ||
+      result.description.toLowerCase().includes(query)
+    ).slice(0, 5);
+
     this.selectedResultIndex = -1;
   }
   
@@ -475,18 +488,6 @@ export class Navbar implements OnInit, OnDestroy {
     }
     this.isLanguageDropdownOpen = !this.isLanguageDropdownOpen;
     // Close other dropdowns
-    this.isMessagesDropdownOpen = false;
-    this.isNotificationsDropdownOpen = false;
-    this.isUserDropdownOpen = false;
-  }
-
-  toggleMessagesDropdown(event?: Event) {
-    if (event) {
-      event.stopPropagation();
-    }
-    this.isMessagesDropdownOpen = !this.isMessagesDropdownOpen;
-    // Close other dropdowns
-    this.isLanguageDropdownOpen = false;
     this.isNotificationsDropdownOpen = false;
     this.isUserDropdownOpen = false;
   }
@@ -498,7 +499,6 @@ export class Navbar implements OnInit, OnDestroy {
     this.isNotificationsDropdownOpen = !this.isNotificationsDropdownOpen;
     // Close other dropdowns
     this.isLanguageDropdownOpen = false;
-    this.isMessagesDropdownOpen = false;
     this.isUserDropdownOpen = false;
   }
 
@@ -509,7 +509,6 @@ export class Navbar implements OnInit, OnDestroy {
     this.isUserDropdownOpen = !this.isUserDropdownOpen;
     // Close other dropdowns
     this.isLanguageDropdownOpen = false;
-    this.isMessagesDropdownOpen = false;
     this.isNotificationsDropdownOpen = false;
   }
 
@@ -527,30 +526,14 @@ export class Navbar implements OnInit, OnDestroy {
     // Implement actual language change logic
   }
   
-  // Message methods
-  openMessage(message: Message) {
-    message.read = true;
-    console.log('Opening message:', message.id);
-    this.isMessagesDropdownOpen = false; // Close dropdown after selection
-    // Implement message opening logic
-  }
-
-  markAllMessagesRead() {
-    this.messages.forEach(msg => msg.read = true);
-  }
-
-  viewAllMessages() {
-    console.log('Viewing all messages');
-    this.isMessagesDropdownOpen = false; // Close dropdown after selection
-    this.router.navigate(['/messagerie']);
-  }
-  
   // Notification methods
   openNotification(notification: Notification) {
     notification.read = true;
-    console.log('Opening notification:', notification.id);
     this.isNotificationsDropdownOpen = false; // Close dropdown after selection
-    // Implement notification opening logic
+    // Navigate based on notification type
+    if (notification.title === 'New Order' || notification.title === 'Order Update') {
+      this.router.navigate(['/orders']);
+    }
   }
 
   markAllNotificationsRead() {

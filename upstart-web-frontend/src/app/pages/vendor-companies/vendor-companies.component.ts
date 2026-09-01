@@ -15,7 +15,7 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
   searchTerm: string = '';
   statusFilter: string = 'all';
   industryFilter: string = 'all';
-  sortBy: string = 'name';
+  sortBy: string = 'companyName';
   sortDirection: 'asc' | 'desc' = 'asc';
   
   // Pagination

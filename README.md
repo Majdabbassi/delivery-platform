@@ -27,8 +27,8 @@ username: admin
 password: REDACTED_ADMIN_PASSWORD
 ```
 
-- **Staff admins** (3): `opsadmin` / `contentadmin` / `supportmod` — emails `ops.admin@upstart.local`, `content.admin@upstart.local`, `support.mod@upstart.local`, password `Upstart@2026!`
 - **Demo business dataset** when empty: 7 customers, 3 vendor owners, 2 delivery owners, 5 vendor companies, 4 delivery companies, 8 drivers, 24 products (linked to the vendor companies), 36 orders, 6 partnerships.
+- Only the **Super Admin** account exists (staff/admin sub-accounts are not seeded).
 - Demo user passwords use `Upstart@2026!` (e.g. vendor owner `naimabarka`).
 
 > Change `admin`'s credentials in production by setting `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
@@ -89,3 +89,12 @@ EXPO_PUBLIC_API_URL=http://192.168.x.x:8080/api
 - Token-based auth via `Authorization: Bearer <jwt>`; tokens are keyed by JTI for revocation/blacklisting.
 - Platform dashboard (Super Admin): `GET /api/dashboard/overview` returns live KPIs (customers, orders, revenue, per-status order counts, companies, owners, drivers, products, admins, partnerships).
 - Per-domain stats: stats/count + statistics endpoints under `/api/orders`, `/api/customer-users`, `/api/driver-persons`, `/api/delivery-owners`, `/api/delivery-companies`, `/api/vendor-owners`, `/api/vendor-companies`, `/api/products`, `/api/admins`, `/api/super-admins` (Super Admin).
+
+## Realtime (WebSocket / STOMP)
+
+- Endpoint: `ws://localhost:8080/ws` (SockJS).
+- Subscribe to the global feed `TOPIC /topic/orders` and per-order `TOPIC /topic/orders/{id}` (open, matches existing clients).
+- Private per-user feed `TOPIC /topic/users/{userId}` — receiving only the events for orders you are involved in.
+  - Authenticate the STOMP handshake by passing your access JWT as a query param: `/ws?token=<jwt>`.
+  - Each session may only subscribe to its **own** user topic; subscribing to another user's topic is rejected with `403`.
+- Event types: `ORDER_CREATED`, `ORDER_STATUS_CHANGED`, `DRIVER_ASSIGNED` (payload includes `involvedUserIds`), and `DRIVER_LOCATION_UPDATE` on `/topic/orders/location` and `/topic/orders/{id}`.

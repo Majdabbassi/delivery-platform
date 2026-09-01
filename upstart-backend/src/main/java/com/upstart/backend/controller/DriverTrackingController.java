@@ -3,13 +3,16 @@ package com.upstart.backend.controller;
 import com.upstart.backend.dto.OrderLocationUpdate;
 import com.upstart.backend.dto.OrderRealtimeEvent;
 import com.upstart.backend.entity.Order;
+import com.upstart.backend.entity.User;
 import com.upstart.backend.service.OrderService;
 import com.upstart.backend.service.RealtimeTrackingService;
+import com.upstart.backend.service.SecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -21,6 +24,7 @@ public class DriverTrackingController {
 
     private final OrderService orderService;
     private final RealtimeTrackingService realtimeTrackingService;
+    private final SecurityService securityService;
 
     @PostMapping("/orders/{orderId}/location")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DRIVER')")
@@ -31,13 +35,23 @@ public class DriverTrackingController {
 
         Order order = orderService.getOrderById(orderId);
 
+        // Lock: a DRIVER may only post location for an order that is assigned to them.
+        if (securityService.getCurrentUser().getRole() != User.Role.SUPER_ADMIN) {
+            Long driverId = securityService.getCurrentUser().getId();
+            boolean assigned = order.getDriverPerson() != null
+                    && driverId.equals(order.getDriverPerson().getId());
+            if (!assigned) {
+                throw new AccessDeniedException("You are not the assigned driver for this order");
+            }
+        }
+
         realtimeTrackingService.broadcastDriverLocation(
                 orderId,
                 order.getOrderNumber(),
                 locationUpdate.getLatitude(),
                 locationUpdate.getLongitude(),
                 locationUpdate.getSpeedKmh(),
-                locationUpdate.getDriverPersonId());
+                order.getDriverPerson() != null ? order.getDriverPerson().getId() : null);
 
         return ResponseEntity.ok(order);
     }

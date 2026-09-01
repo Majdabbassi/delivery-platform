@@ -83,12 +83,12 @@ export class DriversComponent implements OnInit, OnDestroy {
   };
   
   vehicleTypes = [
-    { label: 'All Vehicles', value: 'all' },
-    { label: 'Motorcycle', value: 'MOTORCYCLE' },
-    { label: 'Car', value: 'CAR' },
-    { label: 'Van', value: 'VAN' },
-    { label: 'Truck', value: 'TRUCK' }
+    { label: 'All Vehicles', value: 'all' }
   ];
+
+  get vehicleTypeFormOptions(): { label: string; value: string }[] {
+    return this.vehicleTypes.filter(vt => vt.value !== 'all');
+  }
   
   // deliveryCompanies removed since DriverPerson doesn't have deliveryCompanyId
 
@@ -100,6 +100,7 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadDrivers();
+    this.loadVehicleTypes();
     this.calculateStats();
   }
 
@@ -151,6 +152,43 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
   
   // loadDeliveryCompanies method removed since DriverPerson doesn't have deliveryCompanyId
+
+  loadVehicleTypes(): void {
+    const params: DriverPersonSearchParams = {
+      page: 0,
+      size: 500,
+      sortBy: 'firstName',
+      sortDir: 'asc'
+    };
+    const subscription = this.driverPersonService.searchDriverPersons(params).subscribe({
+      next: (response: PaginatedResponse<DriverPerson>) => {
+        const existing = new Set(this.vehicleTypes.map(vt => vt.value));
+        response.content.forEach(driver => {
+          if (driver.vehicleType && !existing.has(driver.vehicleType)) {
+            this.vehicleTypes.push({
+              label: this.formatVehicleTypeLabel(driver.vehicleType),
+              value: driver.vehicleType
+            });
+            existing.add(driver.vehicleType);
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Error loading vehicle types:', error);
+      }
+    });
+    this.subscriptions.push(subscription);
+  }
+
+  formatVehicleTypeLabel(vehicleType: string): string {
+    switch (vehicleType) {
+      case 'MOTORCYCLE': return 'Motorcycle';
+      case 'CAR': return 'Car';
+      case 'VAN': return 'Van';
+      case 'TRUCK': return 'Truck';
+      default: return vehicleType.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+    }
+  }
 
   calculateStats(): void {
     // Load stats from API using multiple endpoints

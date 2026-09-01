@@ -69,18 +69,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
     byStatus: {}
   };
   
-  categories = [
-    'Electronics',
-    'Clothing',
-    'Home & Garden',
-    'Sports & Outdoors',
-    'Books',
-    'Health & Beauty',
-    'Automotive',
-    'Food & Beverages',
-    'Toys & Games',
-    'Other'
-  ];
+  categories: string[] = [];
 
   constructor(
     private productService: ProductService,
@@ -117,6 +106,7 @@ export class ProductsComponent implements OnInit, OnDestroy {
         this.totalElements = response.totalElements;
         this.totalPages = response.totalPages;
         this.currentPage = response.number;
+        this.mergeCategoriesFromProducts();
         this.loading = false;
       },
       error: (error) => {
@@ -194,10 +184,24 @@ export class ProductsComponent implements OnInit, OnDestroy {
     this.loadProducts();
   }
 
+  private mergeCategoriesFromProducts(): void {
+    if (!this.products.length) return;
+    const fromProducts = Array.from(new Set(
+      this.products.map(p => p.category).filter((c): c is string => !!c)
+    ));
+    if (fromProducts.length) {
+      this.categories = Array.from(new Set([...this.categories, ...fromProducts])).sort();
+    }
+  }
+
   calculateStats(): void {
     const subscription = this.productService.getProductStats().subscribe({
       next: (stats) => {
         this.stats = stats;
+        const categoryKeys = Object.keys(stats.byCategory || {}).filter(k => k);
+        if (categoryKeys.length) {
+          this.categories = Array.from(new Set([...this.categories, ...categoryKeys])).sort();
+        }
       },
       error: (error: any) => {
         console.error('Error loading product statistics:', error);

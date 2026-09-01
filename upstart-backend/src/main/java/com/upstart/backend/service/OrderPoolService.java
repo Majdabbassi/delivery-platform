@@ -3,13 +3,14 @@ package com.upstart.backend.service;
 import com.upstart.backend.entity.Order;
 import com.upstart.backend.entity.DeliveryCompany;
 import com.upstart.backend.entity.Partnership;
+import com.upstart.backend.entity.PooledOrder;
 import com.upstart.backend.entity.VendorCompany;
 import com.upstart.backend.repository.OrderRepository;
 import com.upstart.backend.repository.DeliveryCompanyRepository;
 import com.upstart.backend.repository.PartnershipRepository;
+import com.upstart.backend.repository.PooledOrderRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
@@ -25,7 +26,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Service for managing order pools and broadcasting orders to delivery companies
- * Handles order visibility, filtering, and pool management
+ * Handles order visibility, filtering, and pool management.
+ * Pool visibility (which pending order a company can see) is persisted in the
+ * database; subscriptions and telemetry remain ephemeral.
  */
 @Service
 @Transactional
@@ -33,20 +36,25 @@ public class OrderPoolService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderPoolService.class);
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
+    private final DeliveryCompanyRepository deliveryCompanyRepository;
+    private final PartnershipRepository partnershipRepository;
+    private final DeliveryCompanyService deliveryCompanyService;
+    private final PooledOrderRepository pooledOrderRepository;
 
-    @Autowired
-    private DeliveryCompanyRepository deliveryCompanyRepository;
+    public OrderPoolService(OrderRepository orderRepository,
+                            DeliveryCompanyRepository deliveryCompanyRepository,
+                            PartnershipRepository partnershipRepository,
+                            DeliveryCompanyService deliveryCompanyService,
+                            PooledOrderRepository pooledOrderRepository) {
+        this.orderRepository = orderRepository;
+        this.deliveryCompanyRepository = deliveryCompanyRepository;
+        this.partnershipRepository = partnershipRepository;
+        this.deliveryCompanyService = deliveryCompanyService;
+        this.pooledOrderRepository = pooledOrderRepository;
+    }
 
-    @Autowired
-    private PartnershipRepository partnershipRepository;
-
-    @Autowired
-    private DeliveryCompanyService deliveryCompanyService;
-
-    // In-memory tracking of order pools and subscriptions
-    private final Map<Long, Set<Long>> companyOrderPools = new ConcurrentHashMap<>();
+    // In-memory subscriptions and telemetry (ephemeral, not critical state)
     private final Map<Long, List<OrderPoolSubscription>> poolSubscriptions = new ConcurrentHashMap<>();
     private final Map<Long, OrderPoolMetrics> poolMetrics = new ConcurrentHashMap<>();
 
@@ -72,13 +80,8 @@ public class OrderPoolService {
     public void removeOrderFromPools(Long orderId) {
         logger.info("Removing order {} from all pools", orderId);
 
-        int removedCount = 0;
-        for (Map.Entry<Long, Set<Long>> entry : companyOrderPools.entrySet()) {
-            if (entry.getValue().remove(orderId)) {
-                removedCount++;
-                updatePoolMetrics(entry.getKey(), "orders_removed", 1);
-            }
-        }
+        long removedCount = pooledOrderRepository.countByOrderId(orderId);
+        pooledOrderRepository.deleteByOrderId(orderId);
 
         logger.info("Order {} removed from {} company pools", orderId, removedCount);
     }
@@ -87,8 +90,8 @@ public class OrderPoolService {
      * Get orders available to a specific delivery company
      */
     public Page<Order> getAvailableOrders(Long deliveryCompanyId, Pageable pageable) {
-        Set<Long> orderIds = companyOrderPools.getOrDefault(deliveryCompanyId, new HashSet<>());
-        
+        Set<Long> orderIds = getPooledOrderIdsForCompany(deliveryCompanyId);
+
         if (orderIds.isEmpty()) {
             return Page.empty(pageable);
         }
@@ -100,7 +103,7 @@ public class OrderPoolService {
      * Get filtered orders for delivery company based on criteria
      */
     public List<Order> getFilteredOrders(Long deliveryCompanyId, OrderPoolFilter filter) {
-        Set<Long> orderIds = companyOrderPools.getOrDefault(deliveryCompanyId, new HashSet<>());
+        Set<Long> orderIds = getPooledOrderIdsForCompany(deliveryCompanyId);
         
         if (orderIds.isEmpty()) {
             return new ArrayList<>();
@@ -161,7 +164,7 @@ public class OrderPoolService {
      * Get pool statistics for delivery company
      */
     public OrderPoolStatistics getPoolStatistics(Long deliveryCompanyId) {
-        Set<Long> orderIds = companyOrderPools.getOrDefault(deliveryCompanyId, new HashSet<>());
+        Set<Long> orderIds = getPooledOrderIdsForCompany(deliveryCompanyId);
         OrderPoolMetrics metrics = poolMetrics.getOrDefault(deliveryCompanyId, new OrderPoolMetrics());
         
         List<Order> currentOrders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.PENDING);
@@ -200,7 +203,7 @@ public class OrderPoolService {
         DeliveryCompany company = deliveryCompanyRepository.findById(deliveryCompanyId)
             .orElseThrow(() -> new IllegalArgumentException("Delivery company not found"));
         
-        Set<Long> orderIds = companyOrderPools.getOrDefault(deliveryCompanyId, new HashSet<>());
+        Set<Long> orderIds = getPooledOrderIdsForCompany(deliveryCompanyId);
         
         if (orderIds.isEmpty()) {
             return new ArrayList<>();
@@ -227,7 +230,7 @@ public class OrderPoolService {
             .collect(Collectors.toList());
         
         for (Long orderId : expiredOrderIds) {
-            removeOrderFromPools(orderId);
+            pooledOrderRepository.deleteByOrderId(orderId);
         }
         
         logger.info("Cleared {} expired orders from pools", expiredOrderIds.size());
@@ -238,11 +241,10 @@ public class OrderPoolService {
      */
     public Map<String, Object> getPoolHealthMetrics() {
         Map<String, Object> health = new HashMap<>();
-        
-        int totalPools = companyOrderPools.size();
-        int totalOrders = companyOrderPools.values().stream()
-            .mapToInt(Set::size)
-            .sum();
+
+        List<PooledOrder> all = pooledOrderRepository.findAll();
+        long totalOrders = all.size();
+        long totalPools = all.stream().map(PooledOrder::getDeliveryCompanyId).distinct().count();
         
         int activeSubscriptions = poolSubscriptions.values().stream()
             .mapToInt(List::size)
@@ -307,14 +309,22 @@ public class OrderPoolService {
     }
 
     private void addOrderToCompanyPool(Long companyId, Long orderId) {
-        companyOrderPools.computeIfAbsent(companyId, k -> ConcurrentHashMap.newKeySet())
-                         .add(orderId);
+        if (!pooledOrderRepository.existsByDeliveryCompanyIdAndOrderId(companyId, orderId)) {
+            pooledOrderRepository.save(new PooledOrder(companyId, orderId));
+        }
+    }
+
+    private Set<Long> getPooledOrderIdsForCompany(Long deliveryCompanyId) {
+        return pooledOrderRepository.findByDeliveryCompanyId(deliveryCompanyId)
+            .stream()
+            .map(PooledOrder::getOrderId)
+            .collect(Collectors.toSet());
     }
 
     private Set<Long> findRelevantCompanies(Order order) {
-        return companyOrderPools.entrySet().stream()
-            .filter(entry -> entry.getValue().contains(order.getId()))
-            .map(Map.Entry::getKey)
+        return pooledOrderRepository.findByOrderId(order.getId())
+            .stream()
+            .map(PooledOrder::getDeliveryCompanyId)
             .collect(Collectors.toSet());
     }
 

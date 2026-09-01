@@ -25,7 +25,7 @@ export class RoleGuard implements CanActivate {
 
     const allowedRoles = route.data?.['roles'] as UserRole[] | undefined;
     if (allowedRoles && allowedRoles.length > 0 && !this.authService.hasAnyRole(allowedRoles)) {
-      this.router.navigate(['/profile']);
+      this.router.navigate(['/access-denied']);
       return false;
     }
 

@@ -33,6 +33,21 @@ services:
     ports:
       - "8080:8080"
 
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: upstart-phpmyadmin
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      UPLOAD_LIMIT: 100M
+    ports:
+      - "8081:80"
+
   web:
     build: ./upstart-web-frontend
     container_name: upstart-web

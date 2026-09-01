@@ -47,14 +47,8 @@ export class LoginComponent implements OnInit {
     this.loading = true;
     this.error = '';
     
-    console.log('Attempting login with:', this.loginForm);
     this.authService.login(this.loginForm).subscribe({
       next: (response) => {
-        console.log('Login response received:', response);
-        console.log('Token stored:', localStorage.getItem('authToken'));
-        console.log('User stored:', localStorage.getItem('currentUser'));
-        console.log('Auth service isAuthenticated:', this.authService.isAuthenticated());
-        
         this.loading = false;
         // Store remember me preference
         if (this.rememberMe) {
@@ -68,7 +62,6 @@ export class LoginComponent implements OnInit {
           )
           .subscribe(() => {
             const target = this.returnUrl || this.defaultRouteFor(response.user.role);
-            console.log('Navigation triggered to:', target);
             this.router.navigate([target]);
           });
       },
@@ -99,22 +92,19 @@ export class LoginComponent implements OnInit {
       case 'SUPER_ADMIN': return '/dashboard';
       case 'VENDOR_OWNER': return '/vendorcompanies';
       case 'DELIVERY_OWNER': return '/deliverycompanies';
+      case 'DRIVER': return '/my-jobs';
       case 'CLIENT':
-      case 'DRIVER':
       default: return '/orders';
     }
   }
   
   onForgotPassword(): void {
-    // Implement forgot password functionality
-    console.log('Forgot password clicked');
-    // You can navigate to a forgot password page or show a modal
+    this.error = '';
+    window.alert('Password reset is managed by your account administrator. Please contact support for assistance.');
   }
   
   onRegister(): void {
-    // Implement registration functionality
-    console.log('Register clicked');
-    // You can navigate to a registration page
+    this.router.navigate(['/register']);
   }
   
   clearError(): void {

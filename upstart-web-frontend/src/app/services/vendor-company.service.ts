@@ -109,6 +109,31 @@ export class VendorCompanyService {
     throw error;
   }
 
+  private mapCompany(company: any): VendorCompany {
+    return {
+      ...company,
+      name: company.companyName,
+      email: company.contactEmail,
+      phone: company.contactPhone,
+      address: company.businessAddress,
+      status: company.isActive ? 'ACTIVE' : 'INACTIVE',
+      businessCategory: company.businessCategory || 'General',
+      industry: company.businessCategory || 'General',
+      contactPerson: company.owner ? `${company.owner.firstName} ${company.owner.lastName}` : 'N/A',
+      licenseNumber: company.businessLicense,
+      vendorOwnerId: company.owner?.id,
+      totalProducts: company.totalProducts || 0,
+      totalOrders: company.totalOrders || 0,
+      totalRevenue: company.totalRevenue || 0,
+      rating: company.rating || 0,
+      isVerified: company.isVerified || false
+    };
+  }
+
+  private mapPage(response: any): PaginatedResponse<VendorCompany> {
+    return { ...response, content: (response.content || []).map((company: any) => this.mapCompany(company)) };
+  }
+
   // Create operations
   createVendorCompany(company: VendorCompany): Observable<VendorCompany> {
     return this.http.post<VendorCompany>(this.baseUrl, company).pipe(
@@ -139,15 +164,31 @@ export class VendorCompanyService {
     return this.http.get<PaginatedResponse<VendorCompany>>(this.baseUrl, {
       params
     }).pipe(
+      map(response => this.mapPage(response)),
       catchError(this.handleError)
     );
   }
 
   searchVendorCompanies(searchParams: VendorCompanySearchParams): Observable<PaginatedResponse<VendorCompany>> {
     let params = new HttpParams();
-    
-    Object.keys(searchParams).forEach(key => {
-      const value = (searchParams as any)[key];
+
+    const backendParams: Record<string, any> = { ...searchParams };
+    if (searchParams.name) {
+      backendParams['companyName'] = searchParams.name;
+      delete backendParams['name'];
+      delete backendParams['email'];
+      delete backendParams['phone'];
+      delete backendParams['contactPerson'];
+    }
+    if (searchParams.status && searchParams.status !== 'all') {
+      backendParams['isActive'] = searchParams.status === 'ACTIVE';
+      delete backendParams['status'];
+    }
+    delete backendParams['businessCategory'];
+    delete backendParams['verified'];
+
+    Object.keys(backendParams).forEach(key => {
+      const value = backendParams[key];
       if (value !== undefined && value !== null && value !== '') {
         if (Array.isArray(value)) {
           value.forEach(v => params = params.append(key, v));
@@ -160,6 +201,7 @@ export class VendorCompanyService {
     return this.http.get<PaginatedResponse<VendorCompany>>(`${this.baseUrl}/search`, {
       params
     }).pipe(
+      map(response => this.mapPage(response)),
       catchError(this.handleError)
     );
   }

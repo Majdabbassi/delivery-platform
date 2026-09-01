@@ -1,7 +1,10 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { OrderService, OrderDTO, OrderStatus, OrderPriority, CreateOrderDTO, OrderRatingDTO } from '../../services/order.service';
-import { AuthService, UserRole } from '../../services/auth.service';
+import { AuthService, User, UserRole } from '../../services/auth.service';
+import { RealtimeService } from '../../services/realtime.service';
+import { VendorCompanyService, VendorCompany } from '../../services/vendor-company.service';
+import { CustomerUserService, CustomerUser } from '../../services/customer-user.service';
 
 @Component({
   selector: 'app-orders',
@@ -55,6 +58,10 @@ export class OrdersComponent implements OnInit, OnDestroy {
     orderValue: 0,
     priority: OrderPriority.NORMAL
   };
+
+  // Dynamic dropdown options for the create-order form
+  vendorCompanies: VendorCompany[] = [];
+  customers: CustomerUser[] = [];
   
   ratingForm: OrderRatingDTO = {
     orderId: 0
@@ -69,12 +76,17 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   constructor(
     private orderService: OrderService,
-    private authService: AuthService
+    private authService: AuthService,
+    private realtimeService: RealtimeService,
+    private vendorCompanyService: VendorCompanyService,
+    private customerUserService: CustomerUserService
   ) {}
 
   ngOnInit(): void {
     this.loadOrders();
     this.calculateStats();
+    this.loadVendorCompanies();
+    this.loadCustomers();
     
     // Subscribe to real-time updates
     this.subscriptions.add(
@@ -84,10 +96,53 @@ export class OrdersComponent implements OnInit, OnDestroy {
         this.calculateStats();
       })
     );
+
+    // Refresh the list automatically when orders change in realtime
+    this.subscriptions.add(
+      this.realtimeService.events$.subscribe(event => {
+        if (event && ['ORDER_CREATED', 'ORDER_STATUS_CHANGED', 'DRIVER_ASSIGNED'].includes(event.type)) {
+          this.loadOrders();
+        }
+      })
+    );
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
+  }
+
+  loadVendorCompanies(): void {
+    this.subscriptions.add(
+      this.vendorCompanyService.getAllVendorCompanies(0, 500, 'name', 'asc').subscribe({
+        next: (response) => {
+          this.vendorCompanies = response.content;
+        },
+        error: (error) => {
+          console.error('Error loading vendor companies:', error);
+        }
+      })
+    );
+  }
+
+  loadCustomers(): void {
+    this.subscriptions.add(
+      this.customerUserService.getAllCustomerUsers(0, 500, 'firstName', 'asc').subscribe({
+        next: (response) => {
+          this.customers = response.content;
+        },
+        error: (error) => {
+          console.error('Error loading customers:', error);
+        }
+      })
+    );
+  }
+
+  get currentUser(): User | null {
+    return this.authService.getCurrentUser();
+  }
+
+  get isClient(): boolean {
+    return this.currentUser?.role === UserRole.CLIENT;
   }
 
   // Data loading methods
@@ -102,28 +157,48 @@ export class OrdersComponent implements OnInit, OnDestroy {
       return;
     }
     
-    this.subscriptions.add(
-      this.orderService.getAllOrders(this.currentPage, this.pageSize).subscribe({
-        next: (response) => {
-          this.orders = response.content;
-          this.totalPages = response.totalPages;
-          this.totalElements = response.totalElements;
-          this.applyFilters();
-          this.loading = false;
-        },
-        error: (error) => {
-          console.error('Error loading orders:', error);
-          if (error.status === 401 || error.status === 403) {
-            this.error = 'Authentication failed. Please log in again.';
-          } else if (error.status === 0) {
-            this.error = 'Unable to connect to server. Please check your connection.';
-          } else {
-            this.error = `Failed to load orders: ${error.message || 'Unknown error'}`;
-          }
-          this.loading = false;
-        }
-      })
-    );
+    const currentUser = this.authService.getCurrentUser();
+    
+    // SUPER_ADMIN uses the paginated global listing; all other roles use /orders/my
+    if (currentUser?.role === UserRole.SUPER_ADMIN) {
+      this.subscriptions.add(
+        this.orderService.getAllOrders(this.currentPage, this.pageSize).subscribe({
+          next: (response) => {
+            this.orders = response.content;
+            this.totalPages = response.totalPages;
+            this.totalElements = response.totalElements;
+            this.applyFilters();
+            this.loading = false;
+          },
+          error: (error) => this.handleLoadError(error)
+        })
+      );
+    } else {
+      this.subscriptions.add(
+        this.orderService.getMyOrders().subscribe({
+          next: (orders) => {
+            this.orders = orders;
+            this.totalPages = 1;
+            this.totalElements = orders.length;
+            this.applyFilters();
+            this.loading = false;
+          },
+          error: (error) => this.handleLoadError(error)
+        })
+      );
+    }
+  }
+
+  private handleLoadError(error: any): void {
+    console.error('Error loading orders:', error);
+    if (error.status === 401 || error.status === 403) {
+      this.error = 'Authentication failed. Please log in again.';
+    } else if (error.status === 0) {
+      this.error = 'Unable to connect to server. Please check your connection.';
+    } else {
+      this.error = `Failed to load orders: ${error.message || 'Unknown error'}`;
+    }
+    this.loading = false;
   }
 
   loadPendingUnassigned(): void {
@@ -402,7 +477,11 @@ export class OrdersComponent implements OnInit, OnDestroy {
     }
     
     this.subscriptions.add(
-      this.orderService.addOrderRating(this.ratingForm.orderId, this.ratingForm).subscribe({
+      this.orderService.addOrderRating(
+        this.ratingForm.orderId,
+        this.ratingForm.customerRating || 1,
+        this.ratingForm.customerReview
+      ).subscribe({
         next: (updatedOrder) => {
           const index = this.orders.findIndex(o => o.id === updatedOrder.id);
           if (index !== -1) {
@@ -423,6 +502,12 @@ export class OrdersComponent implements OnInit, OnDestroy {
   openCreateModal(): void {
     this.showCreateModal = true;
     this.resetOrderForm();
+
+    // Clients create orders for themselves
+    const user = this.authService.getCurrentUser();
+    if (user?.role === UserRole.CLIENT) {
+      this.orderForm.customerUserId = user.id;
+    }
   }
 
   closeCreateModal(): void {

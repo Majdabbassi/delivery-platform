@@ -1,7 +1,7 @@
 package com.upstart.backend.service;
 
 import com.upstart.backend.entity.*;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,23 +22,37 @@ public class ScoringAlgorithmService {
 
     private static final Logger logger = LoggerFactory.getLogger(ScoringAlgorithmService.class);
 
-    @Autowired
-    private DeliveryCompanyService deliveryCompanyService;
+    private final DeliveryCompanyService deliveryCompanyService;
 
     // Scoring weights for partnerships
-    private static final double PARTNERSHIP_RATING_WEIGHT = 0.25;
-    private static final double PARTNERSHIP_RELIABILITY_WEIGHT = 0.20;
-    private static final double PARTNERSHIP_COST_WEIGHT = 0.20;
-    private static final double PARTNERSHIP_SPEED_WEIGHT = 0.15;
-    private static final double PARTNERSHIP_CAPACITY_WEIGHT = 0.10;
-    private static final double PARTNERSHIP_HISTORY_WEIGHT = 0.10;
+    @Value("${upstart.assignment.scoring.partnership-weights.rating:0.25}")
+    private double partnershipRatingWeight;
+    @Value("${upstart.assignment.scoring.partnership-weights.reliability:0.20}")
+    private double partnershipReliabilityWeight;
+    @Value("${upstart.assignment.scoring.partnership-weights.cost:0.20}")
+    private double partnershipCostWeight;
+    @Value("${upstart.assignment.scoring.partnership-weights.speed:0.15}")
+    private double partnershipSpeedWeight;
+    @Value("${upstart.assignment.scoring.partnership-weights.capacity:0.10}")
+    private double partnershipCapacityWeight;
+    @Value("${upstart.assignment.scoring.partnership-weights.history:0.10}")
+    private double partnershipHistoryWeight;
 
     // Scoring weights for delivery companies
-    private static final double COMPANY_RATING_WEIGHT = 0.30;
-    private static final double COMPANY_AVAILABILITY_WEIGHT = 0.25;
-    private static final double COMPANY_COST_WEIGHT = 0.20;
-    private static final double COMPANY_DISTANCE_WEIGHT = 0.15;
-    private static final double COMPANY_CAPACITY_WEIGHT = 0.10;
+    @Value("${upstart.assignment.scoring.delivery-company-weights.rating:0.30}")
+    private double companyRatingWeight;
+    @Value("${upstart.assignment.scoring.delivery-company-weights.availability:0.25}")
+    private double companyAvailabilityWeight;
+    @Value("${upstart.assignment.scoring.delivery-company-weights.cost:0.20}")
+    private double companyCostWeight;
+    @Value("${upstart.assignment.scoring.delivery-company-weights.distance:0.15}")
+    private double companyDistanceWeight;
+    @Value("${upstart.assignment.scoring.delivery-company-weights.capacity:0.10}")
+    private double companyCapacityWeight;
+
+    public ScoringAlgorithmService(DeliveryCompanyService deliveryCompanyService) {
+        this.deliveryCompanyService = deliveryCompanyService;
+    }
 
     /**
      * Score and rank partnerships for an order
@@ -96,12 +110,12 @@ public class ScoringAlgorithmService {
 
         // Calculate weighted total score
         double totalScore = 
-                ratingScore * PARTNERSHIP_RATING_WEIGHT +
-                reliabilityScore * PARTNERSHIP_RELIABILITY_WEIGHT +
-                costScore * PARTNERSHIP_COST_WEIGHT +
-                speedScore * PARTNERSHIP_SPEED_WEIGHT +
-                capacityScore * PARTNERSHIP_CAPACITY_WEIGHT +
-                historyScore * PARTNERSHIP_HISTORY_WEIGHT;
+                ratingScore * partnershipRatingWeight +
+                reliabilityScore * partnershipReliabilityWeight +
+                costScore * partnershipCostWeight +
+                speedScore * partnershipSpeedWeight +
+                capacityScore * partnershipCapacityWeight +
+                historyScore * partnershipHistoryWeight;
 
         // Apply bonuses and penalties
         totalScore = applyPartnershipBonuses(totalScore, partnership, order);
@@ -137,11 +151,11 @@ public class ScoringAlgorithmService {
 
         // Calculate weighted total score
         double totalScore = 
-                ratingScore * COMPANY_RATING_WEIGHT +
-                availabilityScore * COMPANY_AVAILABILITY_WEIGHT +
-                costScore * COMPANY_COST_WEIGHT +
-                distanceScore * COMPANY_DISTANCE_WEIGHT +
-                capacityScore * COMPANY_CAPACITY_WEIGHT;
+                ratingScore * companyRatingWeight +
+                availabilityScore * companyAvailabilityWeight +
+                costScore * companyCostWeight +
+                distanceScore * companyDistanceWeight +
+                capacityScore * companyCapacityWeight;
 
         // Apply bonuses and penalties
         totalScore = applyCompanyBonuses(totalScore, company, order);
@@ -376,7 +390,7 @@ public class ScoringAlgorithmService {
         double adjustedScore = baseScore;
         
         // High rating bonus
-        if (company.getRating().compareTo(BigDecimal.valueOf(4.5)) >= 0) {
+        if (company.getRating() != null && company.getRating().compareTo(BigDecimal.valueOf(4.5)) >= 0) {
             adjustedScore += 0.05;
         }
         

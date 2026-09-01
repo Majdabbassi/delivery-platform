@@ -14,7 +14,7 @@ export interface Partnership {
   startDate: string;
   endDate?: string;
   isExclusive: boolean;
-  serviceArea: string;
+  serviceAreas: string[];
   commissionRate: number;
   totalOrders?: number;
   totalRevenue?: number;
@@ -151,13 +151,17 @@ export class PartnershipService {
   }
 
   addRevenue(id: number, amount: number): Observable<Partnership> {
-    const body = { amount };
-    return this.http.patch<Partnership>(`${this.baseUrl}/${id}/add-revenue`, body);
+    const params = new HttpParams().set('revenue', amount.toString());
+    return this.http.patch<Partnership>(`${this.baseUrl}/${id}/add-revenue`, null, {
+      params
+    });
   }
 
   addRating(id: number, rating: number): Observable<Partnership> {
-    const body = { rating };
-    return this.http.patch<Partnership>(`${this.baseUrl}/${id}/add-rating`, body);
+    const params = new HttpParams().set('rating', rating.toString());
+    return this.http.patch<Partnership>(`${this.baseUrl}/${id}/add-rating`, null, {
+      params
+    });
   }
 
   // Query Operations
@@ -205,7 +209,22 @@ export class PartnershipService {
   }
 
   getEligiblePartnershipsForOrder(orderData: any): Observable<Partnership[]> {
-    return this.http.post<Partnership[]>(`${this.baseUrl}/eligible-for-order`, orderData);
+    let params = new HttpParams();
+    if (orderData.vendorCompanyId != null) {
+      params = params.set('vendorCompanyId', orderData.vendorCompanyId.toString());
+    }
+    if (orderData.serviceArea) {
+      params = params.set('serviceArea', orderData.serviceArea);
+    }
+    if (orderData.orderValue != null) {
+      params = params.set('orderValue', orderData.orderValue.toString());
+    }
+    if (orderData.distance != null) {
+      params = params.set('distance', orderData.distance.toString());
+    }
+    return this.http.get<Partnership[]>(`${this.baseUrl}/eligible-for-order`, {
+      params
+    });
   }
 
   getHighPerformingPartnerships(): Observable<Partnership[]> {

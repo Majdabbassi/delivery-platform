@@ -248,6 +248,10 @@
               <button class="btn-action view" (click)="openDetailsModal(order)" title="View Details">
                 <i class="fas fa-eye"></i>
               </button>
+
+              <a class="btn-action track" [routerLink]="['/tracking', order.trackingNumber]" *ngIf="order.trackingNumber" title="Track Package">
+                <i class="fas fa-map-marker-alt"></i>
+              </a>
               
               <!-- Status Update Dropdown -->
               <div class="dropdown" *ngIf="canUpdateStatus()">
@@ -327,12 +331,18 @@
         <h3>Order Details</h3>
         <div class="form-row">
           <div class="form-group">
-            <label for="vendorCompanyId">Vendor Company ID *</label>
-            <input type="number" id="vendorCompanyId" [(ngModel)]="orderForm.vendorCompanyId" name="vendorCompanyId" required>
+            <label for="vendorCompanyId">Vendor Company *</label>
+            <select id="vendorCompanyId" [(ngModel)]="orderForm.vendorCompanyId" name="vendorCompanyId" required>
+              <option *ngFor="let company of vendorCompanies" [ngValue]="company.id">{{ company.name }}</option>
+            </select>
           </div>
-          <div class="form-group">
-            <label for="customerUserId">Customer User ID *</label>
-            <input type="number" id="customerUserId" [(ngModel)]="orderForm.customerUserId" name="customerUserId" required>
+          <div class="form-group" *ngIf="!isClient">
+            <label for="customerUserId">Customer *</label>
+            <select id="customerUserId" [(ngModel)]="orderForm.customerUserId" name="customerUserId" required>
+              <option *ngFor="let customer of customers" [ngValue]="customer.id">
+                {{ customer.firstName }} {{ customer.lastName }} ({{ customer.username }})
+              </option>
+            </select>
           </div>
         </div>
         
@@ -524,34 +534,7 @@
         <label for="customerReview">Review</label>
         <textarea id="customerReview" [(ngModel)]="ratingForm.customerReview" name="customerReview" placeholder="Share your experience..."></textarea>
       </div>
-      
-      <div class="detailed-ratings">
-        <h3>Detailed Ratings</h3>
-        <div class="rating-row">
-          <label for="deliverySpeedRating">Delivery Speed:</label>
-          <input type="number" id="deliverySpeedRating" [(ngModel)]="ratingForm.deliverySpeedRating" name="deliverySpeedRating" min="1" max="5" step="0.1">
-        </div>
-        <div class="rating-row">
-          <label for="communicationRating">Communication:</label>
-          <input type="number" id="communicationRating" [(ngModel)]="ratingForm.communicationRating" name="communicationRating" min="1" max="5" step="0.1">
-        </div>
-        <div class="rating-row">
-          <label for="professionalismRating">Professionalism:</label>
-          <input type="number" id="professionalismRating" [(ngModel)]="ratingForm.professionalismRating" name="professionalismRating" min="1" max="5" step="0.1">
-        </div>
-        <div class="rating-row">
-          <label for="packageConditionRating">Package Condition:</label>
-          <input type="number" id="packageConditionRating" [(ngModel)]="ratingForm.packageConditionRating" name="packageConditionRating" min="1" max="5" step="0.1">
-        </div>
-      </div>
-      
-      <div class="form-group">
-        <label>
-          <input type="checkbox" [(ngModel)]="ratingForm.wouldRecommend" name="wouldRecommend">
-          Would you recommend this service?
-        </label>
-      </div>
-      
+
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" (click)="closeRatingModal()">Cancel</button>
         <button type="submit" class="btn btn-primary" [disabled]="loading">Submit Rating</button>

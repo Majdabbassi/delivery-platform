@@ -97,6 +97,31 @@ export class DeliveryCompanyService {
     throw error;
   }
 
+  private mapCompany(company: any): DeliveryCompany {
+    return {
+      ...company,
+      name: company.companyName,
+      email: company.contactEmail,
+      phone: company.contactPhone,
+      address: company.companyAddress,
+      serviceType: company.serviceRegion || 'Standard Delivery',
+      status: company.isActive ? 'ACTIVE' : 'INACTIVE',
+      contactPerson: company.owner ? `${company.owner.firstName} ${company.owner.lastName}` : 'N/A',
+      coverageAreas: company.managedZones ? company.managedZones.split(',').map((area: string) => area.trim()) : [],
+      vehicleTypes: company.vehicleTypesSupported ? company.vehicleTypesSupported.split(',').map((type: string) => type.trim()) : [],
+      licenseNumber: company.operatingLicense,
+      deliveryOwnerId: company.owner?.id,
+      totalDeliveries: company.totalDeliveriesManaged || 0,
+      totalRevenue: company.totalRevenue || 0,
+      rating: company.rating || 0,
+      isVerified: company.isLicensed || false
+    };
+  }
+
+  private mapPage(response: any): PaginatedResponse<DeliveryCompany> {
+    return { ...response, content: (response.content || []).map((company: any) => this.mapCompany(company)) };
+  }
+
   // Create operations
   createDeliveryCompany(company: DeliveryCompany): Observable<DeliveryCompany> {
     return this.http.post<DeliveryCompany>(this.baseUrl, company).pipe(
@@ -127,15 +152,30 @@ export class DeliveryCompanyService {
     return this.http.get<PaginatedResponse<DeliveryCompany>>(this.baseUrl, {
       params
     }).pipe(
+      map(response => this.mapPage(response)),
       catchError(this.handleError)
     );
   }
 
   searchDeliveryCompanies(searchParams: DeliveryCompanySearchParams): Observable<PaginatedResponse<DeliveryCompany>> {
     let params = new HttpParams();
-    
-    Object.keys(searchParams).forEach(key => {
-      const value = (searchParams as any)[key];
+
+    const backendParams: Record<string, any> = { ...searchParams };
+    if (searchParams.name) {
+      backendParams['companyName'] = searchParams.name;
+      delete backendParams['name'];
+      delete backendParams['email'];
+      delete backendParams['phone'];
+      delete backendParams['contactPerson'];
+    }
+    if (searchParams.status && searchParams.status !== 'all') {
+      backendParams['isActive'] = searchParams.status === 'ACTIVE';
+      delete backendParams['status'];
+    }
+    delete backendParams['verified'];
+
+    Object.keys(backendParams).forEach(key => {
+      const value = backendParams[key];
       if (value !== undefined && value !== null && value !== '') {
         if (Array.isArray(value)) {
           value.forEach(v => params = params.append(key, v));
@@ -148,6 +188,7 @@ export class DeliveryCompanyService {
     return this.http.get<PaginatedResponse<DeliveryCompany>>(`${this.baseUrl}/search`, {
       params
     }).pipe(
+      map(response => this.mapPage(response)),
       catchError(this.handleError)
     );
   }
@@ -340,7 +381,7 @@ export class DeliveryCompanyService {
 
   // Statistical endpoints
   getDeliveryCompanyStats(): Observable<DeliveryCompanyStats> {
-    return this.http.get<DeliveryCompanyStats>(`${this.baseUrl}/stats`).pipe(
+    return this.http.get<DeliveryCompanyStats>(`${this.baseUrl}/stats/count`).pipe(
       catchError(this.handleError)
     );
   }

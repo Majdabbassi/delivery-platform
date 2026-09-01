@@ -1,0 +1,247 @@
+<div class="pool-container">
+  <!-- Header -->
+  <div class="pool-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <span class="title-icon">🛒</span>
+        Delivery Marketplace
+      </h1>
+      <p class="subtitle" *ngIf="ownedCompanyName && !isSuperAdmin">
+        Bidding as: <strong>{{ ownedCompanyName }}</strong>
+      </p>
+      <p class="subtitle" *ngIf="isSuperAdmin && deliveryCompanies.length > 0">
+        Viewing pool for:
+        <select class="company-select" [(ngModel)]="selectedCompanyId" (change)="onCompanyChange()">
+          <option *ngFor="let company of deliveryCompanies" [ngValue]="company.id">{{ company.name }}</option>
+        </select>
+      </p>
+      <p class="subtitle" *ngIf="ownedCompanyName && isSuperAdmin && deliveryCompanies.length === 0">
+        No delivery companies registered yet.
+      </p>
+    </div>
+    <div class="header-right" *ngIf="stats">
+      <span class="count-chip">{{ stats.currentOrderCount }} order{{ stats.currentOrderCount === 1 ? '' : 's' }} available</span>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="error">
+    <span class="error-icon">⚠️</span>
+    <span>{{ error }}</span>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading marketplace...</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- Pool stats -->
+    <section class="card-section">
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of statCards" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- My bidding stats -->
+    <section class="card-section" *ngIf="bidStats">
+      <h2 class="section-title">My Bidding Activity</h2>
+      <div class="cards-grid small">
+        <div class="metric-card blue">
+          <div class="card-icon">📨</div>
+          <div class="card-body">
+            <span class="card-value">{{ bidStats.bidsSubmitted }}</span>
+            <span class="card-label">Submitted</span>
+          </div>
+        </div>
+        <div class="metric-card green">
+          <div class="card-icon">✅</div>
+          <div class="card-body">
+            <span class="card-value">{{ bidStats.bidsAccepted }}</span>
+            <span class="card-label">Accepted</span>
+          </div>
+        </div>
+        <div class="metric-card orange">
+          <div class="card-icon">⛔</div>
+          <div class="card-body">
+            <span class="card-value">{{ bidStats.bidsRejected }}</span>
+            <span class="card-label">Rejected</span>
+          </div>
+        </div>
+        <div class="metric-card gray">
+          <div class="card-icon">📊</div>
+          <div class="card-body">
+            <span class="card-value">{{ bidStats.acceptanceRate.toFixed(1) }}%</span>
+            <span class="card-label">Acceptance Rate</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recommended orders -->
+    <section class="card-section" *ngIf="recommended && recommended.length > 0">
+      <h2 class="section-title">⭐ Recommended For You</h2>
+      <div class="orders-grid">
+        <div class="order-card" *ngFor="let order of recommended">
+          <div class="order-head">
+            <div class="order-head-left">
+              <span class="order-vendor">{{ order.vendorCompanyName || 'Vendor' }}</span>
+              <span class="order-id">#{{ order.orderNumber }}</span>
+            </div>
+            <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
+          </div>
+          <div class="order-route">
+            <div class="route-point">
+              <span class="route-dot pickup"></span>
+              <span class="route-text">{{ order.pickupAddress }}</span>
+            </div>
+            <div class="route-point">
+              <span class="route-dot delivery"></span>
+              <span class="route-text">{{ order.deliveryAddress }}</span>
+            </div>
+          </div>
+          <div class="order-meta">
+            <span class="meta-item">💰 {{ formatCurrency(order.orderValue) }}</span>
+            <span class="meta-item" *ngIf="order.estimatedDistance != null">📏 {{ order.estimatedDistance }} km</span>
+            <span class="meta-item" *ngIf="order.estimatedDeliveryTime">⏱ {{ formatDate(order.estimatedDeliveryTime) }}</span>
+          </div>
+          <div class="order-actions">
+            <ng-container *ngIf="!order.myBid">
+              <button class="btn btn-bid" (click)="toggleBidForm(order)">💰 Bid Now</button>
+            </ng-container>
+            <ng-container *ngIf="order.myBid">
+              <span class="status-badge" [class]="bidClass(order.myBid.status)">{{ order.myBid.status }}</span>
+            </ng-container>
+            <button class="btn btn-track" (click)="trackOrder(order)">📍 Track</button>
+          </div>
+
+          <!-- Inline bid form -->
+          <div class="bid-form" *ngIf="expandedOrderId === order.id">
+            <div class="bid-form-grid">
+              <label class="form-field">
+                <span>Bid Amount</span>
+                <input type="number" min="0" step="0.01" [(ngModel)]="getBidForm(order).bidAmount" placeholder="0.00" />
+              </label>
+              <label class="form-field">
+                <span>Estimated Delivery</span>
+                <input type="datetime-local" [(ngModel)]="getBidForm(order).estimatedDeliveryTime" />
+              </label>
+              <label class="form-field full">
+                <span>Message <small>(optional)</small></span>
+                <input type="text" [(ngModel)]="getBidForm(order).message" placeholder="Offer note for the vendor..." />
+              </label>
+            </div>
+            <div class="bid-form-actions">
+              <button class="btn btn-bid" (click)="submitBid(order)">Submit Bid</button>
+              <button class="btn btn-cancel" (click)="toggleBidForm(order)">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Browse / filter -->
+    <section class="card-section">
+      <div class="browse-header">
+        <h2 class="section-title">🔍 Browse the Pool</h2>
+        <div class="filters-bar">
+          <select class="filter-select" [(ngModel)]="filters.priority">
+            <option value="">All Priorities</option>
+            <option *ngFor="let p of priorityOptions" [ngValue]="p">{{ p }}</option>
+          </select>
+          <input
+            class="filter-input"
+            type="number"
+            min="0"
+            placeholder="Max value"
+            [(ngModel)]="filters.maxValue"
+          />
+          <select class="filter-select" [(ngModel)]="filters.sortBy">
+            <option *ngFor="let opt of sortByOptions" [ngValue]="opt.value">{{ opt.label }}</option>
+          </select>
+          <select class="filter-select" [(ngModel)]="filters.sortDirection">
+            <option value="desc">Descending</option>
+            <option value="asc">Ascending</option>
+          </select>
+          <button class="btn btn-filter" (click)="applyFilters()">Apply</button>
+          <button class="btn btn-reset" (click)="resetFilters()">Reset</button>
+        </div>
+      </div>
+
+      <div class="empty-state" *ngIf="browseOrders.length === 0">
+        <span class="empty-icon">📭</span>
+        <p>No orders match the current filters.</p>
+        <p class="empty-hint">Try widening the filter or resetting your search.</p>
+      </div>
+
+      <div class="orders-grid" *ngIf="browseOrders.length > 0">
+        <div class="order-card" *ngFor="let order of browseOrders">
+          <div class="order-head">
+            <div class="order-head-left">
+              <span class="order-vendor">{{ order.vendorCompanyName || 'Vendor' }}</span>
+              <span class="order-id">#{{ order.orderNumber }}</span>
+            </div>
+            <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
+          </div>
+          <div class="order-route">
+            <div class="route-point">
+              <span class="route-dot pickup"></span>
+              <span class="route-text">{{ order.pickupAddress }}</span>
+            </div>
+            <div class="route-point">
+              <span class="route-dot delivery"></span>
+              <span class="route-text">{{ order.deliveryAddress }}</span>
+            </div>
+          </div>
+          <div class="order-meta">
+            <span class="meta-item">💰 {{ formatCurrency(order.orderValue) }}</span>
+            <span class="meta-item" *ngIf="order.estimatedDistance != null">📏 {{ order.estimatedDistance }} km</span>
+            <span class="meta-item">📦 {{ order.status }}</span>
+          </div>
+          <div class="order-actions">
+            <ng-container *ngIf="!order.myBid">
+              <button class="btn btn-bid" (click)="toggleBidForm(order)">💰 Bid Now</button>
+            </ng-container>
+            <ng-container *ngIf="order.myBid && order.myBid.status === BidStatus.SUBMITTED">
+              <span class="status-badge bid-submitted">Submitted</span>
+              <button class="btn btn-withdraw" (click)="withdrawBid(order)">↩ Withdraw</button>
+            </ng-container>
+            <ng-container *ngIf="order.myBid && order.myBid.status !== BidStatus.SUBMITTED">
+              <span class="status-badge" [class]="bidClass(order.myBid.status)">{{ order.myBid.status }}</span>
+            </ng-container>
+            <button class="btn btn-track" (click)="trackOrder(order)">📍 Track</button>
+          </div>
+
+          <!-- Inline bid form -->
+          <div class="bid-form" *ngIf="expandedOrderId === order.id">
+            <div class="bid-form-grid">
+              <label class="form-field">
+                <span>Bid Amount</span>
+                <input type="number" min="0" step="0.01" [(ngModel)]="getBidForm(order).bidAmount" placeholder="0.00" />
+              </label>
+              <label class="form-field">
+                <span>Estimated Delivery</span>
+                <input type="datetime-local" [(ngModel)]="getBidForm(order).estimatedDeliveryTime" />
+              </label>
+              <label class="form-field full">
+                <span>Message <small>(optional)</small></span>
+                <input type="text" [(ngModel)]="getBidForm(order).message" placeholder="Offer note for the vendor..." />
+              </label>
+            </div>
+            <div class="bid-form-actions">
+              <button class="btn btn-bid" (click)="submitBid(order)">Submit Bid</button>
+              <button class="btn btn-cancel" (click)="toggleBidForm(order)">Cancel</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>

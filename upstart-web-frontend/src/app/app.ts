@@ -4,6 +4,7 @@ import { Subscription } from 'rxjs';
 import { filter } from 'rxjs/operators';
 import { ThemeService } from './services/theme.service';
 import { AuthService } from './services/auth.service';
+import { RealtimeService } from './services/realtime.service';
 
 @Component({
   selector: 'app-root',
@@ -21,7 +22,8 @@ export class App implements OnInit, OnDestroy {
   constructor(
     private themeService: ThemeService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private realtimeService: RealtimeService
   ) {
     // ThemeService will initialize automatically when injected
   }
@@ -31,12 +33,22 @@ export class App implements OnInit, OnDestroy {
     this.isAuthenticated = this.authService.isAuthenticated();
     
     // Check initial route
-    this.isLoginPage = this.router.url.startsWith('/login');
+    this.isLoginPage = this.isPublicPage(this.router.url);
+
+    // Start the realtime (WebSocket / STOMP) connection if already authenticated
+    if (this.isAuthenticated) {
+      this.realtimeService.connect();
+    }
     
     // Subscribe to authentication state changes
     this.authSubscription = this.authService.isAuthenticated$.subscribe(
       (isAuthenticated) => {
         this.isAuthenticated = isAuthenticated;
+        if (isAuthenticated) {
+          this.realtimeService.connect();
+        } else {
+          this.realtimeService.disconnect();
+        }
       }
     );
     
@@ -44,8 +56,12 @@ export class App implements OnInit, OnDestroy {
     this.routerSubscription = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
       .subscribe((event: NavigationEnd) => {
-        this.isLoginPage = event.url.startsWith('/login');
+        this.isLoginPage = this.isPublicPage(event.url);
       });
+  }
+
+  private isPublicPage(url: string): boolean {
+    return url.startsWith('/login') || url.startsWith('/register');
   }
   
   ngOnDestroy(): void {
@@ -55,5 +71,6 @@ export class App implements OnInit, OnDestroy {
     if (this.authSubscription) {
       this.authSubscription.unsubscribe();
     }
+    this.realtimeService.disconnect();
   }
 }

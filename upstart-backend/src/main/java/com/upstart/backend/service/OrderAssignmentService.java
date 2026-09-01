@@ -5,7 +5,6 @@ import com.upstart.backend.repository.*;
 import com.upstart.backend.specification.PartnershipSpecifications;
 import com.upstart.backend.service.ScoringAlgorithmService.PartnershipScore;
 import com.upstart.backend.service.ScoringAlgorithmService.DeliveryCompanyScore;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -28,23 +27,26 @@ public class OrderAssignmentService {
 
     private static final Logger logger = LoggerFactory.getLogger(OrderAssignmentService.class);
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final OrderRepository orderRepository;
+    private final PartnershipRepository partnershipRepository;
+    private final DeliveryCompanyRepository deliveryCompanyRepository;
+    private final DriverPersonRepository driverPersonRepository;
+    private final ScoringAlgorithmService scoringAlgorithmService;
+    private final DeliveryCompanyService deliveryCompanyService;
 
-    @Autowired
-    private PartnershipRepository partnershipRepository;
-
-    @Autowired
-    private DeliveryCompanyRepository deliveryCompanyRepository;
-
-    @Autowired
-    private DriverPersonRepository driverPersonRepository;
-
-    @Autowired
-    private ScoringAlgorithmService scoringAlgorithmService;
-
-    @Autowired
-    private DeliveryCompanyService deliveryCompanyService;
+    public OrderAssignmentService(OrderRepository orderRepository,
+                                  PartnershipRepository partnershipRepository,
+                                  DeliveryCompanyRepository deliveryCompanyRepository,
+                                  DriverPersonRepository driverPersonRepository,
+                                  ScoringAlgorithmService scoringAlgorithmService,
+                                  DeliveryCompanyService deliveryCompanyService) {
+        this.orderRepository = orderRepository;
+        this.partnershipRepository = partnershipRepository;
+        this.deliveryCompanyRepository = deliveryCompanyRepository;
+        this.driverPersonRepository = driverPersonRepository;
+        this.scoringAlgorithmService = scoringAlgorithmService;
+        this.deliveryCompanyService = deliveryCompanyService;
+    }
 
     /**
      * Assign an order using the best available option
@@ -286,21 +288,27 @@ public class OrderAssignmentService {
      */
     private BigDecimal calculatePartnershipDeliveryFee(Order order, Partnership partnership) {
         BigDecimal baseFee = order.getBaseFee() != null ? order.getBaseFee() : BigDecimal.valueOf(5.00);
-        BigDecimal distanceFee = order.getEstimatedDistance().multiply(BigDecimal.valueOf(0.50));
+        BigDecimal distanceFee = distanceOrZero(order).multiply(BigDecimal.valueOf(0.50));
         BigDecimal partnershipDiscount = baseFee.multiply(partnership.getCommissionRate());
         
         return baseFee.add(distanceFee).subtract(partnershipDiscount);
     }
 
     /**
-     * Calculate delivery fee for direct orders
+     * Calculates the direct delivery fee, falling back to zero distance when the
+     * order has no distance recorded. Null-safe against missing distanceKm.
      */
     private BigDecimal calculateDirectDeliveryFee(Order order, DeliveryCompany company) {
         BigDecimal baseFee = order.getBaseFee() != null ? order.getBaseFee() : BigDecimal.valueOf(5.00);
-        BigDecimal distanceFee = order.getEstimatedDistance().multiply(BigDecimal.valueOf(0.50));
+        BigDecimal distanceFee = distanceOrZero(order).multiply(BigDecimal.valueOf(0.50));
         BigDecimal companyCommission = baseFee.multiply(company.getCommissionRate());
         
         return baseFee.add(distanceFee).add(companyCommission);
+    }
+
+    private BigDecimal distanceOrZero(Order order) {
+        BigDecimal distance = order.getEstimatedDistance();
+        return distance != null ? distance : BigDecimal.ZERO;
     }
 
     /**
@@ -308,7 +316,7 @@ public class OrderAssignmentService {
      */
     private boolean isWithinOrderConstraints(Order order, Partnership partnership) {
         BigDecimal orderValue = order.getOrderAmount();
-        BigDecimal distance = order.getEstimatedDistance();
+        BigDecimal distance = distanceOrZero(order);
         double distanceDouble = distance.doubleValue();
 
         // Check order value constraints

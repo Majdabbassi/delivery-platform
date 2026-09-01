@@ -2,34 +2,8 @@
 .companies-container {
   padding: 2rem;
   background: white;
-  min-height: 100vh;
-  max-height: 100vh;
-  overflow-y: auto;
   overflow-x: hidden;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  /* Custom scrollbar styling */
-  scrollbar-width: thin;
-  scrollbar-color: #dc2626 #ffffff;
-}
-
-/* Custom scrollbar for webkit browsers */
-.companies-container::-webkit-scrollbar {
-  width: 8px;
-}
-
-.companies-container::-webkit-scrollbar-track {
-  background: #ffffff;
-  border-radius: 4px;
-}
-
-.companies-container::-webkit-scrollbar-thumb {
-  background: #dc2626;
-  border-radius: 4px;
-  transition: background 0.2s ease;
-}
-
-.companies-container::-webkit-scrollbar-thumb:hover {
-  background: #b91c1c;
 }
 
 /* Header Section */

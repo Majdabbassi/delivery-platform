@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 @Builder
@@ -29,4 +30,7 @@ public class OrderRealtimeEvent {
     private Double speedKmh;
 
     private LocalDateTime timestamp;
+
+    /** User ids (principal ids) that should receive this event on their private topic. */
+    private Set<Long> involvedUserIds;
 }

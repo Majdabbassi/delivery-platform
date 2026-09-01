@@ -573,14 +573,50 @@ public class DeliveryCompanyService {
 
     @Transactional(readOnly = true)
     public boolean canAcceptOrder(DeliveryCompany company, Order order) {
+        if (company == null || order == null) {
+            return false;
+        }
+        // Only unassigned, pending orders can be accepted.
+        if (order.getStatus() != Order.OrderStatus.PENDING || order.getDeliveryCompany() != null) {
+            return false;
+        }
         return isAvailableForOrders(company)
-                && hasAvailableDrivers(company)
-                && isInServiceArea(company);
+                && isInServiceArea(company, order.getPickupAddress(), order.getDeliveryAddress());
     }
 
-    private boolean isInServiceArea(DeliveryCompany company) {
-        // Simple implementation - in real scenario, this would check against service regions
-        return company.getServiceRegion() != null && !company.getServiceRegion().isEmpty();
+    @Transactional(readOnly = true)
+    public boolean isInServiceArea(DeliveryCompany company, String pickupAddress, String deliveryAddress) {
+        if (company == null) {
+            return false;
+        }
+        String region = company.getServiceRegion();
+        if (region == null || region.isBlank()) {
+            return false;
+        }
+        // Free-text service region (comma-separated): satisfy if either endpoint
+        // mentions any configured region term. Pure geographic containment would
+        // require structured polygons, which are not present in this model.
+        String normalizedRegion = region.toLowerCase();
+        if (regionMatches(normalizedRegion, pickupAddress) || regionMatches(normalizedRegion, deliveryAddress)) {
+            return true;
+        }
+        // Fall back to simple non-empty check when no address is available.
+        return (pickupAddress == null || pickupAddress.isBlank())
+                && (deliveryAddress == null || deliveryAddress.isBlank());
+    }
+
+    private boolean regionMatches(String normalizedRegion, String address) {
+        if (address == null || address.isBlank()) {
+            return false;
+        }
+        String normalizedAddress = address.toLowerCase();
+        for (String term : normalizedRegion.split(",")) {
+            String t = term.trim();
+            if (!t.isEmpty() && normalizedAddress.contains(t)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Transactional(readOnly = true)

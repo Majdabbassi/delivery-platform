@@ -1,0 +1,81 @@
+<div class="tracking-container">
+  <!-- Header -->
+  <div class="tracking-header">
+    <div class="header-left">
+      <h1 class="page-title">
+        <span class="title-icon">📍</span>
+        Package Tracking
+      </h1>
+      <p class="subtitle">Enter your tracking number to follow the live delivery.</p>
+    </div>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <form (ngSubmit)="trackOrder()" class="search-form">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Enter tracking number, e.g. TRK-000001"
+        [(ngModel)]="trackingNumber"
+        name="trackingNumber"
+        autocomplete="off" />
+      <button type="submit" class="search-btn" [disabled]="searching">
+        {{ searching ? 'Searching…' : 'Track Package' }}
+      </button>
+    </form>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="error">
+    <span class="error-icon">⚠️</span>
+    <span>{{ error }}</span>
+  </div>
+
+  <!-- Order card -->
+  <div class="order-card" *ngIf="order">
+    <div class="order-card-header">
+      <div>
+        <div class="order-number">{{ order.orderNumber }}</div>
+        <div class="tracking-number">Tracking: {{ order.trackingNumber }}</div>
+      </div>
+      <span class="status-badge" [class]="getStatusClass(order.status)">
+        {{ getStatusDisplayName(order.status) }}
+      </span>
+    </div>
+
+    <div class="order-meta">
+      <div class="meta-item">
+        <span class="meta-label">From</span>
+        <span class="meta-value">{{ formatAddress(order.pickupAddress) }}</span>
+      </div>
+      <div class="meta-arrow">→</div>
+      <div class="meta-item">
+        <span class="meta-label">To</span>
+        <span class="meta-value">{{ formatAddress(order.deliveryAddress) }}</span>
+      </div>
+      <div class="meta-item meta-driver">
+        <span class="meta-label">Driver</span>
+        <span class="meta-value">{{ order.driverName || 'Not assigned yet' }}</span>
+      </div>
+    </div>
+
+    <!-- Live speed indicator -->
+    <div class="live-bar" *ngIf="lastLocation">
+      <span class="live-dot"></span>
+      <span>Live position updated · Speed
+        {{ lastLocation.speedKmh != null ? lastLocation.speedKmh.toFixed(0) + ' km/h' : '—' }}
+        · {{ lastLocation.timestamp ? (lastLocation.timestamp | date: 'HH:mm:ss') : '' }}</span>
+    </div>
+
+    <!-- Map -->
+    <div class="map-wrap" #mapContainer></div>
+  </div>
+
+  <!-- Empty / hint state -->
+  <div class="empty-state" *ngIf="!order && !searching">
+    <span class="empty-icon">🚚</span>
+    <p>No package loaded yet.</p>
+    <p class="empty-hint">Search with the tracking number you received when your order was placed.</p>
+  </div>
+</div>

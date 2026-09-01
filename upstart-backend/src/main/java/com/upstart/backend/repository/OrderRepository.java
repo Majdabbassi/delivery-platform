@@ -35,6 +35,12 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     // Find by partnership
     List<Order> findByPartnership(Partnership partnership);
     Page<Order> findByPartnership(Partnership partnership, Pageable pageable);
+
+    // Find by company owner (tenant scoping)
+    List<Order> findByVendorCompanyOwner(VendorOwner owner);
+    List<Order> findByDeliveryCompanyOwner(DeliveryOwner owner);
+    List<Order> findByVendorCompanyOwnerAndStatus(VendorOwner owner, Order.OrderStatus status);
+    List<Order> findByDeliveryCompanyOwnerAndStatus(DeliveryOwner owner, Order.OrderStatus status);
     
     // Find by status
     List<Order> findByStatus(Order.OrderStatus status);

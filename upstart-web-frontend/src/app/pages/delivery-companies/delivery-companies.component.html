@@ -90,9 +90,9 @@
       </select>
       
       <select [(ngModel)]="sortBy" (ngModelChange)="onSort($event)">
-        <option value="name">Sort by Name</option>
+        <option value="companyName">Sort by Name</option>
         <option value="rating">Sort by Rating</option>
-        <option value="totalDeliveries">Sort by Deliveries</option>
+        <option value="totalDeliveriesManaged">Sort by Deliveries</option>
         <option value="totalRevenue">Sort by Revenue</option>
       </select>
     </div>
@@ -105,7 +105,7 @@
       <table class="delivery-companies-table">
         <thead>
           <tr>
-            <th class="sortable" (click)="onSort('name')">
+            <th class="sortable" (click)="onSort('companyName')">
               Company <i class="fas fa-sort"></i>
             </th>
             <th>Contact Info</th>
@@ -114,7 +114,7 @@
             <th class="sortable" (click)="onSort('rating')">
               Rating <i class="fas fa-sort"></i>
             </th>
-            <th class="sortable" (click)="onSort('totalDeliveries')">
+            <th class="sortable" (click)="onSort('totalDeliveriesManaged')">
               Deliveries <i class="fas fa-sort"></i>
             </th>
             <th>Status</th>

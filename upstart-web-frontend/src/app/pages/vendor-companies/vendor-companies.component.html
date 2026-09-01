@@ -87,8 +87,8 @@
       </select>
       
       <select class="filter-select" [(ngModel)]="sortBy" (ngModelChange)="onSort($event)">
-        <option value="name">Sort by Name</option>
-        <option value="industry">Sort by Industry</option>
+        <option value="companyName">Sort by Name</option>
+        <option value="businessAddress">Sort by Address</option>
         <option value="totalRevenue">Sort by Revenue</option>
         <option value="contractStartDate">Sort by Contract Date</option>
       </select>
@@ -101,10 +101,10 @@
       <table class="companies-table">
         <thead>
           <tr>
-            <th (click)="onSort('name')" class="sortable">
+            <th (click)="onSort('companyName')" class="sortable">
               Company
-              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'name' && sortDirection === 'asc'" 
-                 [class.fa-sort-down]="sortBy === 'name' && sortDirection === 'desc'"></i>
+                <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'companyName' && sortDirection === 'asc'" 
+                  [class.fa-sort-down]="sortBy === 'companyName' && sortDirection === 'desc'"></i>
             </th>
             <th>Contact Info</th>
             <th (click)="onSort('industry')" class="sortable">

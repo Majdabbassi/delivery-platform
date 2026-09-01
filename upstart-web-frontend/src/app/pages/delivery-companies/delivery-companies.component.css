@@ -2,9 +2,6 @@
 .delivery-companies-container {
   padding: 24px;
   background-color: var(--bg-secondary);
-  min-height: 100vh;
-  overflow-y: auto;
-  max-height: 100vh;
 }
 
 /* Header Section */
@@ -1137,11 +1134,6 @@
     border-radius: 0;
     max-height: 100vh;
     margin: 0;
-  }
-  
-  /* Enhanced mobile scrollbar */
-  .delivery-companies-container::-webkit-scrollbar {
-    width: 4px;
   }
   
   .table-section::-webkit-scrollbar {

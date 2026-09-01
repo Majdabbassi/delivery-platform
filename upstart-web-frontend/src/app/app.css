@@ -99,6 +99,272 @@ router-outlet + * {
   to { opacity: 0; }
 }
 
+/* ========================================
+   RESPONSIVE DESIGN - Mobile First Approach
+   ======================================== */
+
+/* Mobile: 320px - 767px */
+@media (max-width: 767px) {
+  /* Full screen layout for mobile */
+  app-root {
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* Sidebar hidden by default on mobile */
+  app-sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    height: 100vh;
+    width: 80vw;
+    max-width: 300px;
+    z-index: 999;
+    transform: translateX(-100%);
+    transition: transform var(--transition-normal);
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border-primary);
+  }
+
+  /* Sidebar visible when .show class added */
+  app-sidebar.show {
+    transform: translateX(0);
+  }
+
+  /* Overlay when sidebar is open */
+  .app-layout.sidebar-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 99;
+  }
+
+  /* Content area takes full width on mobile */
+  .content-area {
+    height: 100vh;
+    width: 100%;
+  }
+
+  /* Navbar adjustments for mobile */
+  app-navbar {
+    position: sticky;
+    top: 0;
+    padding: 0 var(--space-md);
+    height: auto;
+  }
+
+  /* Main content takes full viewport on mobile */
+  .main-content {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  /* Reduce padding on mobile */
+  .content-container {
+    padding: var(--space-md);
+  }
+
+  /* Touch-friendly button sizes */
+  button {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+    font-size: 16px; /* Prevents auto-zoom on iOS */
+  }
+
+  /* Hamburger menu button styling */
+  .hamburger-menu {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 44px;
+    height: 44px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .hamburger-menu span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--text-primary);
+    margin: 4px 0;
+    transition: all var(--transition-fast);
+  }
+
+  /* Adjust dropdown menus on mobile */
+  .dropdown-menu {
+    position: fixed !important;
+    top: auto !important;
+    right: var(--space-md) !important;
+    left: auto !important;
+    width: calc(100% - 32px) !important;
+    max-width: 300px;
+  }
+
+  /* Mobile-friendly tables */
+  table {
+    font-size: 14px;
+  }
+
+  table td, table th {
+    padding: 8px 4px;
+  }
+
+  /* Stack form fields on mobile */
+  .form-row {
+    flex-direction: column !important;
+  }
+
+  .form-group {
+    width: 100% !important;
+    margin-bottom: var(--space-md);
+  }
+
+  /* Modals: Full screen on mobile */
+  .modal-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px 16px 0 0 !important;
+  }
+
+  /* Cards: Stack on mobile */
+  .card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Responsive typography on mobile */
+  h1 {
+    font-size: 24px;
+  }
+
+  h2 {
+    font-size: 20px;
+  }
+
+  h3 {
+    font-size: 18px;
+  }
+
+  /* Input fields: Full width on mobile */
+  input,
+  select,
+  textarea {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  /* Flex layout: Stack on mobile */
+  .flex-layout {
+    flex-direction: column !important;
+  }
+
+  /* Grid layout: 1 column on mobile */
+  [class*='grid'],
+  .dashboard-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Tablet: 768px - 1023px */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .content-container {
+    padding: var(--space-lg);
+  }
+
+  /* 2-column grid on tablet */
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* Reduce sidebar width on tablet */
+  app-sidebar {
+    width: 240px;
+  }
+
+  /* Adjust main content spacing */
+  .main-content {
+    margin: var(--space-lg);
+  }
+}
+
+/* Desktop: 1024px+ */
+@media (min-width: 1024px) {
+  /* Normal desktop layout */
+  .hamburger-menu {
+    display: none;
+  }
+
+  /* Show sidebar by default on desktop */
+  app-sidebar {
+    position: relative;
+    transform: translateX(0);
+  }
+
+  /* Desktop grid layouts */
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
+  }
+}
+
+/* Large Desktop: 1440px+ */
+@media (min-width: 1440px) {
+  .content-container {
+    padding: var(--space-2xl);
+  }
+
+  .card-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+}
+
+/* Extra Large: 1920px+ */
+@media (min-width: 1920px) {
+  .card-grid {
+    grid-template-columns: repeat(5, 1fr) !important;
+  }
+
+  .content-container {
+    max-width: 1920px;
+    margin: 0 auto;
+  }
+}
+
+/* Landscape orientation on mobile/tablet */
+@media (max-height: 600px) {
+  app-navbar {
+    padding: 8px 12px;
+  }
+
+  .content-container {
+    padding: var(--space-sm);
+  }
+
+  button {
+    min-height: 36px;
+    padding: 8px 12px;
+    font-size: 14px;
+  }
+}
+
+/* High DPI / Retina Displays */
+@media (min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  * {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
 /* Modern Glass Effect for Elevated Elements */
 .glass-effect {
   background: var(--bg-overlay);

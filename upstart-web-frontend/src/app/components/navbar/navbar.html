@@ -80,45 +80,6 @@
 
 
 
-    <!-- Messages -->
-    <div class="dropdown messages-dropdown">
-      <button class="navbar-action" 
-              title="Messages"
-              aria-label="Messages"
-              (click)="toggleMessagesDropdown($event)"
-              [attr.aria-expanded]="isMessagesDropdownOpen">
-        <span class="action-icon">📧</span>
-        <span class="badge" *ngIf="unreadMessagesCount > 0">{{ unreadMessagesCount }}</span>
-      </button>
-      <div class="dropdown-content messages-content"
-           [class.show]="isMessagesDropdownOpen">
-        <div class="dropdown-header">
-          <h3>Messages</h3>
-          <button class="mark-all-read" 
-                  (click)="markAllMessagesRead()"
-                  *ngIf="unreadMessagesCount > 0">
-            Mark all read
-          </button>
-        </div>
-        <div class="messages-list">
-          <a *ngFor="let msg of messages" 
-             (click)="openMessage(msg)"
-             [class.unread]="!msg.read"
-             class="message-item">
-            <div class="message-avatar">{{ msg.sender.charAt(0) }}</div>
-            <div class="message-content">
-              <div class="message-sender">{{ msg.sender }}</div>
-              <div class="message-text">{{ msg.content }}</div>
-              <div class="message-time">{{ formatTime(msg.timestamp) }}</div>
-            </div>
-          </a>
-        </div>
-        <div class="dropdown-footer">
-          <a (click)="viewAllMessages()" class="view-all">View all messages</a>
-        </div>
-      </div>
-    </div>
-
     <!-- Notifications -->
     <div class="dropdown notifications-dropdown">
       <button class="navbar-action" 
@@ -140,6 +101,10 @@
           </button>
         </div>
         <div class="notifications-list">
+          <div class="notifications-empty" *ngIf="notifications.length === 0">
+            <span class="empty-icon">🔔</span>
+            <p>No notifications yet</p>
+          </div>
           <a *ngFor="let notif of notifications" 
              (click)="openNotification(notif)"
              [class.unread]="!notif.read"
@@ -191,10 +156,6 @@
         <a (click)="navigateToProfile()" class="dropdown-item">
           <span class="item-icon">👤</span>
           <span class="item-text">Profile</span>
-        </a>
-        <a (click)="navigateToSettings()" class="dropdown-item">
-          <span class="item-icon">⚙️</span>
-          <span class="item-text">Settings</span>
         </a>
         <a (click)="navigateToHelp()" class="dropdown-item">
           <span class="item-icon">❓</span>

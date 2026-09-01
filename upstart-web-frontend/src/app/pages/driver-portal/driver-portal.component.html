@@ -1,0 +1,145 @@
+<div class="driver-portal">
+  <!-- Header -->
+  <div class="portal-header">
+    <div class="header-left">
+      <h1>Driver Portal</h1>
+      <p class="subtitle">
+        {{ currentUser ? (currentUser.firstName + ' ' + currentUser.lastName) : '' }}
+        <span class="vehicle-info" *ngIf="driverPerson?.vehicleType">
+          • {{ driverPerson!.vehicleType | titlecase }}
+          <ng-container *ngIf="driverPerson?.vehiclePlateNumber"> • {{ driverPerson!.vehiclePlateNumber }}</ng-container>
+        </span>
+      </p>
+    </div>
+    <button class="availability-btn" [class.available]="isAvailable" [disabled]="availabilityLoading"
+            (click)="toggleAvailability()">
+      <span class="status-dot"></span>
+      {{ isAvailable ? 'Available' : 'Unavailable' }}
+    </button>
+  </div>
+
+  <!-- Error banner -->
+  <div class="error-banner" *ngIf="error">
+    <span>⚠️</span><span>{{ error }}</span>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon">🚚</div>
+      <div class="kpi-value">{{ activeJobs.length }}</div>
+      <div class="kpi-label">Active Jobs</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">✅</div>
+      <div class="kpi-value">{{ completedJobs.length }}</div>
+      <div class="kpi-label">Completed</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon">📋</div>
+      <div class="kpi-value">{{ jobs.length }}</div>
+      <div class="kpi-label">Total Jobs</div>
+    </div>
+  </div>
+
+  <!-- Location error -->
+  <div class="error-banner" *ngIf="locationError">
+    <span>📍</span><span>{{ locationError }}</span>
+  </div>
+
+  <!-- Active Jobs -->
+  <section class="jobs-section">
+    <h2 class="section-title">My Active Jobs</h2>
+
+    <div class="loading-state" *ngIf="loading">
+      <div class="spinner"></div>
+      <p>Loading your jobs...</p>
+    </div>
+
+    <div class="empty-state" *ngIf="!loading && activeJobs.length === 0">
+      <span class="empty-icon">🙌</span>
+      <p>No active jobs right now. You'll see assigned deliveries here.</p>
+    </div>
+
+    <div class="job-grid" *ngIf="!loading && activeJobs.length > 0">
+      <div class="job-card" *ngFor="let job of activeJobs">
+        <div class="job-top">
+          <div class="job-ref">
+            <span class="job-number">Order #{{ job.orderNumber }}</span>
+            <span class="tracking-number" *ngIf="job.trackingNumber">Tracking: {{ job.trackingNumber }}</span>
+          </div>
+          <span class="status-badge" [class]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
+        </div>
+
+        <div class="route">
+          <div class="route-point">
+            <span class="point-dot pickup"></span>
+            <div class="point-info">
+              <span class="point-label">Pickup</span>
+              <span class="point-address">{{ job.pickupAddress }}</span>
+            </div>
+          </div>
+          <div class="route-line"></div>
+          <div class="route-point">
+            <span class="point-dot delivery"></span>
+            <div class="point-info">
+              <span class="point-label">Delivery</span>
+              <span class="point-address">{{ job.deliveryAddress }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="job-meta">
+          <div class="meta-item">
+            <span class="meta-label">Customer</span>
+            <span class="meta-value">{{ job.customerName }}</span>
+          </div>
+          <div class="meta-item" *ngIf="job.customerPhone">
+            <span class="meta-label">Phone</span>
+            <span class="meta-value">{{ job.customerPhone }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Priority</span>
+            <span class="meta-value">{{ getPriorityDisplayName(job.priority) }}</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">Estimated Delivery</span>
+            <span class="meta-value">{{ formatDate(job.estimatedDeliveryTime) }}</span>
+          </div>
+        </div>
+
+        <div class="job-actions">
+<select class="status-select" (change)="onStatusChange(job, $event)"
+                *ngIf="allowedStatusTransitions(job.status).length > 0">
+            <option [value]="job.status" selected>{{ getStatusDisplayName(job.status) }}</option>
+            <option *ngFor="let next of allowedStatusTransitions(job.status)" [value]="next">
+              {{ getStatusDisplayName(next) }}
+            </option>
+          </select>
+          <button class="action-btn location-btn" (click)="sendLocation(job)">
+            📍 Send Location
+          </button>
+          <button class="action-btn track-btn" *ngIf="job.trackingNumber" (click)="trackJob(job)">
+            🗺️ Track
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recent history -->
+  <section class="jobs-section" *ngIf="completedJobs.length > 0 || cancelledJobs.length > 0">
+    <h2 class="section-title">Recent History</h2>
+    <div class="history-list">
+      <div class="history-item" *ngFor="let job of jobs">
+        <ng-container *ngIf="['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(job.status)">
+          <span class="history-status" [class]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
+          <span class="history-number">Order #{{ job.orderNumber }}</span>
+          <span class="history-route">{{ job.pickupAddress }} → {{ job.deliveryAddress }}</span>
+          <span class="history-time">{{ formatDate(job.actualDeliveryTime || job.updatedAt) }}</span>
+          <button class="action-btn track-btn" *ngIf="job.trackingNumber" (click)="trackJob(job)">🗺️</button>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+</div>

@@ -28,16 +28,4 @@
     </ul>
   </nav>
 
-  <!-- Quick Actions -->
-  <div class="sidebar-actions">
-    <h4 class="actions-title">Quick Actions</h4>
-    <div class="action-buttons">
-      <button class="action-btn" *ngFor="let action of quickActions" 
-              (click)="executeAction(action.id)" 
-              [title]="action.tooltip">
-        <span class="action-icon">{{ action.icon }}</span>
-        <span class="action-label">{{ action.label }}</span>
-      </button>
-    </div>
-  </div>
 </aside>

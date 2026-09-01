@@ -79,7 +79,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
     totalLoyaltyPoints: 0
   };
   
-  roles = ['CLIENT', 'VENDOR_OWNER', 'DELIVERY_OWNER', 'DRIVER'];
+  roles: string[] = [];
   paymentMethods = ['CARD', 'CASH', 'WALLET', 'BANK_TRANSFER'];
   genders = ['MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'];
 
@@ -90,6 +90,7 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadCustomers();
+    this.loadRoles();
     this.calculateStats();
   }
 
@@ -128,6 +129,24 @@ export class CustomersComponent implements OnInit, OnDestroy {
         this.error = 'Failed to load customers. Please try again.';
         this.loading = false;
         console.error('Error loading customers:', error);
+      }
+    });
+    this.subscriptions.push(subscription);
+  }
+
+  loadRoles(): void {
+    const subscription = this.customerUserService.getAllCustomerUsers(0, 500, 'firstName', 'asc').subscribe({
+      next: (response: CustomerUserPaginatedResponse<CustomerUser>) => {
+        const distinct = Array.from(new Set(
+          response.content.map(c => c.role).filter((r): r is string => !!r)
+        ));
+        if (distinct.length) {
+          this.roles = distinct.sort();
+        }
+      },
+      error: (error) => {
+        console.error('Error loading customer roles:', error);
+        this.roles = ['CLIENT', 'VENDOR_OWNER', 'DELIVERY_OWNER', 'DRIVER'];
       }
     });
     this.subscriptions.push(subscription);

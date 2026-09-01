@@ -23,6 +23,16 @@ export interface DashboardOverview {
 
 export type StatsMap = Record<string, number | string>;
 
+export interface AssignmentStatistics {
+  totalOrders: number;
+  assignedOrders: number;
+  pendingOrders: number;
+  partnershipOrders: number;
+  directOrders: number;
+  assignmentRate: number;
+  partnershipRate: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -48,5 +58,9 @@ export class DashboardService {
 
   getProductStats(): Observable<StatsMap> {
     return this.http.get<StatsMap>(`${API_BASE_URL}/products/stats/count`);
+  }
+
+  getAssignmentStatistics(): Observable<AssignmentStatistics> {
+    return this.http.get<AssignmentStatistics>(`${API_BASE_URL}/orders/assignment/statistics`);
   }
 }
