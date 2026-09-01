@@ -23,7 +23,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/partnerships")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
 public class PartnershipController {

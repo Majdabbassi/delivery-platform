@@ -24,7 +24,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/vendor-companies")
-@CrossOrigin(origins = "*")
 public class VendorCompanyController {
 
     @Autowired

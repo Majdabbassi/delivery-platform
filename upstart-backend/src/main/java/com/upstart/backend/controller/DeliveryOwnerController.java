@@ -22,7 +22,6 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/delivery-owners")
-@CrossOrigin(origins = "*")
 public class DeliveryOwnerController {
 
     @Autowired

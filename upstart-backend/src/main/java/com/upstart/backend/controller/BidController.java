@@ -23,7 +23,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/bids")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
 public class BidController {

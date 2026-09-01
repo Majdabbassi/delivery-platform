@@ -20,7 +20,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/pool")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Slf4j
 public class OrderPoolController {

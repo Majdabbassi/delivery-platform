@@ -52,7 +52,12 @@ public class DataInitializer {
         String password = passwordEncoder.encode(DEMO_PASSWORD);
 
         SuperAdmin admin = userRepository.findByUsername("demo.admin")
-                .filter(SuperAdmin.class::isInstance).map(SuperAdmin.class::cast).orElseGet(() -> {
+                .filter(SuperAdmin.class::isInstance)
+                .map(SuperAdmin.class::cast)
+                .or(() -> userRepository.findByEmail("admin@upstart.demo")
+                        .filter(SuperAdmin.class::isInstance)
+                        .map(SuperAdmin.class::cast))
+                .orElseGet(() -> {
                     SuperAdmin value = new SuperAdmin("demo.admin", "admin@upstart.demo", password, "Maya", "Admin");
                     value.setPhoneNumber("+212600000001");
                     value.setSystemPermissions("{\"users\":true,\"companies\":true,\"reports\":true}");
@@ -60,6 +65,14 @@ public class DataInitializer {
                     return userRepository.save(value);
                 });
         admin.setPassword(password);
+        admin.setUsername("admin");
+        admin.setEmail("admin@upstart.demo");
+        admin.setFirstName("super");
+        admin.setLastName("Admin");
+        admin.setPhoneNumber("+212600000001");
+        admin.setSystemPermissions("{\"users\":true,\"companies\":true,\"reports\":true}");
+        admin.setLastSystemAccess(LocalDateTime.now());
+        userRepository.save(admin);
 
         VendorOwner vendorOne = vendorOwner("vendor.sofia", "sofia@upstart.demo", "Sofia", "Bennani", "+212600000002", "MA-V-10001", "Food & Grocery", vendorOwnerRepository, password);
         VendorOwner vendorTwo = vendorOwner("vendor.youssef", "youssef@upstart.demo", "Youssef", "Alaoui", "+212600000003", "MA-V-10002", "Electronics", vendorOwnerRepository, password);
@@ -98,7 +111,6 @@ public class DataInitializer {
 
         Order orderOne = order("ORD-DEMO-1001", atlas, customerOne, swift, driverOne, atlasSwift, Order.OrderStatus.COMPLETED, Order.OrderPriority.NORMAL, "Market groceries", "Atlas Market, Casablanca", "38 Boulevard Zerktouni, Casablanca", new BigDecimal("235.00"), new BigDecimal("18.00"), orderRepository);
         Order orderTwo = order("ORD-DEMO-1002", techHub, customerTwo, city, driverThree, techCity, Order.OrderStatus.IN_TRANSIT, Order.OrderPriority.HIGH, "Laptop accessories", "TechHub Rabat", "8 Avenue Mohammed V, Rabat", new BigDecimal("890.00"), new BigDecimal("30.00"), orderRepository);
-        Order orderThree = order("ORD-DEMO-1003", casaHome, customerThree, swift, driverTwo, null, Order.OrderStatus.DELIVERED, Order.OrderPriority.NORMAL, "Home organization set", "Casa Home, Casablanca", "45 Rue des Fleurs, Casablanca", new BigDecimal("420.00"), new BigDecimal("22.00"), orderRepository);
         Order orderFour = order("ORD-DEMO-1004", atlas, customerTwo, null, null, null, Order.OrderStatus.PENDING, Order.OrderPriority.URGENT, "Fresh produce basket", "Atlas Market, Casablanca", "8 Avenue Mohammed V, Rabat", new BigDecimal("180.00"), new BigDecimal("25.00"), orderRepository);
         Order orderFive = order("ORD-DEMO-1005", techHub, customerOne, null, null, null, Order.OrderStatus.PENDING, Order.OrderPriority.HIGH, "Wireless keyboard and mouse", "TechHub Rabat", "12 Rue Atlas, Casablanca", new BigDecimal("650.00"), new BigDecimal("28.00"), orderRepository);
         order("ORD-DEMO-1006", casaHome, customerThree, city, driverFour, techCity, Order.OrderStatus.ASSIGNED, Order.OrderPriority.NORMAL, "Bedroom lamp", "Casa Home, Casablanca", "45 Rue des Fleurs, Casablanca", new BigDecimal("310.00"), new BigDecimal("20.00"), orderRepository);
