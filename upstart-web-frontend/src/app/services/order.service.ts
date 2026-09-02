@@ -9,13 +9,13 @@ import { OrderRealtimeEvent } from './realtime.service';
 // Enums
 export enum OrderStatus {
   PENDING = 'PENDING',
+  OPEN_FOR_BID = 'OPEN_FOR_BID',
   ASSIGNED = 'ASSIGNED',
   CONFIRMED = 'CONFIRMED',
   IN_PROGRESS = 'IN_PROGRESS',
   PICKED_UP = 'PICKED_UP',
   IN_TRANSIT = 'IN_TRANSIT',
   DELIVERED = 'DELIVERED',
-  COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
   FAILED = 'FAILED'
 }
@@ -27,6 +27,21 @@ export enum OrderPriority {
   URGENT = 'URGENT'
 }
 
+export enum OrderType {
+  MARKETPLACE = 'MARKETPLACE',
+  GENERAL_DELIVERY = 'GENERAL_DELIVERY'
+}
+
+export enum RoutingMode {
+  DIRECT = 'DIRECT',
+  OPEN_BID = 'OPEN_BID'
+}
+
+export enum PricingMode {
+  FIXED = 'FIXED',
+  MIN_MAX = 'MIN_MAX'
+}
+
 // DTOs and Interfaces
 export interface CreateOrderDTO {
   vendorCompanyId: number;
@@ -34,6 +49,21 @@ export interface CreateOrderDTO {
   deliveryCompanyId?: number;
   partnershipId?: number;
   driverPersonId?: number;
+
+  // Two order types: marketplace (products) and general delivery.
+  orderType?: OrderType;
+  routingMode?: RoutingMode;
+  pricingMode?: PricingMode;
+
+  // Sender / recipient (used for general delivery).
+  senderName?: string;
+  senderPhone?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+
+  // Proposed pricing (min/max) for general-delivery orders.
+  proposedMinAmount?: number;
+  proposedMaxAmount?: number;
   
   // Address (Required)
   pickupAddress: string;
@@ -104,6 +134,20 @@ export interface OrderDTO {
   id: number;
   orderNumber: string;
   trackingNumber: string;
+
+  // Order type & routing
+  orderType: OrderType;
+  routingMode: RoutingMode;
+
+  // Sender / recipient
+  senderName?: string;
+  senderPhone?: string;
+  recipientName?: string;
+  recipientPhone?: string;
+
+  // Proposed pricing
+  proposedMinAmount?: number;
+  proposedMaxAmount?: number;
   
   // Company Information
   vendorCompanyId: number;
@@ -223,6 +267,15 @@ export class OrderService {
   createOrder(orderData: CreateOrderDTO): Observable<OrderDTO> {
     // The backend accepts the Order entity shape (nested references), not flat ids.
     const payload: any = {
+      orderType: orderData.orderType || OrderType.MARKETPLACE,
+      routingMode: orderData.routingMode || RoutingMode.OPEN_BID,
+      pricingMode: orderData.pricingMode || PricingMode.FIXED,
+      senderName: orderData.senderName,
+      senderPhone: orderData.senderPhone,
+      recipientName: orderData.recipientName,
+      recipientPhone: orderData.recipientPhone,
+      proposedMinAmount: orderData.proposedMinAmount,
+      proposedMaxAmount: orderData.proposedMaxAmount,
       vendorCompany: orderData.vendorCompanyId ? { id: orderData.vendorCompanyId } : undefined,
       customerUser: orderData.customerUserId ? { id: orderData.customerUserId } : {},
       pickupAddress: orderData.pickupAddress,
@@ -396,6 +449,12 @@ export class OrderService {
     );
   }
 
+  getOpenForBidOrders(): Observable<OrderDTO[]> {
+    return this.http.get<OrderDTO[]>(`${this.baseUrl}/open-for-bid`).pipe(
+      map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
+    );
+  }
+
   getOverdueOrders(): Observable<OrderDTO[]> {
     return this.http.get<OrderDTO[]>(`${this.baseUrl}/overdue`).pipe(
       map((orders: any[]) => orders.map(o => this.mapOrderEntity(o)))
@@ -451,13 +510,13 @@ export class OrderService {
   getStatusDisplayName(status: OrderStatus): string {
     const statusNames: { [key in OrderStatus]: string } = {
       [OrderStatus.PENDING]: 'Pending',
+      [OrderStatus.OPEN_FOR_BID]: 'Open for Bids',
       [OrderStatus.ASSIGNED]: 'Assigned',
       [OrderStatus.CONFIRMED]: 'Confirmed',
       [OrderStatus.IN_PROGRESS]: 'In Progress',
       [OrderStatus.PICKED_UP]: 'Picked Up',
       [OrderStatus.IN_TRANSIT]: 'In Transit',
       [OrderStatus.DELIVERED]: 'Delivered',
-      [OrderStatus.COMPLETED]: 'Completed',
       [OrderStatus.CANCELLED]: 'Cancelled',
       [OrderStatus.FAILED]: 'Failed'
     };
@@ -477,13 +536,13 @@ export class OrderService {
   getStatusClass(status: OrderStatus): string {
     const statusClasses: { [key in OrderStatus]: string } = {
       [OrderStatus.PENDING]: 'status-pending',
+      [OrderStatus.OPEN_FOR_BID]: 'status-open-for-bid',
       [OrderStatus.ASSIGNED]: 'status-assigned',
       [OrderStatus.CONFIRMED]: 'status-confirmed',
       [OrderStatus.IN_PROGRESS]: 'status-in-progress',
       [OrderStatus.PICKED_UP]: 'status-picked-up',
       [OrderStatus.IN_TRANSIT]: 'status-in-transit',
       [OrderStatus.DELIVERED]: 'status-delivered',
-      [OrderStatus.COMPLETED]: 'status-completed',
       [OrderStatus.CANCELLED]: 'status-cancelled',
       [OrderStatus.FAILED]: 'status-failed'
     };
@@ -528,7 +587,7 @@ export class OrderService {
     const driver = raw.driverPerson || {};
 
     const status = raw.status as OrderStatus;
-    const completedStatuses = [OrderStatus.COMPLETED, OrderStatus.DELIVERED, OrderStatus.CANCELLED];
+    const completedStatuses = [OrderStatus.DELIVERED, OrderStatus.CANCELLED];
     const isOverdue = raw.isOverdue === true || (
       raw.estimatedDeliveryTime != null &&
       !completedStatuses.includes(status) &&
@@ -539,6 +598,14 @@ export class OrderService {
       id: raw.id,
       orderNumber: raw.orderNumber,
       trackingNumber: raw.trackingNumber,
+      orderType: (raw.orderType as OrderType) || OrderType.MARKETPLACE,
+      routingMode: (raw.routingMode as RoutingMode) || RoutingMode.OPEN_BID,
+      senderName: raw.senderName,
+      senderPhone: raw.senderPhone,
+      recipientName: raw.recipientName,
+      recipientPhone: raw.recipientPhone,
+      proposedMinAmount: numberOr(raw.proposedMinAmount),
+      proposedMaxAmount: numberOr(raw.proposedMaxAmount),
       vendorCompanyId: vendor.id,
       vendorCompanyName: vendor.companyName,
       deliveryCompanyId: delivery.id,
@@ -579,7 +646,7 @@ export class OrderService {
       notes: raw.notes,
       isOverdue,
       isAssigned: !!raw.driverPersonId || !!driver.id,
-      isCompleted: status === OrderStatus.COMPLETED || status === OrderStatus.DELIVERED,
+      isCompleted: status === OrderStatus.DELIVERED,
       isCancelled: status === OrderStatus.CANCELLED,
       durationMinutes: undefined,
       statusDisplayName: this.getStatusDisplayName(status),

@@ -9,6 +9,9 @@
       <p class="subtitle" *ngIf="ownedCompanyName && !isSuperAdmin">
         Bidding as: <strong>{{ ownedCompanyName }}</strong>
       </p>
+      <p class="subtitle" *ngIf="isDriver">
+        Bidding as: <strong>{{ driverPerson?.firstName }} {{ driverPerson?.lastName || 'Independent Driver' }}</strong>
+      </p>
       <p class="subtitle" *ngIf="isSuperAdmin && deliveryCompanies.length > 0">
         Viewing pool for:
         <select class="company-select" [(ngModel)]="selectedCompanyId" (change)="onCompanyChange()">
@@ -38,7 +41,7 @@
 
   <ng-container *ngIf="!loading">
     <!-- Pool stats -->
-    <section class="card-section">
+    <section class="card-section" *ngIf="statCards.length > 0">
       <div class="cards-grid">
         <div class="metric-card" *ngFor="let card of statCards" [class]="'metric-card ' + card.color">
           <div class="card-icon">{{ card.icon }}</div>
@@ -86,13 +89,13 @@
     </section>
 
     <!-- Recommended orders -->
-    <section class="card-section" *ngIf="recommended && recommended.length > 0">
+    <section class="card-section" *ngIf="recommended && recommended.length > 0 && !isDriver">
       <h2 class="section-title">⭐ Recommended For You</h2>
       <div class="orders-grid">
         <div class="order-card" *ngFor="let order of recommended">
           <div class="order-head">
             <div class="order-head-left">
-              <span class="order-vendor">{{ order.vendorCompanyName || 'Vendor' }}</span>
+              <span class="order-vendor">{{ getOrderSourceLabel(order) }}</span>
               <span class="order-id">#{{ order.orderNumber }}</span>
             </div>
             <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
@@ -185,7 +188,7 @@
         <div class="order-card" *ngFor="let order of browseOrders">
           <div class="order-head">
             <div class="order-head-left">
-              <span class="order-vendor">{{ order.vendorCompanyName || 'Vendor' }}</span>
+              <span class="order-vendor">{{ getOrderSourceLabel(order) }}</span>
               <span class="order-id">#{{ order.orderNumber }}</span>
             </div>
             <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>

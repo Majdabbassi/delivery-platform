@@ -11,11 +11,17 @@ export enum BidStatus {
   EXPIRED = 'EXPIRED'
 }
 
+export enum BidderType {
+  COMPANY = 'COMPANY',
+  INDEPENDENT_DRIVER = 'INDEPENDENT_DRIVER'
+}
+
 export interface Bid {
   id: number;
   bidId: string;
+  bidderType: BidderType;
   orderId: number;
-  deliveryCompanyId: number;
+  deliveryCompanyId?: number;
   driverId?: number;
   bidAmount: number;
   estimatedDeliveryTime?: string;
@@ -28,7 +34,8 @@ export interface Bid {
 
 export interface BidRequest {
   orderId: number;
-  deliveryCompanyId: number;
+  bidderType?: BidderType;
+  deliveryCompanyId?: number;
   driverId?: number;
   bidAmount: number;
   estimatedDeliveryTime?: string;
@@ -88,6 +95,14 @@ export class BidService {
     return this.http.get<PageMetadata>(`${this.baseUrl}/my`, { params });
   }
 
+  getMyDriverBids(driverId?: number): Observable<PageMetadata> {
+    let params = new HttpParams();
+    if (driverId != null) {
+      params = params.set('driverId', driverId.toString());
+    }
+    return this.http.get<PageMetadata>(`${this.baseUrl}/my/driver`, { params });
+  }
+
   acceptBid(bidId: string, message?: string): Observable<Bid> {
     let params = new HttpParams();
     if (message) {
@@ -114,5 +129,13 @@ export class BidService {
       params = params.set('deliveryCompanyId', deliveryCompanyId.toString());
     }
     return this.http.get<BidStatistics>(`${this.baseUrl}/my/stats`, { params });
+  }
+
+  getMyDriverBidStats(driverId?: number): Observable<BidStatistics> {
+    let params = new HttpParams();
+    if (driverId != null) {
+      params = params.set('driverId', driverId.toString());
+    }
+    return this.http.get<BidStatistics>(`${this.baseUrl}/my/stats/driver`, { params });
   }
 }

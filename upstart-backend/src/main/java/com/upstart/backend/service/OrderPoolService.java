@@ -96,7 +96,7 @@ public class OrderPoolService {
             return Page.empty(pageable);
         }
 
-        return orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.PENDING, pageable);
+        return orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.OPEN_FOR_BID, pageable);
     }
 
     /**
@@ -109,7 +109,7 @@ public class OrderPoolService {
             return new ArrayList<>();
         }
 
-        List<Order> orders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.PENDING);
+        List<Order> orders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.OPEN_FOR_BID);
         
         return orders.stream()
             .filter(order -> matchesFilter(order, filter, deliveryCompanyId))
@@ -167,7 +167,7 @@ public class OrderPoolService {
         Set<Long> orderIds = getPooledOrderIdsForCompany(deliveryCompanyId);
         OrderPoolMetrics metrics = poolMetrics.getOrDefault(deliveryCompanyId, new OrderPoolMetrics());
         
-        List<Order> currentOrders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.PENDING);
+        List<Order> currentOrders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.OPEN_FOR_BID);
         
         BigDecimal totalValue = currentOrders.stream()
             .map(Order::getTotalAmount)
@@ -209,7 +209,7 @@ public class OrderPoolService {
             return new ArrayList<>();
         }
 
-        List<Order> orders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.PENDING);
+        List<Order> orders = orderRepository.findByIdInAndStatus(orderIds, Order.OrderStatus.OPEN_FOR_BID);
         
         return orders.stream()
             .filter(order -> isOrderRecommended(order, company))
@@ -224,7 +224,7 @@ public class OrderPoolService {
     public void clearExpiredOrders() {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(24); // Orders older than 24 hours
         
-        List<Long> expiredOrderIds = orderRepository.findExpiredPendingOrders(cutoff)
+        List<Long> expiredOrderIds = orderRepository.findExpiredOpenForBidOrders(cutoff)
             .stream()
             .map(Order::getId)
             .collect(Collectors.toList());

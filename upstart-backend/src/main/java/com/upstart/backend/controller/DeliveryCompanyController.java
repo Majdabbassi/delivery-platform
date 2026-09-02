@@ -2,7 +2,9 @@ package com.upstart.backend.controller;
 
 import com.upstart.backend.entity.DeliveryCompany;
 import com.upstart.backend.service.DeliveryCompanyService;
+import com.upstart.backend.service.SecurityService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -29,6 +31,25 @@ public class DeliveryCompanyController {
     @Autowired
     private DeliveryCompanyService deliveryCompanyService;
 
+    @Autowired
+    private SecurityService securityService;
+
+    private void assertCompanyReadAccess(Long companyId) {
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            return;
+        }
+        securityService.getOwnedDeliveryCompanyOrThrow(companyId);
+    }
+
+    private void assertOwnerIdMatchesCurrent(Long ownerId) {
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (!securityService.getCurrentDeliveryOwner().getId().equals(ownerId)) {
+            throw new AccessDeniedException("You can only access your own delivery companies");
+        }
+    }
+
     // Create operations
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping
@@ -50,6 +71,7 @@ public class DeliveryCompanyController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     @GetMapping("/{id}")
     public ResponseEntity<DeliveryCompany> getDeliveryCompanyById(@PathVariable Long id) {
+        assertCompanyReadAccess(id);
         DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(id);
         return ResponseEntity.ok(deliveryCompany);
     }
@@ -67,6 +89,10 @@ public class DeliveryCompanyController {
                    Sort.by(sortBy).ascending();
         
         Pageable pageable = PageRequest.of(page, size, sort);
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.DELIVERY_OWNER) {
+            Long ownerId = securityService.getCurrentDeliveryOwner().getId();
+            return ResponseEntity.ok(deliveryCompanyService.findByOwner(ownerId, pageable));
+        }
         Page<DeliveryCompany> deliveryCompanies = deliveryCompanyService.getAllDeliveryCompanies(pageable);
         return ResponseEntity.ok(deliveryCompanies);
     }
@@ -230,6 +256,7 @@ public class DeliveryCompanyController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     @GetMapping("/owner/{ownerId}")
     public ResponseEntity<List<DeliveryCompany>> getByOwner(@PathVariable Long ownerId) {
+        assertOwnerIdMatchesCurrent(ownerId);
         List<DeliveryCompany> deliveryCompanies = deliveryCompanyService.findByOwnerId(ownerId);
         return ResponseEntity.ok(deliveryCompanies);
     }
@@ -242,6 +269,7 @@ public class DeliveryCompanyController {
             @RequestParam(defaultValue = "10") int size) {
         
         Pageable pageable = PageRequest.of(page, size);
+        assertOwnerIdMatchesCurrent(ownerId);
         Page<DeliveryCompany> deliveryCompanies = deliveryCompanyService.findByOwner(ownerId, pageable);
         return ResponseEntity.ok(deliveryCompanies);
     }
@@ -252,6 +280,7 @@ public class DeliveryCompanyController {
     public ResponseEntity<DeliveryCompany> updateDeliveryCompany(
             @PathVariable Long id,
             @Valid @RequestBody DeliveryCompany deliveryCompany) {
+        assertCompanyReadAccess(id);
         DeliveryCompany updatedDeliveryCompany = deliveryCompanyService.updateDeliveryCompany(id, deliveryCompany);
         return ResponseEntity.ok(updatedDeliveryCompany);
     }

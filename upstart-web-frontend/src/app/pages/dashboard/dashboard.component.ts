@@ -133,7 +133,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
        OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT].includes(o.status)
     ).length;
     const completed = orders.filter(o =>
-      [OrderStatus.COMPLETED, OrderStatus.DELIVERED].includes(o.status)
+      o.status === OrderStatus.DELIVERED
     ).length;
 
     this.myActivityCards = [
@@ -160,7 +160,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case UserRole.DELIVERY_OWNER:
         this.quickLinks = [
           { icon: '🚛', label: 'My Companies', detail: 'Manage delivery companies', route: '/deliverycompanies' },
-          { icon: '🚗', label: 'Drivers', detail: 'Manage your driver fleet', route: '/drivers' },
+          { icon: '🛒', label: 'Marketplace', detail: 'Browse and bid on available orders', route: '/pool' },
           { icon: '📋', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
           { icon: '🤝', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
         ];

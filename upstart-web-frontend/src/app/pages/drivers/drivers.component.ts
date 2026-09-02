@@ -2,7 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { DriverPersonService, DriverPerson, PaginatedResponse, DriverPersonSearchParams } from '../../services/driver-person.service';
 import { DeliveryCompanyService, DeliveryCompany } from '../../services/delivery-company.service';
-import { AuthService } from '../../services/auth.service';
+import { AuthService, User, UserRole } from '../../services/auth.service';
 
 // DriverPerson and DeliveryCompany interfaces are now imported from services
 
@@ -13,6 +13,7 @@ import { AuthService } from '../../services/auth.service';
   standalone: false
 })
 export class DriversComponent implements OnInit, OnDestroy {
+  currentUser: User | null = null;
   drivers: DriverPerson[] = [];
   filteredDrivers: DriverPerson[] = [];
   searchTerm: string = '';
@@ -57,7 +58,7 @@ export class DriversComponent implements OnInit, OnDestroy {
     emergencyContact: '',
     licenseNumber: '',
     licenseExpiryDate: new Date().toISOString(),
-    vehicleType: 'MOTORCYCLE',
+    vehicleType: 'CAR',
     vehiclePlateNumber: '',
     vehicleModel: '',
     isAvailable: true,
@@ -98,7 +99,16 @@ export class DriversComponent implements OnInit, OnDestroy {
     private authService: AuthService
   ) {}
 
+  get isDeliveryOwner(): boolean {
+    return this.currentUser?.role === UserRole.DELIVERY_OWNER;
+  }
+
+  get isSuperAdmin(): boolean {
+    return this.currentUser?.role === UserRole.SUPER_ADMIN;
+  }
+
   ngOnInit(): void {
+    this.currentUser = this.authService.getCurrentUser();
     this.loadDrivers();
     this.loadVehicleTypes();
     this.calculateStats();
@@ -111,7 +121,29 @@ export class DriversComponent implements OnInit, OnDestroy {
   loadDrivers(): void {
     this.loading = true;
     this.error = null;
-    
+
+    if (this.isDeliveryOwner) {
+      // Delivery owners see only their own company drivers.
+      const companySubscription = this.driverPersonService.getMyCompanyDrivers().subscribe({
+        next: (drivers) => {
+          this.drivers = drivers || [];
+          this.totalElements = this.drivers.length;
+          this.totalPages = 1;
+          this.currentPage = 0;
+          this.applyFilters();
+          this.calculateStats();
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading company drivers:', error);
+          this.error = 'Failed to load your company drivers. Please try again.';
+          this.loading = false;
+        }
+      });
+      this.subscriptions.push(companySubscription);
+      return;
+    }
+
     const searchParams: DriverPersonSearchParams = {
       isAvailable: this.availabilityFilter === 'available' ? true : this.availabilityFilter === 'busy' ? false : undefined,
       vehicleType: this.vehicleTypeFilter !== 'all' ? this.vehicleTypeFilter : undefined,
@@ -154,6 +186,19 @@ export class DriversComponent implements OnInit, OnDestroy {
   // loadDeliveryCompanies method removed since DriverPerson doesn't have deliveryCompanyId
 
   loadVehicleTypes(): void {
+    if (this.isDeliveryOwner) {
+      // Derive vehicle types from the loaded (own company) drivers.
+      this.drivers.forEach(driver => {
+        if (driver.vehicleType && !this.vehicleTypes.some(vt => vt.value === driver.vehicleType)) {
+          this.vehicleTypes.push({
+            label: this.formatVehicleTypeLabel(driver.vehicleType),
+            value: driver.vehicleType
+          });
+        }
+      });
+      return;
+    }
+
     const params: DriverPersonSearchParams = {
       page: 0,
       size: 500,
@@ -182,7 +227,8 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   formatVehicleTypeLabel(vehicleType: string): string {
     switch (vehicleType) {
-      case 'MOTORCYCLE': return 'Motorcycle';
+      case 'BIKE': return 'Bike';
+      case 'SCOOTER': return 'Scooter';
       case 'CAR': return 'Car';
       case 'VAN': return 'Van';
       case 'TRUCK': return 'Truck';
@@ -191,6 +237,20 @@ export class DriversComponent implements OnInit, OnDestroy {
   }
 
   calculateStats(): void {
+    if (this.isDeliveryOwner) {
+      // Delivery owners compute stats from their own company drivers only.
+      this.stats.total = this.drivers.length;
+      this.stats.active = this.drivers.filter(d => d.isVerified).length;
+      this.stats.available = this.drivers.filter(d => d.isAvailable).length;
+      this.stats.busy = this.drivers.filter(d => !d.isAvailable && d.isVerified).length;
+      this.stats.totalDeliveries = this.drivers.reduce((sum, d) => sum + (d.totalDeliveries || 0), 0);
+      this.stats.totalEarnings = this.drivers.reduce((sum, d) => sum + (d.totalEarnings || 0), 0);
+      this.stats.avgRating = this.drivers.length > 0
+        ? this.drivers.reduce((sum, d) => sum + (d.rating || 0), 0) / this.drivers.length
+        : 0;
+      return;
+    }
+
     // Load stats from API using multiple endpoints
     const availableSubscription = this.driverPersonService.countAvailableDriverPersons().subscribe({
       next: (count) => {
@@ -387,7 +447,7 @@ export class DriversComponent implements OnInit, OnDestroy {
       emergencyContact: '',
       licenseNumber: '',
       licenseExpiryDate: new Date().toISOString(),
-      vehicleType: 'MOTORCYCLE',
+      vehicleType: 'CAR',
       vehiclePlateNumber: '',
       vehicleModel: '',
       isAvailable: true,
@@ -438,21 +498,41 @@ export class DriversComponent implements OnInit, OnDestroy {
     if (this.showAddModal) {
       // Add new driver
       const driverData = this.driverForm as DriverPerson;
-      const subscription = this.driverPersonService.createDriverPerson(driverData).subscribe({
-        next: (newDriver) => {
-          this.drivers.push(newDriver);
-          this.applyFilters();
-          this.calculateStats();
-          this.closeModals();
-        },
-        error: (error) => {
-          console.error('Error creating driver:', error);
-          this.error = 'Failed to create driver. Please try again.';
-        }
-      });
+      let subscription;
+      if (this.isDeliveryOwner) {
+        subscription = this.driverPersonService.addDriverToMyCompany(driverData).subscribe({
+          next: (newDriver) => {
+            this.drivers.push(newDriver);
+            this.applyFilters();
+            this.calculateStats();
+            this.closeModals();
+          },
+          error: (error) => {
+            console.error('Error creating company driver:', error);
+            this.error = 'Failed to add driver to your company. Please try again.';
+          }
+        });
+      } else {
+        subscription = this.driverPersonService.createDriverPerson(driverData).subscribe({
+          next: (newDriver) => {
+            this.drivers.push(newDriver);
+            this.applyFilters();
+            this.calculateStats();
+            this.closeModals();
+          },
+          error: (error) => {
+            console.error('Error creating driver:', error);
+            this.error = 'Failed to create driver. Please try again.';
+          }
+        });
+      }
       this.subscriptions.push(subscription);
     } else if (this.showEditModal && this.selectedDriver && this.selectedDriver.id) {
-      // Update existing driver
+      // Update existing driver (not available on the company-scoped flow; only SUPER_ADMIN).
+      if (this.isDeliveryOwner) {
+        this.closeModals();
+        return;
+      }
       const driverData = this.driverForm as DriverPerson;
       const subscription = this.driverPersonService.updateDriverPerson(this.selectedDriver.id, driverData).subscribe({
         next: (updatedDriver) => {
@@ -475,24 +555,40 @@ export class DriversComponent implements OnInit, OnDestroy {
 
   deleteDriver(): void {
     if (this.selectedDriver && this.selectedDriver.id) {
-      const subscription = this.driverPersonService.deleteDriverPerson(this.selectedDriver.id).subscribe({
-        next: () => {
-          this.drivers = this.drivers.filter(d => d.id !== this.selectedDriver!.id);
-          this.applyFilters();
-          this.calculateStats();
-          this.closeModals();
-        },
-        error: (error) => {
-          console.error('Error deleting driver:', error);
-          this.error = 'Failed to delete driver. Please try again.';
-        }
-      });
+      let subscription;
+      if (this.isDeliveryOwner) {
+        subscription = this.driverPersonService.removeDriverFromMyCompany(this.selectedDriver.id).subscribe({
+          next: () => {
+            this.drivers = this.drivers.filter(d => d.id !== this.selectedDriver!.id);
+            this.applyFilters();
+            this.calculateStats();
+            this.closeModals();
+          },
+          error: (error) => {
+            console.error('Error removing driver from company:', error);
+            this.error = 'Failed to remove driver from your company. Please try again.';
+          }
+        });
+      } else {
+        subscription = this.driverPersonService.deleteDriverPerson(this.selectedDriver.id).subscribe({
+          next: () => {
+            this.drivers = this.drivers.filter(d => d.id !== this.selectedDriver!.id);
+            this.applyFilters();
+            this.calculateStats();
+            this.closeModals();
+          },
+          error: (error) => {
+            console.error('Error deleting driver:', error);
+            this.error = 'Failed to delete driver. Please try again.';
+          }
+        });
+      }
       this.subscriptions.push(subscription);
     }
   }
 
   toggleDriverStatus(driver: DriverPerson): void {
-    if (!driver.id) return;
+    if (!driver.id || !this.isSuperAdmin) return;
     const newStatus = !driver.isVerified;
     const subscription = this.driverPersonService.updateVerificationStatus(driver.id, newStatus).subscribe({
       next: (updatedDriver) => {
@@ -513,19 +609,36 @@ export class DriversComponent implements OnInit, OnDestroy {
   toggleDriverAvailability(driver: DriverPerson): void {
     if (!driver.id) return;
     const newAvailability = !driver.isAvailable;
-    const subscription = this.driverPersonService.updateAvailabilityStatus(driver.id, newAvailability).subscribe({
-      next: (updatedDriver) => {
-        const index = this.drivers.findIndex(d => d.id === driver.id);
-        if (index !== -1) {
-          this.drivers[index] = updatedDriver;
-          this.calculateStats();
+    let subscription;
+    if (this.isDeliveryOwner) {
+      subscription = this.driverPersonService.updateCompanyDriverAvailability(driver.id, newAvailability).subscribe({
+        next: (updatedDriver) => {
+          const index = this.drivers.findIndex(d => d.id === driver.id);
+          if (index !== -1) {
+            this.drivers[index] = updatedDriver;
+            this.calculateStats();
+          }
+        },
+        error: (error) => {
+          console.error('Error updating company driver availability:', error);
+          this.error = 'Failed to update driver availability. Please try again.';
         }
-      },
-      error: (error) => {
-        console.error('Error updating driver availability:', error);
-        this.error = 'Failed to update driver availability. Please try again.';
-      }
-    });
+      });
+    } else {
+      subscription = this.driverPersonService.updateAvailabilityStatus(driver.id, newAvailability).subscribe({
+        next: (updatedDriver) => {
+          const index = this.drivers.findIndex(d => d.id === driver.id);
+          if (index !== -1) {
+            this.drivers[index] = updatedDriver;
+            this.calculateStats();
+          }
+        },
+        error: (error) => {
+          console.error('Error updating driver availability:', error);
+          this.error = 'Failed to update driver availability. Please try again.';
+        }
+      });
+    }
     this.subscriptions.push(subscription);
   }
 
@@ -543,7 +656,8 @@ export class DriversComponent implements OnInit, OnDestroy {
   getVehicleIcon(vehicleType: string | undefined): string {
     if (!vehicleType) return 'fas fa-car';
     switch (vehicleType) {
-      case 'MOTORCYCLE': return 'fas fa-motorcycle';
+      case 'BIKE': return 'fas fa-bicycle';
+      case 'SCOOTER': return 'fas fa-motorcycle';
       case 'CAR': return 'fas fa-car';
       case 'VAN': return 'fas fa-shuttle-van';
       case 'TRUCK': return 'fas fa-truck';

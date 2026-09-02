@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { OrderService, OrderDTO, OrderStatus, OrderPriority, CreateOrderDTO, OrderRatingDTO } from '../../services/order.service';
+import { OrderService, OrderDTO, OrderStatus, OrderPriority, CreateOrderDTO, OrderRatingDTO, OrderType, RoutingMode, PricingMode } from '../../services/order.service';
 import { AuthService, User, UserRole } from '../../services/auth.service';
 import { RealtimeService } from '../../services/realtime.service';
 import { VendorCompanyService, VendorCompany } from '../../services/vendor-company.service';
@@ -53,6 +53,9 @@ export class OrdersComponent implements OnInit, OnDestroy {
   orderForm: CreateOrderDTO = {
     vendorCompanyId: 0,
     customerUserId: 0,
+    orderType: OrderType.MARKETPLACE,
+    routingMode: RoutingMode.OPEN_BID,
+    pricingMode: PricingMode.FIXED,
     pickupAddress: '',
     deliveryAddress: '',
     orderValue: 0,
@@ -70,6 +73,9 @@ export class OrdersComponent implements OnInit, OnDestroy {
   // Enums for template
   OrderStatus = OrderStatus;
   OrderPriority = OrderPriority;
+  OrderType = OrderType;
+  RoutingMode = RoutingMode;
+  PricingMode = PricingMode;
   UserRole = UserRole;
   
   private subscriptions = new Subscription();
@@ -112,6 +118,26 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   loadVendorCompanies(): void {
+    const user = this.authService.getCurrentUser();
+    // Only roles whose create-order flow needs vendor companies can access the list.
+    // SUPER_ADMIN can list all; VENDOR_OWNER is limited to their own companies.
+    if (!user) return;
+    if (user.role === UserRole.CLIENT || user.role === UserRole.DELIVERY_OWNER || user.role === UserRole.DRIVER) {
+      return;
+    }
+    if (user.role === UserRole.VENDOR_OWNER) {
+      this.subscriptions.add(
+        this.vendorCompanyService.getVendorCompaniesByOwner(user.id).subscribe({
+          next: (companies) => {
+            this.vendorCompanies = companies || [];
+          },
+          error: (error) => {
+            console.error('Error loading vendor companies:', error);
+          }
+        })
+      );
+      return;
+    }
     this.subscriptions.add(
       this.vendorCompanyService.getAllVendorCompanies(0, 500, 'name', 'asc').subscribe({
         next: (response) => {
@@ -125,6 +151,16 @@ export class OrdersComponent implements OnInit, OnDestroy {
   }
 
   loadCustomers(): void {
+    const user = this.authService.getCurrentUser();
+    // Only SUPER_ADMIN may list all customer users on the backend.
+    if (!user || user.role === UserRole.CLIENT) {
+      // Clients create orders for themselves; no list needed.
+      const current = this.authService.getCurrentUser();
+      if (current && current.role === UserRole.CLIENT) {
+        this.orderForm.customerUserId = current.id;
+      }
+      return;
+    }
     this.subscriptions.add(
       this.customerUserService.getAllCustomerUsers(0, 500, 'firstName', 'asc').subscribe({
         next: (response) => {
@@ -143,6 +179,21 @@ export class OrdersComponent implements OnInit, OnDestroy {
 
   get isClient(): boolean {
     return this.currentUser?.role === UserRole.CLIENT;
+  }
+
+  get isMarketplace(): boolean {
+    return this.orderForm.orderType === OrderType.MARKETPLACE;
+  }
+
+  get isGeneralDelivery(): boolean {
+    return this.orderForm.orderType === OrderType.GENERAL_DELIVERY;
+  }
+
+  onOrderTypeChange(): void {
+    if (this.isGeneralDelivery) {
+      // General-delivery orders do not carry a vendor company or products.
+      this.orderForm.vendorCompanyId = 0;
+    }
   }
 
   // Data loading methods
@@ -542,11 +593,19 @@ export class OrdersComponent implements OnInit, OnDestroy {
     this.orderForm = {
       vendorCompanyId: 0,
       customerUserId: 0,
+      orderType: OrderType.MARKETPLACE,
+      routingMode: RoutingMode.OPEN_BID,
+      pricingMode: PricingMode.FIXED,
       pickupAddress: '',
       deliveryAddress: '',
       orderValue: 0,
       priority: OrderPriority.NORMAL
     };
+    const user = this.authService.getCurrentUser();
+    if (user?.role === UserRole.CLIENT) {
+      this.orderForm.customerUserId = user.id;
+      this.orderForm.orderType = OrderType.GENERAL_DELIVERY;
+    }
   }
 
   resetRatingForm(): void {
@@ -563,7 +622,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
         [OrderStatus.ASSIGNED, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, 
          OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT].includes(o.status)
       ).length,
-      completed: this.orders.filter(o => o.status === OrderStatus.COMPLETED).length,
+      completed: this.orders.filter(o => o.status === OrderStatus.DELIVERED).length,
       cancelled: this.orders.filter(o => o.status === OrderStatus.CANCELLED).length,
       overdue: this.orders.filter(o => o.isOverdue).length,
       urgent: this.orders.filter(o => o.priority === OrderPriority.URGENT).length

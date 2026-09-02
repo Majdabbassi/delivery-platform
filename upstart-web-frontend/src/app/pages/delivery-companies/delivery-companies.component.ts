@@ -91,7 +91,15 @@ export class DeliveryCompaniesComponent implements OnInit, OnDestroy {
   constructor(
     private deliveryCompanyService: DeliveryCompanyService,
     private authService: AuthService
-  ) {}
+  ) {
+    this.currentUser = this.authService.getCurrentUser();
+  }
+
+  private currentUser: any;
+
+  get isSuperAdmin(): boolean {
+    return this.currentUser?.role === 'SUPER_ADMIN';
+  }
 
   ngOnInit(): void {
     this.loadDeliveryCompanies();

@@ -117,6 +117,12 @@ export class AuthService {
     return this.http.post<User>(`${this.userBaseUrl}/register`, userData, { headers });
   }
 
+  // Driver self-registration - public endpoint for independent drivers.
+  registerDriver(userData: any): Observable<User> {
+    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.post<User>(`${this.userBaseUrl}/register/driver`, userData, { headers });
+  }
+
   // Clears local session data without calling the server.
   // Safe to use when the token is missing/expired (avoids interceptor recursion).
   clearLocalSession(): void {
@@ -169,7 +175,7 @@ export class AuthService {
   }
 
   canCreateOrder(): boolean {
-    return this.hasAnyRole([UserRole.VENDOR_OWNER, UserRole.CLIENT]);
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT]);
   }
 
   canViewAllOrders(): boolean {
@@ -177,19 +183,19 @@ export class AuthService {
   }
 
   canUpdateOrderStatus(): boolean {
-    return this.hasAnyRole([UserRole.DELIVERY_OWNER, UserRole.DRIVER]);
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER]);
   }
 
   canAssignDeliveryCompany(): boolean {
-    return this.hasRole(UserRole.VENDOR_OWNER);
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER]);
   }
 
   canRateOrder(): boolean {
-    return this.hasRole(UserRole.CLIENT);
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.CLIENT]);
   }
 
   canCancelOrder(): boolean {
-    return this.hasAnyRole([UserRole.VENDOR_OWNER, UserRole.CLIENT]);
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT]);
   }
 
   canUpdateOrder(): boolean {
@@ -201,8 +207,18 @@ export class AuthService {
   }
 
   // UI permission helpers
+  // Delivery owners manage their own company drivers; SUPER_ADMIN manages everyone.
   canAccessDriversPage(): boolean {
     return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER]);
+  }
+
+  canManageCompanyDrivers(): boolean {
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER]);
+  }
+
+  // The bidding pool is visible to delivery owners and independent drivers.
+  canAccessPoolPage(): boolean {
+    return this.hasAnyRole([UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER]);
   }
 
   canAccessVendorCompaniesPage(): boolean {

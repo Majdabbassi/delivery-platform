@@ -84,7 +84,10 @@
               <div class="bid-card-head">
                 <div>
                   <span class="bid-amount">{{ formatCurrency(bid.bidAmount) }}</span>
-                  <span class="bid-company">Delivery company #{{ bid.deliveryCompanyId }}</span>
+                  <span class="bid-company">{{ bidderLabel(bid) }}</span>
+                  <span class="bid-bidder-type" [class]="bid.bidderType === 'INDEPENDENT_DRIVER' ? 'bidder-driver' : 'bidder-company'">
+                    {{ bid.bidderType === 'INDEPENDENT_DRIVER' ? 'Independent Driver' : 'Company' }}
+                  </span>
                 </div>
                 <span class="status-badge" [class]="bidClass(bid.status)">{{ bid.status }}</span>
               </div>

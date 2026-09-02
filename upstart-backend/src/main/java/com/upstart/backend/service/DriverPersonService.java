@@ -528,6 +528,42 @@ public class DriverPersonService {
         log.info("Driver person deleted successfully with ID: {}", id);
     }
 
+    // COMPANY-SCOPED DRIVER MANAGEMENT (DELIVERY_OWNER)
+    public List<DriverPerson> getDriversByDeliveryCompany(Long deliveryCompanyId) {
+        log.debug("Fetching drivers for delivery company: {}", deliveryCompanyId);
+        return driverPersonRepository.findByDeliveryCompanyId(deliveryCompanyId);
+    }
+
+    public DriverPerson createDriverForCompany(DriverPerson driverPerson, com.upstart.backend.entity.DeliveryCompany company) {
+        driverPerson.setDeliveryCompany(company);
+        // Trusted because the employer company is licensed/active.
+        driverPerson.setIsVerified(company.getIsActive() && company.getIsLicensed());
+        return createDriverPerson(driverPerson);
+    }
+
+    public DriverPerson assignDriverToCompany(Long driverId, com.upstart.backend.entity.DeliveryCompany company) {
+        DriverPerson driver = driverPersonRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver person not found with ID: " + driverId));
+        driver.setDeliveryCompany(company);
+        // Trusted because the employer company is licensed/active.
+        driver.setIsVerified(company.getIsActive() && company.getIsLicensed());
+        return driverPersonRepository.save(driver);
+    }
+
+    public void removeDriverFromCompany(Long driverId, Long deliveryCompanyId) {
+        DriverPerson driver = driverPersonRepository.findById(driverId)
+                .orElseThrow(() -> new RuntimeException("Driver person not found with ID: " + driverId));
+        if (driver.getDeliveryCompany() == null
+                || !driver.getDeliveryCompany().getId().equals(deliveryCompanyId)) {
+            throw new RuntimeException("Driver is not part of delivery company: " + deliveryCompanyId);
+        }
+        driver.setDeliveryCompany(null);
+        driver.setIsAvailable(false);
+        // No longer covered by a licensed employer; verification must be re-earned.
+        driver.setIsVerified(false);
+        driverPersonRepository.save(driver);
+    }
+
     // STATISTICS
     @Transactional(readOnly = true)
     public Long countAllDriverPersons() {

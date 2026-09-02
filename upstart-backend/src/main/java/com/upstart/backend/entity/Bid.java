@@ -29,11 +29,14 @@ public class Bid {
     @Column(name = "order_id", nullable = false)
     private Long orderId;
 
-    @NotNull(message = "Delivery company is required")
-    @Column(name = "delivery_company_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "bidder_type", nullable = false, length = 30)
+    private BidderType bidderType;
+
+    @Column(name = "delivery_company_id", nullable = true)
     private Long deliveryCompanyId;
 
-    @Column(name = "driver_id")
+    @Column(name = "driver_id", nullable = true)
     private Long driverId;
 
     @NotNull(message = "Bid amount is required")
@@ -61,5 +64,10 @@ public class Bid {
 
     public enum BidStatus {
         SUBMITTED, ACCEPTED, REJECTED, WITHDRAWN, EXPIRED
+    }
+
+    public enum BidderType {
+        COMPANY,
+        INDEPENDENT_DRIVER
     }
 }

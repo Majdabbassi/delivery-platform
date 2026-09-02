@@ -36,10 +36,10 @@ export class Sidebar implements OnInit, OnDestroy {
     { icon: '🚛', label: 'Delivery Companies', route: '/deliverycompanies', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
     { icon: '🚚', label: 'Delivery Owners', route: '/deliveryowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
     { icon: '🚗', label: 'Drivers', route: '/drivers', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
-    { icon: '📦', label: 'Products', route: '/products', badge: null, roles: null },
+    { icon: '📦', label: 'Products', route: '/products', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
     { icon: '🤝', label: 'Partnerships', route: '/partnerships', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.DELIVERY_OWNER] },
-    { icon: '🛒', label: 'Marketplace', route: '/pool', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
-    { icon: '💼', label: 'Bid Inbox', route: '/bids', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
+    { icon: '🛒', label: 'Marketplace', route: '/pool', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER] },
+    { icon: '💼', label: 'Bid Inbox', route: '/bids', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT] },
     { icon: '📍', label: 'Tracking', route: '/tracking', badge: null, roles: null },
     
     { icon: '👤', label: 'Profile', route: '/profile', badge: null, roles: null },

@@ -1,7 +1,10 @@
 package com.upstart.backend.controller;
 
+import com.upstart.backend.entity.DeliveryCompany;
 import com.upstart.backend.entity.DriverPerson;
+import com.upstart.backend.repository.DeliveryCompanyRepository;
 import com.upstart.backend.service.DriverPersonService;
+import com.upstart.backend.service.SecurityService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
@@ -12,11 +15,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -26,6 +31,83 @@ import java.util.Map;
 public class DriverPersonController {
 
     private final DriverPersonService driverPersonService;
+    private final SecurityService securityService;
+    private final DeliveryCompanyRepository deliveryCompanyRepository;
+
+    // Delivery-owner-scoped driver management
+    @GetMapping("/my/company")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
+    @Operation(summary = "Get drivers of the current delivery owner's company",
+            description = "Delivery owners manage the drivers of their own company only")
+    public ResponseEntity<List<DriverPerson>> getMyCompanyDrivers() {
+        DeliveryCompany company = resolveOwnedDeliveryCompany();
+        List<DriverPerson> drivers = driverPersonService.getDriversByDeliveryCompany(company.getId());
+        return ResponseEntity.ok(drivers);
+    }
+
+    @PostMapping("/my/company")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
+    @Operation(summary = "Add a driver to the current delivery owner's company")
+    public ResponseEntity<DriverPerson> addDriverToMyCompany(@RequestBody DriverPerson driverPerson) {
+        DeliveryCompany company = resolveOwnedDeliveryCompany();
+        DriverPerson created = driverPersonService.createDriverForCompany(driverPerson, company);
+        return new ResponseEntity<>(created, HttpStatus.CREATED);
+    }
+
+    @PatchMapping("/my/company/{id}/availability")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
+    public ResponseEntity<DriverPerson> updateCompanyDriverAvailability(
+            @PathVariable Long id, @RequestParam boolean isAvailable) {
+        assertDriverBelongsToOwnedCompany(id);
+        DriverPerson updated = driverPersonService.updateAvailabilityStatus(id, isAvailable);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/my/company/{id}")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
+    @Operation(summary = "Remove a driver from the current delivery owner's company")
+    public ResponseEntity<Void> removeDriverFromMyCompany(@PathVariable Long id) {
+        DeliveryCompany company = resolveOwnedDeliveryCompany();
+        driverPersonService.removeDriverFromCompany(id, company.getId());
+        return ResponseEntity.noContent().build();
+    }
+
+    private DeliveryCompany resolveOwnedDeliveryCompany() {
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            throw new AccessDeniedException("SUPER_ADMIN must specify a company via the global driver endpoints");
+        }
+        return deliveryCompanyRepository.findByOwnerId(securityService.getCurrentDeliveryOwner().getId())
+                .stream()
+                .findFirst()
+                .orElseThrow(() -> new AccessDeniedException("Current user owns no delivery company"));
+    }
+
+    private void assertDriverBelongsToOwnedCompany(Long driverId) {
+        DeliveryCompany company = resolveOwnedDeliveryCompany();
+        DriverPerson driver = driverPersonService.getDriverPersonById(driverId);
+        if (driver.getDeliveryCompany() == null
+                || !driver.getDeliveryCompany().getId().equals(company.getId())) {
+            throw new AccessDeniedException("Driver does not belong to your delivery company");
+        }
+    }
+
+    // Current-driver self endpoints (DRIVER)
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('DRIVER')")
+    @Operation(summary = "Get the current driver's own profile")
+    public ResponseEntity<DriverPerson> getCurrentDriverPerson() {
+        return ResponseEntity.ok(securityService.getCurrentDriverPerson());
+    }
+
+    private void assertDriverSelfOrAdmin(Long driverId) {
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            return;
+        }
+        DriverPerson current = securityService.getCurrentDriverPerson();
+        if (!current.getId().equals(driverId)) {
+            throw new AccessDeniedException("Drivers can only access their own profile");
+        }
+    }
 
     // CREATE
     @PostMapping
@@ -43,6 +125,7 @@ public class DriverPersonController {
     @Operation(summary = "Get driver person by ID", description = "Retrieves a driver person by their unique identifier")
     public ResponseEntity<DriverPerson> getDriverPersonById(@PathVariable Long id) {
         log.info("Fetching driver person with ID: {}", id);
+        assertDriverSelfOrAdmin(id);
         DriverPerson driverPerson = driverPersonService.getDriverPersonById(id);
         return ResponseEntity.ok(driverPerson);
     }
@@ -125,6 +208,7 @@ public class DriverPersonController {
     @Operation(summary = "Update driver person", description = "Updates an existing driver person's details")
     public ResponseEntity<DriverPerson> updateDriverPerson(@PathVariable Long id, @RequestBody DriverPerson driverPersonDetails) {
         log.info("Updating driver person with ID: {}", id);
+        assertDriverSelfOrAdmin(id);
         DriverPerson updatedDriverPerson = driverPersonService.updateDriverPerson(id, driverPersonDetails);
         return ResponseEntity.ok(updatedDriverPerson);
     }
@@ -136,6 +220,7 @@ public class DriverPersonController {
             @PathVariable Long id, 
             @RequestParam boolean isAvailable) {
         log.info("Updating availability status for driver person ID: {} to: {}", id, isAvailable);
+        assertDriverSelfOrAdmin(id);
         DriverPerson updatedDriverPerson = driverPersonService.updateAvailabilityStatus(id, isAvailable);
         return ResponseEntity.ok(updatedDriverPerson);
     }

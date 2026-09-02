@@ -216,10 +216,10 @@
               <button class="btn-action performance" (click)="openPerformanceModal(driver)" title="View Performance">
                 <i class="fas fa-chart-line"></i>
               </button>
-              <button class="btn-action edit" (click)="openEditModal(driver)" title="Edit">
+              <button class="btn-action edit" *ngIf="!isDeliveryOwner" (click)="openEditModal(driver)" title="Edit">
                 <i class="fas fa-edit"></i>
               </button>
-              <button class="btn-action toggle" 
+              <button class="btn-action toggle" *ngIf="isSuperAdmin"
                       (click)="toggleDriverStatus(driver)" 
                       [title]="driver.isVerified ? 'Deactivate' : 'Activate'">
                 <i class="fas" [class.fa-user-slash]="driver.isVerified" [class.fa-user-check]="!driver.isVerified"></i>

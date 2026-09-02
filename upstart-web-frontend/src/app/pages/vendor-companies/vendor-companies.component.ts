@@ -80,10 +80,22 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
     'Other'
   ];
 
+  private currentUser: any;
+
   constructor(
     private vendorCompanyService: VendorCompanyService,
     private authService: AuthService
-  ) {}
+  ) {
+    this.currentUser = this.authService.getCurrentUser();
+  }
+
+  get isSuperAdmin(): boolean {
+    return this.currentUser?.role === 'SUPER_ADMIN';
+  }
+
+  get isVendorOwner(): boolean {
+    return this.currentUser?.role === 'VENDOR_OWNER';
+  }
 
   ngOnInit(): void {
     this.loadCompanies();
@@ -97,7 +109,29 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
   loadCompanies(): void {
     this.loading = true;
     this.error = null;
-    
+
+    // VENDOR_OWNER is only allowed to see their own companies (owner-scoped endpoint).
+    // The general /search and listing endpoints are SUPER_ADMIN only, so use the
+    // owner-scoped endpoint and filter/paginate locally for this role.
+    if (this.isVendorOwner && this.currentUser) {
+      const subscription = this.vendorCompanyService.getVendorCompaniesByOwner(this.currentUser.id).subscribe({
+        next: (companies) => {
+          this.companies = companies || [];
+          this.totalElements = this.companies.length;
+          this.totalPages = 1;
+          this.applyLocalFilter();
+          this.loading = false;
+        },
+        error: (error) => {
+          console.error('Error loading vendor companies:', error);
+          this.error = 'Failed to load your vendor companies. Please try again.';
+          this.loading = false;
+        }
+      });
+      this.subscriptions.push(subscription);
+      return;
+    }
+
     const searchParams: VendorCompanySearchParams = {
       page: this.currentPage,
       size: this.pageSize,
@@ -136,6 +170,38 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
     });
     
     this.subscriptions.push(subscription);
+  }
+
+  private applyLocalFilter(): void {
+    const term = this.searchTerm?.toLowerCase() || '';
+    let filtered = this.companies.filter(c =>
+      !term ||
+      c.name?.toLowerCase().includes(term) ||
+      c.email?.toLowerCase().includes(term) ||
+      c.contactPerson?.toLowerCase().includes(term)
+    );
+
+    if (this.statusFilter !== 'all') {
+      filtered = filtered.filter(c => c.status === this.statusFilter.toUpperCase());
+    }
+
+    if (this.industryFilter !== 'all') {
+      filtered = filtered.filter(c => c.businessCategory === this.industryFilter);
+    }
+
+    if (this.sortBy && this.sortDirection) {
+      filtered.sort((a, b) => {
+        let aVal: any = a[this.sortBy as keyof VendorCompany];
+        let bVal: any = b[this.sortBy as keyof VendorCompany];
+        if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+        if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+        return this.sortDirection === 'asc' ? (aVal > bVal ? 1 : aVal < bVal ? -1 : 0) : (aVal < bVal ? 1 : aVal > bVal ? -1 : 0);
+      });
+    }
+
+    this.filteredCompanies = filtered;
+    this.totalElements = this.companies.length;
+    this.totalPages = 1;
   }
 
   // Pagination methods

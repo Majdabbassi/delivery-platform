@@ -31,6 +31,7 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     List<Order> findByDriverPerson(DriverPerson driverPerson);
     Page<Order> findByCustomerUser(CustomerUser customerUser, Pageable pageable);
     Page<Order> findByDriverPerson(DriverPerson driverPerson, Pageable pageable);
+    List<Order> findByCreatedByUserId(Long userId);
     
     // Find by partnership
     List<Order> findByPartnership(Partnership partnership);
@@ -97,17 +98,17 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
                                        @Param("status") Order.OrderStatus status);
     
     // Revenue calculations
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.vendorCompany = :vendorCompany AND o.status = 'COMPLETED'")
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.vendorCompany = :vendorCompany AND o.status = 'DELIVERED'")
     BigDecimal calculateTotalRevenueByVendorCompany(@Param("vendorCompany") VendorCompany vendorCompany);
     
-    @Query("SELECT SUM(o.deliveryFee) FROM Order o WHERE o.deliveryCompany = :deliveryCompany AND o.status = 'COMPLETED'")
+    @Query("SELECT SUM(o.deliveryFee) FROM Order o WHERE o.deliveryCompany = :deliveryCompany AND o.status = 'DELIVERED'")
     BigDecimal calculateTotalDeliveryRevenueByDeliveryCompany(@Param("deliveryCompany") DeliveryCompany deliveryCompany);
     
-    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.partnership = :partnership AND o.status = 'COMPLETED'")
+    @Query("SELECT SUM(o.totalAmount) FROM Order o WHERE o.partnership = :partnership AND o.status = 'DELIVERED'")
     BigDecimal calculateTotalRevenueByPartnership(@Param("partnership") Partnership partnership);
     
     // Special status queries
-    @Query("SELECT o FROM Order o WHERE o.estimatedDeliveryTime < :currentTime AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'FAILED')")
+    @Query("SELECT o FROM Order o WHERE o.estimatedDeliveryTime < :currentTime AND o.status NOT IN ('DELIVERED', 'CANCELLED', 'FAILED')")
     List<Order> findOverdueOrders(@Param("currentTime") LocalDateTime currentTime);
     
     @Query("SELECT o FROM Order o WHERE o.status = 'PENDING' AND o.deliveryCompany IS NULL")
@@ -116,10 +117,10 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @Query("SELECT o FROM Order o WHERE o.status = 'PENDING' AND o.partnership IS NULL")
     List<Order> findPendingOrdersWithoutPartnership();
     
-    @Query("SELECT o FROM Order o WHERE o.status IN ('COMPLETED') AND o.createdAt >= :startDate")
+    @Query("SELECT o FROM Order o WHERE o.status IN ('DELIVERED') AND o.createdAt >= :startDate")
     List<Order> findCompletedOrdersSince(@Param("startDate") LocalDateTime startDate);
     
-    @Query("SELECT o FROM Order o WHERE o.priority = 'URGENT' AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'FAILED')")
+    @Query("SELECT o FROM Order o WHERE o.priority = 'URGENT' AND o.status NOT IN ('DELIVERED', 'CANCELLED', 'FAILED')")
     List<Order> findActiveUrgentOrders();
     
     // Geographic queries
@@ -167,8 +168,8 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     List<Order> findByIdInAndStatus(@Param("orderIds") java.util.Set<Long> orderIds, 
                                    @Param("status") Order.OrderStatus status);
     
-    @Query("SELECT o FROM Order o WHERE o.status = 'PENDING' AND o.estimatedDeliveryTime < :currentTime")
-    List<Order> findExpiredPendingOrders(@Param("currentTime") LocalDateTime currentTime);
+    @Query("SELECT o FROM Order o WHERE o.status = 'OPEN_FOR_BID' AND o.estimatedDeliveryTime < :currentTime")
+    List<Order> findExpiredOpenForBidOrders(@Param("currentTime") LocalDateTime currentTime);
     
     // Additional count methods for OrderAssignmentService
     @Query("SELECT COUNT(o) FROM Order o WHERE o.partnership IS NOT NULL")
@@ -177,6 +178,6 @@ public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecific
     @Query("SELECT COUNT(o) FROM Order o WHERE o.partnership IS NULL AND o.deliveryCompany IS NOT NULL")
     long countByPartnershipIsNullAndDeliveryCompanyIsNotNull();
 
-    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'COMPLETED'")
+    @Query("SELECT COALESCE(SUM(o.totalAmount), 0) FROM Order o WHERE o.status = 'DELIVERED'")
     BigDecimal getTotalCompletedRevenue();
 }

@@ -53,11 +53,11 @@ export class DriverPortalComponent implements OnInit, OnDestroy {
   }
 
   get activeJobs(): OrderDTO[] {
-    return this.jobs.filter(job => !['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(job.status));
+    return this.jobs.filter(job => !['DELIVERED', 'CANCELLED', 'FAILED'].includes(job.status));
   }
 
   get completedJobs(): OrderDTO[] {
-    return this.jobs.filter(job => ['DELIVERED', 'COMPLETED'].includes(job.status));
+    return this.jobs.filter(job => job.status === 'DELIVERED');
   }
 
   get cancelledJobs(): OrderDTO[] {
@@ -71,11 +71,9 @@ export class DriverPortalComponent implements OnInit, OnDestroy {
   loadDriverProfile(): void {
     if (!this.currentUser) return;
     this.subscriptions.add(
-      this.driverPersonService.searchDriverPersons({ username: this.currentUser.username, page: 0, size: 1 }).subscribe({
-        next: (response) => {
-          if (response.content.length) {
-            this.driverPerson = response.content[0];
-          }
+      this.driverPersonService.getCurrentDriver().subscribe({
+        next: (driver) => {
+          this.driverPerson = driver;
         },
         error: () => {
           this.driverPerson = null;
@@ -151,7 +149,7 @@ export class DriverPortalComponent implements OnInit, OnDestroy {
       [OrderStatus.IN_PROGRESS]: [OrderStatus.PICKED_UP, OrderStatus.CANCELLED],
       [OrderStatus.PICKED_UP]: [OrderStatus.IN_TRANSIT],
       [OrderStatus.IN_TRANSIT]: [OrderStatus.DELIVERED],
-      [OrderStatus.DELIVERED]: [OrderStatus.COMPLETED]
+      [OrderStatus.DELIVERED]: []
     };
     return flow[status] || [];
   }

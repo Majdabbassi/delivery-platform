@@ -106,6 +106,10 @@ export class LoginComponent implements OnInit {
   onRegister(): void {
     this.router.navigate(['/register']);
   }
+
+  onDriverRegister(): void {
+    this.router.navigate(['/driver-register']);
+  }
   
   clearError(): void {
     this.error = '';

@@ -132,7 +132,7 @@
     <h2 class="section-title">Recent History</h2>
     <div class="history-list">
       <div class="history-item" *ngFor="let job of jobs">
-        <ng-container *ngIf="['DELIVERED', 'COMPLETED', 'CANCELLED', 'FAILED'].includes(job.status)">
+        <ng-container *ngIf="['DELIVERED', 'CANCELLED', 'FAILED'].includes(job.status)">
           <span class="history-status" [class]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
           <span class="history-number">Order #{{ job.orderNumber }}</span>
           <span class="history-route">{{ job.pickupAddress }} → {{ job.deliveryAddress }}</span>

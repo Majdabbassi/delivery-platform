@@ -1,10 +1,13 @@
 package com.upstart.backend.controller;
 
 import com.upstart.backend.dto.RegisterDto;
+import com.upstart.backend.dto.DriverRegisterDto;
 import com.upstart.backend.dto.UserResponseDto;
 import com.upstart.backend.entity.CustomerUser;
+import com.upstart.backend.entity.DriverPerson;
 import com.upstart.backend.entity.User;
 import com.upstart.backend.service.CustomerUserService;
+import com.upstart.backend.service.DriverPersonService;
 import com.upstart.backend.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +29,7 @@ public class UserController {
     
     private final UserService userService;
     private final CustomerUserService customerUserService;
+    private final DriverPersonService driverPersonService;
     
     @PostMapping("/register")
     public ResponseEntity<UserResponseDto> register(@Valid @RequestBody RegisterDto registerDto) {
@@ -41,6 +45,32 @@ public class UserController {
         customerUser.setPhoneNumber(registerDto.getPhoneNumber());
         
         CustomerUser saved = customerUserService.createCustomerUser(customerUser);
+        return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseDto.fromUser(saved));
+    }
+
+    @PostMapping("/register/driver")
+    public ResponseEntity<UserResponseDto> registerDriver(@Valid @RequestBody DriverRegisterDto dto) {
+        log.info("Registering new independent driver with username: {}", dto.getUsername());
+
+        DriverPerson driver = new DriverPerson(
+            dto.getUsername(),
+            dto.getEmail(),
+            dto.getPassword(),
+            dto.getFirstName(),
+            dto.getLastName(),
+            dto.getLicenseNumber(),
+            dto.getVehicleType(),
+            dto.getVehiclePlate(),
+            dto.getPhoneNumber()
+        );
+        driver.setVehicleModel(dto.getVehicleModel());
+        driver.setVehicleColor(dto.getVehicleColor());
+        driver.setDeliveryZone(dto.getDeliveryZone());
+        driver.setIsVerified(false); // verified by SUPER_ADMIN before they can take on jobs
+        driver.setDeliveryCompany(null); // independent driver
+        driver.setIsAvailable(true);
+
+        DriverPerson saved = driverPersonService.createDriverPerson(driver);
         return ResponseEntity.status(HttpStatus.CREATED).body(UserResponseDto.fromUser(saved));
     }
 

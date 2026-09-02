@@ -2,6 +2,7 @@ package com.upstart.backend.controller;
 
 import com.upstart.backend.entity.CustomerUser;
 import com.upstart.backend.service.CustomerUserService;
+import com.upstart.backend.service.SecurityService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -14,6 +15,7 @@ import org.springframework.data.domain.Sort;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +32,29 @@ public class CustomerUserController {
     @Autowired
     private CustomerUserService customerUserService;
 
+    @Autowired
+    private SecurityService securityService;
+
+    private void assertSelfOrAdmin(Long id) {
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            return;
+        }
+        CustomerUser me = securityService.getCurrentCustomerUser();
+        if (!me.getId().equals(id)) {
+            throw new AccessDeniedException("Clients can only access their own profile");
+        }
+    }
+
+    private void assertSelfOrAdminByUsername(String username) {
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            return;
+        }
+        CustomerUser me = securityService.getCurrentCustomerUser();
+        if (!me.getUsername().equals(username)) {
+            throw new AccessDeniedException("Clients can only access their own profile");
+        }
+    }
+
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @Operation(summary = "Create a new customer user", description = "Creates a new customer user with the provided details")
@@ -42,6 +67,7 @@ public class CustomerUserController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLIENT')")
     @Operation(summary = "Get customer user by ID", description = "Retrieves a customer user by their unique identifier")
     public ResponseEntity<CustomerUser> getCustomerUserById(@PathVariable Long id) {
+        assertSelfOrAdmin(id);
         CustomerUser customerUser = customerUserService.getCustomerUserById(id)
                 .orElseThrow(() -> new RuntimeException("Customer user not found with ID: " + id));
         return ResponseEntity.ok(customerUser);
@@ -51,6 +77,7 @@ public class CustomerUserController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLIENT')")
     @Operation(summary = "Get customer user by username", description = "Retrieves a customer user by their username")
     public ResponseEntity<CustomerUser> getCustomerUserByUsername(@PathVariable String username) {
+        assertSelfOrAdminByUsername(username);
         CustomerUser customerUser = customerUserService.getCustomerUserByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Customer user not found with username: " + username));
         return ResponseEntity.ok(customerUser);
@@ -121,6 +148,7 @@ public class CustomerUserController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('CLIENT')")
     @Operation(summary = "Update customer user", description = "Updates an existing customer user's details")
     public ResponseEntity<CustomerUser> updateCustomerUser(@PathVariable Long id, @RequestBody CustomerUser customerUserDetails) {
+        assertSelfOrAdmin(id);
         CustomerUser updatedCustomerUser = customerUserService.updateCustomerUser(id, customerUserDetails);
         return ResponseEntity.ok(updatedCustomerUser);
     }

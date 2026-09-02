@@ -2,6 +2,7 @@ package com.upstart.backend.controller;
 
 import com.upstart.backend.entity.Product;
 import com.upstart.backend.service.ProductService;
+import com.upstart.backend.service.SecurityService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,6 +14,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,12 +32,46 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
+    @Autowired
+    private SecurityService securityService;
+
     private static final String WRITE_ROLE = "hasAnyRole('SUPER_ADMIN','VENDOR_OWNER')";
+
+    private boolean isAdmin() {
+        return securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN;
+    }
+
+    private void assertCanUseVendor(Long vendorCompanyId) {
+        if (isAdmin()) {
+            return;
+        }
+        securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
+    }
+
+    private void assertCanModifyProduct(Long productId) {
+        if (isAdmin()) {
+            return;
+        }
+        Product product = productService.getProductById(productId);
+        if (product.getVendorCompany() == null || product.getVendorCompany().getOwner() == null) {
+            throw new AccessDeniedException("Product is not linked to a vendor company");
+        }
+        securityService.getOwnedVendorCompanyOrThrow(product.getVendorCompany().getId());
+    }
 
     @PostMapping
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Create a new product", description = "Creates a new product with the provided details")
     public ResponseEntity<Product> createProduct(@RequestBody Product product) {
+        if (!isAdmin()) {
+            Long vendorId = product.getVendorCompanyIdInput() != null
+                    ? product.getVendorCompanyIdInput()
+                    : (product.getVendorCompany() != null ? product.getVendorCompany().getId() : null);
+            if (vendorId == null) {
+                throw new AccessDeniedException("Vendor company is required");
+            }
+            assertCanUseVendor(vendorId);
+        }
         Product created = productService.createProduct(product);
         return ResponseEntity.ok(created);
     }
@@ -44,6 +80,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Create a product for a vendor", description = "Creates a new product linked to the given vendor company")
     public ResponseEntity<Product> createProductForVendor(@PathVariable Long vendorCompanyId, @RequestBody Product product) {
+        assertCanUseVendor(vendorCompanyId);
         Product created = productService.createProductForVendor(vendorCompanyId, product);
         return ResponseEntity.ok(created);
     }
@@ -299,6 +336,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Update product", description = "Updates an existing product's details")
     public ResponseEntity<Product> updateProduct(@PathVariable Long id, @RequestBody Product product) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateProduct(id, product));
     }
 
@@ -306,6 +344,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Update product status", description = "Updates a product's status")
     public ResponseEntity<Product> updateProductStatus(@PathVariable Long id, @RequestParam Product.ProductStatus status) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateProductStatus(id, status));
     }
 
@@ -313,6 +352,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Update product availability", description = "Updates whether a product is available for ordering")
     public ResponseEntity<Product> updateProductAvailability(@PathVariable Long id, @RequestParam Boolean available) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateProductAvailability(id, available));
     }
 
@@ -320,6 +360,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Update featured status", description = "Updates whether a product is featured")
     public ResponseEntity<Product> updateFeaturedStatus(@PathVariable Long id, @RequestParam Boolean featured) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateFeaturedStatus(id, featured));
     }
 
@@ -327,6 +368,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Update product price", description = "Updates a product's price")
     public ResponseEntity<Product> updateProductPrice(@PathVariable Long id, @RequestParam BigDecimal price) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateProductPrice(id, price));
     }
 
@@ -334,6 +376,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Update stock quantity", description = "Updates a product's stock quantity")
     public ResponseEntity<Product> updateStockQuantity(@PathVariable Long id, @RequestParam Integer quantity) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateStockQuantity(id, quantity));
     }
 
@@ -343,6 +386,7 @@ public class ProductController {
     public ResponseEntity<Product> updateProductRating(@PathVariable Long id,
             @RequestParam(required = false) BigDecimal rating,
             @RequestParam(required = false) Integer reviewCount) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateProductRating(id, rating, reviewCount));
     }
 
@@ -354,6 +398,7 @@ public class ProductController {
             @Parameter(description = "Discount type (PERCENTAGE/FIXED)") @RequestParam(required = false) Product.DiscountType discountType,
             @Parameter(description = "Discount start date") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @Parameter(description = "Discount end date") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.updateDiscount(id, discount, discountType, startDate, endDate));
     }
 
@@ -361,6 +406,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Delete product", description = "Permanently deletes a product from the database")
     public ResponseEntity<Map<String, String>> deleteProduct(@PathVariable Long id) {
+        assertCanModifyProduct(id);
         productService.deleteProduct(id);
         return ResponseEntity.ok(Map.of("message", "Product deleted successfully"));
     }
@@ -369,6 +415,7 @@ public class ProductController {
     @PreAuthorize(WRITE_ROLE)
     @Operation(summary = "Soft delete product", description = "Soft deletes a product by marking it as discontinued")
     public ResponseEntity<Product> softDeleteProduct(@PathVariable Long id) {
+        assertCanModifyProduct(id);
         return ResponseEntity.ok(productService.softDeleteProduct(id));
     }
 

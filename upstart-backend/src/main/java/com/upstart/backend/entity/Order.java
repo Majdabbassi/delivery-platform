@@ -3,7 +3,6 @@ package com.upstart.backend.entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,9 +26,20 @@ public class Order {
     @Column(name = "order_number", unique = true, nullable = false)
     private String orderNumber;
     
+    @Enumerated(EnumType.STRING)
+    @Column(name = "order_type", nullable = false, length = 30)
+    private OrderType orderType = OrderType.MARKETPLACE;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "routing_mode", nullable = false, length = 30)
+    private RoutingMode routingMode = RoutingMode.OPEN_BID;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pricing_mode", nullable = false, length = 30)
+    private PricingMode pricingMode = PricingMode.FIXED;
+
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "vendor_company_id", nullable = false)
-    @NotNull(message = "Vendor company is required")
+    @JoinColumn(name = "vendor_company_id", nullable = true)
     private VendorCompany vendorCompany;
     
     @ManyToOne(fetch = FetchType.EAGER)
@@ -37,8 +47,7 @@ public class Order {
     private DeliveryCompany deliveryCompany;
     
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "customer_user_id", nullable = false)
-    @NotNull(message = "Customer is required")
+    @JoinColumn(name = "customer_user_id", nullable = true)
     private CustomerUser customerUser;
     
     @ManyToOne(fetch = FetchType.EAGER)
@@ -56,6 +65,21 @@ public class Order {
     @NotBlank(message = "Delivery address is required")
     @Column(name = "delivery_address", nullable = false)
     private String deliveryAddress;
+
+    @Column(name = "sender_name", length = 150)
+    private String senderName;
+
+    @Column(name = "sender_phone", length = 30)
+    private String senderPhone;
+
+    @Column(name = "recipient_name", length = 150)
+    private String recipientName;
+
+    @Column(name = "recipient_phone", length = 30)
+    private String recipientPhone;
+
+    @Column(name = "created_by_user_id")
+    private Long createdByUserId;
     
     @Column(name = "pickup_latitude")
     private Double pickupLatitude;
@@ -69,10 +93,17 @@ public class Order {
     @Column(name = "delivery_longitude")
     private Double deliveryLongitude;
     
-    @NotNull(message = "Order amount is required")
     @DecimalMin(value = "0.0", inclusive = false, message = "Order amount must be greater than 0")
-    @Column(name = "order_amount", nullable = false, precision = 10, scale = 2)
+    @Column(name = "order_amount", nullable = true, precision = 10, scale = 2)
     private BigDecimal orderAmount;
+    
+    @DecimalMin(value = "0.0", inclusive = false, message = "Proposed minimum amount must be greater than 0")
+    @Column(name = "proposed_min_amount", nullable = true, precision = 10, scale = 2)
+    private BigDecimal proposedMinAmount;
+
+    @DecimalMin(value = "0.0", inclusive = false, message = "Proposed maximum amount must be greater than 0")
+    @Column(name = "proposed_max_amount", nullable = true, precision = 10, scale = 2)
+    private BigDecimal proposedMaxAmount;
     
     @Column(name = "delivery_fee", precision = 10, scale = 2)
     private BigDecimal deliveryFee;
@@ -93,6 +124,9 @@ public class Order {
     
     @Column(name = "special_instructions")
     private String specialInstructions;
+    
+    @Column(name = "notes", columnDefinition = "TEXT")
+    private String notes;
     
     @Column(name = "estimated_delivery_time")
     private LocalDateTime estimatedDeliveryTime;
@@ -149,16 +183,22 @@ public class Order {
     protected void onCreate() {
         createdAt = LocalDateTime.now();
         updatedAt = LocalDateTime.now();
-        if (totalAmount == null && orderAmount != null && deliveryFee != null) {
-            totalAmount = orderAmount.add(deliveryFee);
-        }
+        recalcTotalAmount();
     }
     
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
-        if (totalAmount == null && orderAmount != null && deliveryFee != null) {
+        recalcTotalAmount();
+    }
+
+    private void recalcTotalAmount() {
+        if (orderAmount != null && deliveryFee != null) {
             totalAmount = orderAmount.add(deliveryFee);
+        } else if (totalAmount == null && orderAmount != null) {
+            totalAmount = orderAmount;
+        } else if (totalAmount == null && deliveryFee != null) {
+            totalAmount = deliveryFee;
         }
     }
     
@@ -176,7 +216,8 @@ public class Order {
     }
     
     public boolean isCompleted() {
-        return status == OrderStatus.COMPLETED;
+        // DELIVERED is the terminal "done" state; COMPLETED was removed.
+        return status == OrderStatus.DELIVERED;
     }
     
     public boolean isCancelled() {
@@ -220,13 +261,13 @@ public class Order {
     
     public enum OrderStatus {
         PENDING,
+        OPEN_FOR_BID,
         ASSIGNED,
         CONFIRMED,
         IN_PROGRESS,
         PICKED_UP,
         IN_TRANSIT,
         DELIVERED,
-        COMPLETED,
         CANCELLED,
         FAILED
     }
@@ -236,5 +277,20 @@ public class Order {
         NORMAL,
         HIGH,
         URGENT
+    }
+
+    public enum OrderType {
+        MARKETPLACE,
+        GENERAL_DELIVERY
+    }
+
+    public enum RoutingMode {
+        DIRECT,
+        OPEN_BID
+    }
+
+    public enum PricingMode {
+        FIXED,
+        MIN_MAX
     }
 }

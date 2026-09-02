@@ -3,6 +3,7 @@ import { Subscription, forkJoin } from 'rxjs';
 import {
   BidService,
   Bid,
+  BidderType,
   BidRanking,
   BidStatus
 } from '../../services/bid.service';
@@ -198,6 +199,17 @@ export class BidsComponent implements OnInit, OnDestroy {
 
   canRespond(bid: Bid): boolean {
     return bid.status === BidStatus.SUBMITTED;
+  }
+
+  bidderLabel(bid: Bid): string {
+    if (bid.bidderType === BidderType.INDEPENDENT_DRIVER) {
+      return bid.driverId ? `Independent Driver #${bid.driverId}` : 'Independent Driver';
+    }
+    return bid.deliveryCompanyId ? `Delivery Company #${bid.deliveryCompanyId}` : 'Delivery Company';
+  }
+
+  get isClient(): boolean {
+    return this.currentUser?.role === UserRole.CLIENT;
   }
 
   bidClass(status: BidStatus): string {

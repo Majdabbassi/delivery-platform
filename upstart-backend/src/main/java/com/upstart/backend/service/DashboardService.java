@@ -56,7 +56,7 @@ public class DashboardService {
         overview.put("totalRevenue", orderRepository.getTotalCompletedRevenue());
         overview.put("pendingOrders", orderRepository.countByStatus(Order.OrderStatus.PENDING));
         overview.put("inProgressOrders", orderRepository.countByStatus(Order.OrderStatus.IN_PROGRESS));
-        overview.put("completedOrders", orderRepository.countByStatus(Order.OrderStatus.COMPLETED));
+        overview.put("completedOrders", orderRepository.countByStatus(Order.OrderStatus.DELIVERED));
         overview.put("cancelledOrders", orderRepository.countByStatus(Order.OrderStatus.CANCELLED));
         overview.put("vendorCompanies", vendorCompanyRepository.count());
         overview.put("vendorOwners", vendorOwnerRepository.count());

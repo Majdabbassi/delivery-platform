@@ -60,33 +60,57 @@ public class BidService {
         Order order = orderRepository.findById(bidRequest.getOrderId())
             .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
-        DeliveryCompany company = deliveryCompanyRepository.findById(bidRequest.getDeliveryCompanyId())
-            .orElseThrow(() -> new IllegalArgumentException("Delivery company not found"));
-
-        if (!isOrderAvailableForBidding(order)) {
-            throw new IllegalStateException("Order is no longer available for bidding");
-        }
-
-        if (!canCompanyBidOnOrder(company, order)) {
-            throw new IllegalStateException("Company is not eligible to bid on this order");
-        }
+        boolean isIndependentDriver = bidRequest.getBidderType() == Bid.BidderType.INDEPENDENT_DRIVER;
 
         Bid bid = new Bid();
         bid.setBidId(generateBidId());
         bid.setOrderId(bidRequest.getOrderId());
-        bid.setDeliveryCompanyId(bidRequest.getDeliveryCompanyId());
-        bid.setDriverId(bidRequest.getDriverId());
+        bid.setBidderType(isIndependentDriver ? Bid.BidderType.INDEPENDENT_DRIVER : Bid.BidderType.COMPANY);
+        bid.setDeliveryCompanyId(isIndependentDriver ? null : bidRequest.getDeliveryCompanyId());
+        bid.setDriverId(isIndependentDriver ? bidRequest.getDriverId() : null);
         bid.setBidAmount(bidRequest.getBidAmount());
         bid.setEstimatedDeliveryTime(bidRequest.getEstimatedDeliveryTime());
         bid.setMessage(bidRequest.getMessage());
         bid.setStatus(Bid.BidStatus.SUBMITTED);
         bid.setSubmittedAt(LocalDateTime.now());
 
+        if (isIndependentDriver) {
+            DriverPerson driver = driverPersonRepository.findById(bid.getDriverId())
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+            if (driver.getDeliveryCompany() != null) {
+                throw new IllegalStateException(
+                        "Drivers employed by a delivery company cannot bid directly. "
+                        + "Only the delivery company owner may bid on their behalf.");
+            }
+            if (!Boolean.TRUE.equals(driver.getIsVerified())) {
+                throw new IllegalStateException("Driver must be verified to bid");
+            }
+            if (!Boolean.TRUE.equals(driver.getIsAvailable())) {
+                throw new IllegalStateException("Driver must be available to bid");
+            }
+            if (!isOrderAvailableForBidding(order)) {
+                throw new IllegalStateException("Order is no longer available for bidding");
+            }
+            if (!canDriverBidOnOrder(order, driver.getId())) {
+                throw new IllegalStateException("Driver has already submitted a bid on this order");
+            }
+            logger.info("Bid {} submitted by independent driver {} for order {} with amount {}",
+                       bid.getBidId(), driver.getId(), order.getId(), bid.getBidAmount());
+        } else {
+            DeliveryCompany company = deliveryCompanyRepository.findById(bidRequest.getDeliveryCompanyId())
+                .orElseThrow(() -> new IllegalArgumentException("Delivery company not found"));
+
+            if (!isOrderAvailableForBidding(order)) {
+                throw new IllegalStateException("Order is no longer available for bidding");
+            }
+            if (!canCompanyBidOnOrder(company, order)) {
+                throw new IllegalStateException("Company is not eligible to bid on this order");
+            }
+            logger.info("Bid {} submitted by company {} for order {} with amount {}",
+                       bid.getBidId(), company.getId(), order.getId(), bid.getBidAmount());
+        }
+
         bid = bidRepository.save(bid);
-
-        logger.info("Bid {} submitted by company {} for order {} with amount {}",
-                   bid.getBidId(), company.getId(), order.getId(), bid.getBidAmount());
-
         return bid;
     }
 
@@ -104,6 +128,14 @@ public class BidService {
     @Transactional(readOnly = true)
     public Page<Bid> getBidsByCompany(Long deliveryCompanyId, Pageable pageable) {
         return bidRepository.findByDeliveryCompanyIdOrderBySubmittedAtDesc(deliveryCompanyId, pageable);
+    }
+
+    /**
+     * Get bids submitted by an independent driver
+     */
+    @Transactional(readOnly = true)
+    public Page<Bid> getBidsByDriver(Long driverId, Pageable pageable) {
+        return bidRepository.findByDriverIdOrderBySubmittedAtDesc(driverId, pageable);
     }
 
     /**
@@ -195,6 +227,20 @@ public class BidService {
     }
 
     /**
+     * Get bid statistics for an independent driver
+     */
+    @Transactional(readOnly = true)
+    public BidStatistics getDriverBidStatistics(Long driverId) {
+        BidStatistics stats = new BidStatistics();
+        stats.setBidsSubmitted(bidRepository.countByDriverId(driverId));
+        stats.setBidsAccepted(bidRepository.countByDriverIdAndStatus(driverId, Bid.BidStatus.ACCEPTED));
+        stats.setBidsRejected(bidRepository.countByDriverIdAndStatus(driverId, Bid.BidStatus.REJECTED));
+        stats.setBidsWithdrawn(bidRepository.countByDriverIdAndStatus(driverId, Bid.BidStatus.WITHDRAWN));
+        stats.setBidsExpired(bidRepository.countByDriverIdAndStatus(driverId, Bid.BidStatus.EXPIRED));
+        return stats;
+    }
+
+    /**
      * Get bid rankings for an order
      */
     @Transactional(readOnly = true)
@@ -280,20 +326,26 @@ public class BidService {
         if (request.getOrderId() == null) {
             throw new IllegalArgumentException("Order ID is required");
         }
-        if (request.getDeliveryCompanyId() == null) {
-            throw new IllegalArgumentException("Delivery company ID is required");
-        }
         if (request.getBidAmount() == null || request.getBidAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Valid bid amount is required");
         }
         if (request.getEstimatedDeliveryTime() == null) {
             throw new IllegalArgumentException("Estimated delivery time is required");
         }
+        if (request.getBidderType() == null) {
+            request.setBidderType(Bid.BidderType.COMPANY); // backward compatible default
+        }
+        if (request.getBidderType() == Bid.BidderType.COMPANY && request.getDeliveryCompanyId() == null) {
+            throw new IllegalArgumentException("Delivery company ID is required for company bids");
+        }
+        if (request.getBidderType() == Bid.BidderType.INDEPENDENT_DRIVER && request.getDriverId() == null) {
+            throw new IllegalArgumentException("Driver ID is required for independent driver bids");
+        }
     }
 
     private boolean isOrderAvailableForBidding(Order order) {
-        return order.getStatus() == Order.OrderStatus.PENDING &&
-               order.getDeliveryCompany() == null;
+        return order.getStatus() == Order.OrderStatus.OPEN_FOR_BID
+               && order.getDeliveryCompany() == null;
     }
 
     private boolean canCompanyBidOnOrder(DeliveryCompany company, Order order) {
@@ -307,25 +359,34 @@ public class BidService {
         return existingBids.isEmpty();
     }
 
+    private boolean canDriverBidOnOrder(Order order, Long driverId) {
+        List<Bid> existingBids = bidRepository
+                .findByOrderIdAndStatusAndDriverId(order.getId(), Bid.BidStatus.SUBMITTED, driverId);
+
+        return existingBids.isEmpty();
+    }
+
     private String generateBidId() {
         return "BID_" + System.currentTimeMillis() + "_" + UUID.randomUUID().toString().substring(0, 8);
     }
 
     private void assignOrderToBid(Order order, Bid bid) {
-        DeliveryCompany company = deliveryCompanyRepository.findById(bid.getDeliveryCompanyId())
-            .orElseThrow(() -> new IllegalArgumentException("Delivery company not found"));
-
-        order.setDeliveryCompany(company);
         order.setStatus(Order.OrderStatus.ASSIGNED);
         order.setDeliveryFee(bid.getBidAmount());
+        order.setAssignedAt(LocalDateTime.now());
+
+        if (bid.getBidderType() == Bid.BidderType.COMPANY) {
+            DeliveryCompany company = deliveryCompanyRepository.findById(bid.getDeliveryCompanyId())
+                .orElseThrow(() -> new IllegalArgumentException("Delivery company not found"));
+            order.setDeliveryCompany(company);
+        }
 
         if (bid.getDriverId() != null) {
-            DriverPerson driver = driverPersonRepository.findById(bid.getDriverId()).orElse(null);
-            if (driver != null) {
-                order.setDriverPerson(driver);
-                driver.setIsAvailable(false);
-                driverPersonRepository.save(driver);
-            }
+            DriverPerson driver = driverPersonRepository.findById(bid.getDriverId())
+                .orElseThrow(() -> new IllegalArgumentException("Driver not found"));
+            order.setDriverPerson(driver);
+            driver.setIsAvailable(false);
+            driverPersonRepository.save(driver);
         }
 
         orderRepository.save(order);
@@ -357,16 +418,26 @@ public class BidService {
         BigDecimal timeScore = BigDecimal.valueOf(Math.max(0, 100 - hoursToDelivery * 2));
         score = score.add(timeScore.multiply(BigDecimal.valueOf(0.3)));
 
-        DeliveryCompany company = deliveryCompanyRepository.findById(bid.getDeliveryCompanyId()).orElse(null);
+        DeliveryCompany company = bid.getDeliveryCompanyId() != null
+                ? deliveryCompanyRepository.findById(bid.getDeliveryCompanyId()).orElse(null)
+                : null;
+        DriverPerson driver = bid.getDriverId() != null
+                ? driverPersonRepository.findById(bid.getDriverId()).orElse(null)
+                : null;
+        BigDecimal ratingScore = null;
         if (company != null && company.getRating() != null) {
-            BigDecimal ratingScore = company.getRating().multiply(BigDecimal.valueOf(20));
+            ratingScore = company.getRating().multiply(BigDecimal.valueOf(20));
+        } else if (driver != null && driver.getRating() != null) {
+            ratingScore = driver.getRating().multiply(BigDecimal.valueOf(20));
+        }
+        if (ratingScore != null) {
             score = score.add(ratingScore.multiply(BigDecimal.valueOf(0.3)));
         }
 
-        return new BidRanking(bid, score, generateRankingReasons(bid, company));
+        return new BidRanking(bid, score, generateRankingReasons(bid, company, driver));
     }
 
-    private List<String> generateRankingReasons(Bid bid, DeliveryCompany company) {
+    private List<String> generateRankingReasons(Bid bid, DeliveryCompany company, DriverPerson driver) {
         List<String> reasons = new ArrayList<>();
 
         if (bid.getBidAmount().compareTo(BigDecimal.valueOf(50)) < 0) {
@@ -382,6 +453,11 @@ public class BidService {
             reasons.add("High-rated company");
         }
 
+        if (driver != null && driver.getRating() != null &&
+            driver.getRating().compareTo(BigDecimal.valueOf(4.0)) > 0) {
+            reasons.add("High-rated driver");
+        }
+
         if (bid.getMessage() != null && !bid.getMessage().trim().isEmpty()) {
             reasons.add("Detailed proposal");
         }
@@ -393,6 +469,7 @@ public class BidService {
 
     public static class BidRequest {
         private Long orderId;
+        private Bid.BidderType bidderType;
         private Long deliveryCompanyId;
         private Long driverId;
         private BigDecimal bidAmount;
@@ -401,9 +478,10 @@ public class BidService {
 
         public BidRequest() {}
 
-        public BidRequest(Long orderId, Long deliveryCompanyId, Long driverId,
+        public BidRequest(Long orderId, Bid.BidderType bidderType, Long deliveryCompanyId, Long driverId,
                          BigDecimal bidAmount, LocalDateTime estimatedDeliveryTime, String message) {
             this.orderId = orderId;
+            this.bidderType = bidderType;
             this.deliveryCompanyId = deliveryCompanyId;
             this.driverId = driverId;
             this.bidAmount = bidAmount;
@@ -413,6 +491,9 @@ public class BidService {
 
         public Long getOrderId() { return orderId; }
         public void setOrderId(Long orderId) { this.orderId = orderId; }
+
+        public Bid.BidderType getBidderType() { return bidderType; }
+        public void setBidderType(Bid.BidderType bidderType) { this.bidderType = bidderType; }
 
         public Long getDeliveryCompanyId() { return deliveryCompanyId; }
         public void setDeliveryCompanyId(Long deliveryCompanyId) { this.deliveryCompanyId = deliveryCompanyId; }

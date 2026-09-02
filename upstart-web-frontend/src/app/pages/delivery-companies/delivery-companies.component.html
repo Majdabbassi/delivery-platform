@@ -14,7 +14,7 @@
           <i class="fas fa-download"></i>
           Export Data
         </button>
-        <button class="btn btn-primary" (click)="openAddModal()">
+        <button *ngIf="isSuperAdmin" class="btn btn-primary" (click)="openAddModal()">
           <i class="fas fa-plus"></i>
           Add Delivery Company
         </button>
@@ -199,7 +199,7 @@
                 <button class="btn-icon" (click)="openEditModal(company)" title="Edit Delivery Company">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn-icon danger" (click)="openDeleteModal(company)" title="Delete Delivery Company">
+                <button *ngIf="isSuperAdmin" class="btn-icon danger" (click)="openDeleteModal(company)" title="Delete Delivery Company">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -216,7 +216,7 @@
       </div>
       <h3>No Delivery Companies Found</h3>
       <p>No delivery companies match your current filters. Try adjusting your search criteria or add a new delivery company.</p>
-      <button class="btn btn-primary" (click)="openAddModal()">
+      <button *ngIf="isSuperAdmin" class="btn btn-primary" (click)="openAddModal()">
         <i class="fas fa-plus"></i>
         Add First Delivery Company
       </button>

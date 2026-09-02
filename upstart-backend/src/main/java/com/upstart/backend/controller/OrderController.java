@@ -1,12 +1,12 @@
 package com.upstart.backend.controller;
 
 import com.upstart.backend.entity.*;
+import com.upstart.backend.exception.ResourceNotFoundException;
 import com.upstart.backend.service.OrderService;
 import com.upstart.backend.service.DeliveryCompanyService;
 import com.upstart.backend.service.PartnershipService;
 import com.upstart.backend.service.SecurityService;
 import com.upstart.backend.service.OrderAssignmentService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -36,8 +36,10 @@ public class OrderController {
     // Create operations
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('CLIENT')")
-    public ResponseEntity<Order> createOrder(@Valid @RequestBody Order order) {
-        log.info("Creating new order for vendor company: {}", order.getVendorCompany().getId());
+    public ResponseEntity<Order> createOrder(@RequestBody Order order) {
+        log.info("Creating new {} order (routing: {})",
+                order.getOrderType() != null ? order.getOrderType() : "MARKETPLACE",
+                order.getRoutingMode() != null ? order.getRoutingMode() : "OPEN_BID");
         Order createdOrder = orderService.createOrder(order);
         return new ResponseEntity<>(createdOrder, HttpStatus.CREATED);
     }
@@ -65,6 +67,7 @@ public class OrderController {
     public ResponseEntity<Order> getOrderByTrackingNumber(@PathVariable String trackingNumber) {
         log.debug("Fetching order with tracking number: {}", trackingNumber);
         Order order = orderService.getOrderByTrackingNumber(trackingNumber);
+        orderService.assertCanReadOrder(order);
         return ResponseEntity.ok(order);
     }
     
@@ -79,7 +82,7 @@ public class OrderController {
     // Update operations
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
-    public ResponseEntity<Order> updateOrder(@PathVariable Long id, @Valid @RequestBody Order orderDetails) {
+    public ResponseEntity<Order> updateOrder(@PathVariable Long id, @RequestBody Order orderDetails) {
         log.info("Updating order with ID: {}", id);
         Order updatedOrder = orderService.updateOrder(id, orderDetails);
         return ResponseEntity.ok(updatedOrder);
@@ -191,18 +194,32 @@ public class OrderController {
                 break;
             case CLIENT:
                 orders = orderService.getOrdersByCustomer(securityService.getCurrentCustomerUser());
+                orders.addAll(orderService.getOrdersCreatedBy(currentUser.getId()));
                 break;
             case VENDOR_OWNER:
                 orders = orderService.getOrdersByVendorOwner(securityService.getCurrentVendorOwner());
+                orders.addAll(orderService.getOrdersCreatedBy(currentUser.getId()));
                 break;
             case DELIVERY_OWNER:
                 orders = orderService.getOrdersByDeliveryOwner(securityService.getCurrentDeliveryOwner());
+                orders.addAll(orderService.getOrdersCreatedBy(currentUser.getId()));
                 break;
             case SUPER_ADMIN:
             default:
                 orders = orderService.getAllOrders(org.springframework.data.domain.Pageable.unpaged()).getContent();
                 break;
         }
+        orders = orders.stream()
+                .filter(java.util.Objects::nonNull)
+                .sorted(java.util.Comparator.comparing(Order::getId).reversed())
+                .collect(java.util.stream.Collectors.toMap(
+                        Order::getId,
+                        o -> o,
+                        (first, second) -> first,
+                        java.util.LinkedHashMap::new))
+                .values()
+                .stream()
+                .toList();
         return ResponseEntity.ok(orders);
     }
     
@@ -230,6 +247,14 @@ public class OrderController {
     public ResponseEntity<List<Order>> getPendingUnassignedOrders() {
         log.debug("Fetching pending unassigned orders");
         List<Order> orders = orderService.getPendingUnassignedOrders();
+        return ResponseEntity.ok(orders);
+    }
+
+    @GetMapping("/open-for-bid")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER') or hasRole('DRIVER')")
+    public ResponseEntity<List<Order>> getOpenForBidOrders() {
+        log.debug("Fetching orders open for bidding");
+        List<Order> orders = orderService.getOpenForBidOrders();
         return ResponseEntity.ok(orders);
     }
     
@@ -307,7 +332,12 @@ public class OrderController {
     
     @GetMapping("/exists/tracking-number/{trackingNumber}")
     public ResponseEntity<Boolean> existsByTrackingNumber(@PathVariable String trackingNumber) {
-        boolean exists = orderService.existsByTrackingNumber(trackingNumber);
-        return ResponseEntity.ok(exists);
+        try {
+            Order order = orderService.getOrderByTrackingNumber(trackingNumber);
+            orderService.assertCanReadOrder(order);
+            return ResponseEntity.ok(true);
+        } catch (ResourceNotFoundException e) {
+            return ResponseEntity.ok(false);
+        }
     }
 }

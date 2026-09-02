@@ -19,7 +19,10 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,6 +36,7 @@ public class OrderService {
     private final RealtimeTrackingService realtimeTrackingService;
     private final SecurityService securityService;
     private final OrderAssignmentService orderAssignmentService;
+    private final OrderPoolService orderPoolService;
 
     @Value("${upstart.assignment.general.auto-assign-on-create:true}")
     private boolean autoAssignOnCreate;
@@ -46,13 +50,48 @@ public class OrderService {
     public Order createOrder(Order order) {
         User currentUser = securityService.getCurrentUser();
         assertOrderCreateRateLimit(currentUser.getUsername());
-        log.info("Creating new order for vendor company: {}", order.getVendorCompany().getId());
+        order.setCreatedByUserId(currentUser.getId());
+
+        // Defaults for the new order-type / routing fields.
+        if (order.getOrderType() == null) {
+            order.setOrderType(Order.OrderType.MARKETPLACE);
+        }
+        if (order.getRoutingMode() == null) {
+            order.setRoutingMode(Order.RoutingMode.OPEN_BID);
+        }
+        if (order.getPricingMode() == null) {
+            order.setPricingMode(Order.PricingMode.FIXED);
+        }
+
+        // The JPA entity constraints cannot run via @Valid on the raw request body
+        // (orderNumber is always null on create), so enforce the business rules
+        // explicitly here.
+        if (order.getPickupAddress() == null || order.getPickupAddress().isBlank()) {
+            throw new IllegalArgumentException("Pickup address is required");
+        }
+        if (order.getDeliveryAddress() == null || order.getDeliveryAddress().isBlank()) {
+            throw new IllegalArgumentException("Delivery address is required");
+        }
+        if (order.getPricingMode() == Order.PricingMode.FIXED
+                && (order.getOrderAmount() == null
+                    || order.getOrderAmount().compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new IllegalArgumentException("Order amount must be greater than zero for fixed pricing");
+        }
+
+        boolean isGeneralDelivery = order.getOrderType() == Order.OrderType.GENERAL_DELIVERY;
+        log.info("Creating new {} order for {}",
+                order.getOrderType(),
+                isGeneralDelivery ? "general delivery" :
+                        (order.getVendorCompany() != null ? order.getVendorCompany().getId() : "unknown vendor"));
 
         // Tenant binding: a CLIENT may only create orders for themselves,
         // and a VENDOR_OWNER may only create orders for their own company.
         if (currentUser.getRole() == User.Role.CLIENT) {
             order.setCustomerUser(securityService.getCurrentCustomerUser());
-        } else if (currentUser.getRole() == User.Role.VENDOR_OWNER) {
+        } else if (currentUser.getRole() == User.Role.VENDOR_OWNER && !isGeneralDelivery) {
+            if (order.getVendorCompany() == null) {
+                throw new IllegalArgumentException("Vendor company is required for marketplace orders");
+            }
             securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId());
         }
         
@@ -70,10 +109,28 @@ public class OrderService {
         if (order.getStatus() == null) {
             order.setStatus(Order.OrderStatus.PENDING);
         }
+        // Pooled orders (open bid) start OPEN_FOR_BID so they are visible to bidders.
+        if (order.getRoutingMode() == Order.RoutingMode.OPEN_BID
+                && order.getStatus() == Order.OrderStatus.PENDING) {
+            order.setStatus(Order.OrderStatus.OPEN_FOR_BID);
+        }
         
         // Set default priority if not provided
         if (order.getPriority() == null) {
             order.setPriority(Order.OrderPriority.NORMAL);
+        }
+        
+        // Adopt proposed pricing: when the sender proposes a range, apply it as
+        // the order amount floor (min) and cap (max) for reference by bidders.
+        if (order.getPricingMode() == Order.PricingMode.MIN_MAX) {
+            if (order.getProposedMinAmount() == null || order.getProposedMaxAmount() == null) {
+                throw new IllegalArgumentException(
+                        "Proposed min and max amounts are required when pricing mode is MIN_MAX");
+            }
+            if (order.getProposedMinAmount().compareTo(order.getProposedMaxAmount()) > 0) {
+                throw new IllegalArgumentException("Proposed min amount cannot exceed proposed max amount");
+            }
+            order.setOrderAmount(order.getProposedMinAmount());
         }
         
         // Calculate total amount if not provided
@@ -85,10 +142,23 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully with ID: {} and order number: {}", savedOrder.getId(), savedOrder.getOrderNumber());
         
+        // Pooled (open-bid) orders are pushed into company pools and remain
+        // OPEN_FOR_BID so both delivery companies and independent drivers can bid.
+        if (savedOrder.getRoutingMode() == Order.RoutingMode.OPEN_BID) {
+            try {
+                orderPoolService.addOrderToPool(savedOrder);
+            } catch (Exception e) {
+                log.warn("Failed to add order {} to company pools: {}", savedOrder.getId(), e.getMessage());
+            }
+        }
+        
         realtimeTrackingService.broadcastOrderCreated(savedOrder);
         
-        // Auto-assign to the best delivery option when enabled.
-        if (autoAssignOnCreate && savedOrder.getStatus() == Order.OrderStatus.PENDING) {
+        // Auto-assign only for direct-routed orders that are still pending; pooled
+        // orders are left OPEN_FOR_BID so carriers/independent drivers can bid.
+        if (autoAssignOnCreate
+                && savedOrder.getRoutingMode() != Order.RoutingMode.OPEN_BID
+                && savedOrder.getStatus() == Order.OrderStatus.PENDING) {
             OrderAssignmentService.OrderAssignmentResult result =
                     orderAssignmentService.assignOrder(savedOrder.getId());
             if (result.isSuccessful()) {
@@ -218,6 +288,9 @@ public class OrderService {
             existingOrder.setDeliveryLongitude(orderDetails.getDeliveryLongitude());
         }
         if (orderDetails.getOrderAmount() != null) {
+            if (orderDetails.getOrderAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Order amount must be greater than zero");
+            }
             existingOrder.setOrderAmount(orderDetails.getOrderAmount());
         }
         if (orderDetails.getDeliveryFee() != null) {
@@ -228,6 +301,9 @@ public class OrderService {
         }
         if (orderDetails.getSpecialInstructions() != null) {
             existingOrder.setSpecialInstructions(orderDetails.getSpecialInstructions());
+        }
+        if (orderDetails.getNotes() != null) {
+            existingOrder.setNotes(orderDetails.getNotes());
         }
         if (orderDetails.getPriority() != null) {
             existingOrder.setPriority(orderDetails.getPriority());
@@ -253,12 +329,29 @@ public class OrderService {
         if (orderDetails.getRequiresSignature() != null) {
             existingOrder.setRequiresSignature(orderDetails.getRequiresSignature());
         }
+        if (orderDetails.getDistanceKm() != null) {
+            existingOrder.setDistanceKm(orderDetails.getDistanceKm());
+        }
+        if (orderDetails.getActualPickupTime() != null) {
+            existingOrder.setActualPickupTime(orderDetails.getActualPickupTime());
+        }
+        if (orderDetails.getActualDeliveryTime() != null) {
+            existingOrder.setActualDeliveryTime(orderDetails.getActualDeliveryTime());
+        }
+        if (orderDetails.getStatus() != null && orderDetails.getStatus() != existingOrder.getStatus()) {
+            assertValidStatusTransition(existingOrder.getStatus(), orderDetails.getStatus());
+            existingOrder.setStatus(orderDetails.getStatus());
+        }
         
         // Recalculate total amount if order amount or delivery fee changed
         if (orderDetails.getOrderAmount() != null || orderDetails.getDeliveryFee() != null) {
             BigDecimal orderAmount = existingOrder.getOrderAmount();
             BigDecimal deliveryFee = existingOrder.getDeliveryFee() != null ? existingOrder.getDeliveryFee() : BigDecimal.ZERO;
-            existingOrder.setTotalAmount(orderAmount.add(deliveryFee));
+            if (orderAmount != null) {
+                existingOrder.setTotalAmount(orderAmount.add(deliveryFee));
+            } else {
+                existingOrder.setTotalAmount(deliveryFee);
+            }
         }
         
         Order updatedOrder = orderRepository.save(existingOrder);
@@ -272,12 +365,16 @@ public class OrderService {
         
         Order order = getOrderById(id);
         assertCanUpdateStatus(order);
+        if (status != order.getStatus()) {
+            assertValidStatusTransition(order.getStatus(), status);
+        }
         order.setStatus(status);
         
         // Set timestamps based on status
         LocalDateTime now = LocalDateTime.now();
         switch (status) {
             case PENDING:
+            case OPEN_FOR_BID:
             case ASSIGNED:
             case CONFIRMED:
             case IN_PROGRESS:
@@ -292,7 +389,6 @@ public class OrderService {
                 // Order is in transit, no specific timestamp update
                 break;
             case DELIVERED:
-            case COMPLETED:
                 if (order.getActualDeliveryTime() == null) {
                     order.setActualDeliveryTime(now);
                 }
@@ -309,6 +405,31 @@ public class OrderService {
         realtimeTrackingService.broadcastOrderStatusChanged(updatedOrder);
         
         return updatedOrder;
+    }
+
+    /**
+     * Allowed order-status transitions. DELIVERED is the terminal "done" state
+     * (COMPLETED was removed). CANCELLED/FAILED are reachable from any
+     * non-terminal status.
+     */
+    private static final Map<Order.OrderStatus, Set<Order.OrderStatus>> ALLOWED_TRANSITIONS = Map.of(
+        Order.OrderStatus.PENDING,      EnumSet.of(Order.OrderStatus.ASSIGNED, Order.OrderStatus.CANCELLED, Order.OrderStatus.FAILED),
+        Order.OrderStatus.OPEN_FOR_BID, EnumSet.of(Order.OrderStatus.ASSIGNED, Order.OrderStatus.CANCELLED, Order.OrderStatus.FAILED),
+        Order.OrderStatus.ASSIGNED,     EnumSet.of(Order.OrderStatus.CONFIRMED, Order.OrderStatus.IN_PROGRESS, Order.OrderStatus.CANCELLED, Order.OrderStatus.FAILED),
+        Order.OrderStatus.CONFIRMED,    EnumSet.of(Order.OrderStatus.IN_PROGRESS, Order.OrderStatus.PICKED_UP, Order.OrderStatus.CANCELLED, Order.OrderStatus.FAILED),
+        Order.OrderStatus.IN_PROGRESS,  EnumSet.of(Order.OrderStatus.PICKED_UP, Order.OrderStatus.CANCELLED, Order.OrderStatus.FAILED),
+        Order.OrderStatus.PICKED_UP,    EnumSet.of(Order.OrderStatus.IN_TRANSIT, Order.OrderStatus.FAILED),
+        Order.OrderStatus.IN_TRANSIT,   EnumSet.of(Order.OrderStatus.DELIVERED, Order.OrderStatus.FAILED),
+        // DELIVERED, CANCELLED, FAILED are terminal.
+        Order.OrderStatus.DELIVERED,    EnumSet.noneOf(Order.OrderStatus.class),
+        Order.OrderStatus.CANCELLED,    EnumSet.noneOf(Order.OrderStatus.class),
+        Order.OrderStatus.FAILED,       EnumSet.noneOf(Order.OrderStatus.class)
+    );
+
+    private void assertValidStatusTransition(Order.OrderStatus from, Order.OrderStatus to) {
+        if (!ALLOWED_TRANSITIONS.getOrDefault(from, Set.of()).contains(to)) {
+            throw new IllegalArgumentException("Invalid status transition: " + from + " -> " + to);
+        }
     }
     
     public Order assignDeliveryCompany(Long orderId, DeliveryCompany deliveryCompany) {
@@ -444,6 +565,11 @@ public class OrderService {
         log.debug("Fetching orders for driver: {}", driver.getId());
         return orderRepository.findByDriverPerson(driver);
     }
+
+    public List<Order> getOrdersCreatedBy(Long userId) {
+        log.debug("Fetching orders created by user: {}", userId);
+        return orderRepository.findByCreatedByUserId(userId);
+    }
     
     public List<Order> getOrdersByPartnership(Partnership partnership) {
         log.debug("Fetching orders for partnership: {}", partnership.getId());
@@ -453,6 +579,15 @@ public class OrderService {
     public List<Order> getOrdersByStatus(Order.OrderStatus status) {
         log.debug("Fetching orders with status: {}", status);
         return orderRepository.findByStatus(status);
+    }
+
+    /**
+     * Orders currently open for bidding. Visible to delivery owners and
+     * independent drivers so they can place bids on the pool.
+     */
+    public List<Order> getOpenForBidOrders() {
+        log.debug("Fetching open-for-bid orders");
+        return orderRepository.findByStatus(Order.OrderStatus.OPEN_FOR_BID);
     }
     
     public List<Order> getPendingUnassignedOrders() {
@@ -538,6 +673,9 @@ public class OrderService {
         if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
             return;
         }
+        if (order.getCreatedByUserId() != null && currentUser.getId().equals(order.getCreatedByUserId())) {
+            return;
+        }
         if (currentUser.getRole() == User.Role.CLIENT
                 && order.getCustomerUser() != null
                 && currentUser.getId().equals(order.getCustomerUser().getId())) {
@@ -555,23 +693,31 @@ public class OrderService {
     /**
      * Grants read access to an order for the SUPER_ADMIN, the vendor company
      * owner, the delivery company owner, the customer who placed the order,
-     * and the driver assigned to the order.
+     * and the driver assigned to the order. Orders that are OPEN_FOR_BID are
+     * readable by delivery owners and independent drivers so they can bid.
      */
     public void assertCanReadOrder(Order order) {
         User currentUser = securityService.getCurrentUser();
         if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
             return;
         }
+        if (order.getCreatedByUserId() != null && currentUser.getId().equals(order.getCreatedByUserId())) {
+            return;
+        }
+        boolean isOpenForBid = order.getStatus() == Order.OrderStatus.OPEN_FOR_BID;
         Long userId = currentUser.getId();
         if (currentUser.getRole() == User.Role.CLIENT
                 && order.getCustomerUser() != null
                 && userId.equals(order.getCustomerUser().getId())) {
             return;
         }
-        if (currentUser.getRole() == User.Role.DRIVER
-                && order.getDriverPerson() != null
-                && userId.equals(order.getDriverPerson().getId())) {
-            return;
+        if (currentUser.getRole() == User.Role.DRIVER) {
+            if (order.getDriverPerson() != null && userId.equals(order.getDriverPerson().getId())) {
+                return;
+            }
+            if (isOpenForBid) {
+                return; // any independent/company driver may view and bid on pooled orders
+            }
         }
         if (currentUser.getRole() == User.Role.VENDOR_OWNER
                 && order.getVendorCompany() != null
@@ -579,11 +725,15 @@ public class OrderService {
                 && userId.equals(order.getVendorCompany().getOwner().getId())) {
             return;
         }
-        if (currentUser.getRole() == User.Role.DELIVERY_OWNER
-                && order.getDeliveryCompany() != null
-                && order.getDeliveryCompany().getOwner() != null
-                && userId.equals(order.getDeliveryCompany().getOwner().getId())) {
-            return;
+        if (currentUser.getRole() == User.Role.DELIVERY_OWNER) {
+            if (order.getDeliveryCompany() != null
+                    && order.getDeliveryCompany().getOwner() != null
+                    && userId.equals(order.getDeliveryCompany().getOwner().getId())) {
+                return;
+            }
+            if (isOpenForBid) {
+                return; // delivery owners may view pooled orders they bid on
+            }
         }
         throw new AccessDeniedException("You do not have permission to view this order");
     }

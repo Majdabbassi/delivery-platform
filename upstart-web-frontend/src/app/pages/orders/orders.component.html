@@ -114,13 +114,13 @@
       <select [(ngModel)]="statusFilter" (change)="onStatusFilter(statusFilter)">
         <option value="all">All Statuses</option>
         <option [value]="OrderStatus.PENDING">Pending</option>
+        <option [value]="OrderStatus.OPEN_FOR_BID">Open for Bids</option>
         <option [value]="OrderStatus.ASSIGNED">Assigned</option>
         <option [value]="OrderStatus.CONFIRMED">Confirmed</option>
         <option [value]="OrderStatus.IN_PROGRESS">In Progress</option>
         <option [value]="OrderStatus.PICKED_UP">Picked Up</option>
         <option [value]="OrderStatus.IN_TRANSIT">In Transit</option>
         <option [value]="OrderStatus.DELIVERED">Delivered</option>
-        <option [value]="OrderStatus.COMPLETED">Completed</option>
         <option [value]="OrderStatus.CANCELLED">Cancelled</option>
         <option [value]="OrderStatus.FAILED">Failed</option>
       </select>
@@ -259,7 +259,7 @@
                   <i class="fas fa-edit"></i>
                 </button>
                 <div class="dropdown-content">
-                  <button *ngFor="let status of [OrderStatus.ASSIGNED, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED, OrderStatus.COMPLETED]"
+                  <button *ngFor="let status of [OrderStatus.ASSIGNED, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED]"
                           (click)="updateOrderStatus(order, status)"
                           [disabled]="order.status === status">
                     {{ getStatusDisplayName(status) }}
@@ -269,14 +269,14 @@
               
               <button class="btn-action rate" 
                       (click)="openRatingModal(order)" 
-                      *ngIf="canRate() && order.status === OrderStatus.COMPLETED"
+                      *ngIf="canRate() && order.status === OrderStatus.DELIVERED"
                       title="Rate Order">
                 <i class="fas fa-star"></i>
               </button>
               
               <button class="btn-action cancel" 
                       (click)="cancelOrder(order)" 
-                      *ngIf="canCancel() && order.status !== OrderStatus.CANCELLED && order.status !== OrderStatus.COMPLETED"
+                      *ngIf="canCancel() && order.status !== OrderStatus.CANCELLED"
                       title="Cancel Order">
                 <i class="fas fa-times"></i>
               </button>
@@ -328,11 +328,27 @@
     
     <form class="order-form" (ngSubmit)="createOrder()">
       <div class="form-section">
-        <h3>Order Details</h3>
+        <h3>Order Type &amp; Routing</h3>
         <div class="form-row">
           <div class="form-group">
+            <label for="orderType">Order Type *</label>
+            <select id="orderType" [(ngModel)]="orderForm.orderType" name="orderType" (ngModelChange)="onOrderTypeChange()">
+              <option [value]="OrderType.MARKETPLACE">Marketplace (Products)</option>
+              <option [value]="OrderType.GENERAL_DELIVERY">General Delivery</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="routingMode">Routing *</label>
+            <select id="routingMode" [(ngModel)]="orderForm.routingMode" name="routingMode">
+              <option [value]="RoutingMode.OPEN_BID">Deliver to Pool (Bidding)</option>
+              <option [value]="RoutingMode.DIRECT">Direct (Assign Now)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" *ngIf="isMarketplace">
             <label for="vendorCompanyId">Vendor Company *</label>
-            <select id="vendorCompanyId" [(ngModel)]="orderForm.vendorCompanyId" name="vendorCompanyId" required>
+            <select id="vendorCompanyId" [(ngModel)]="orderForm.vendorCompanyId" name="vendorCompanyId" [required]="isMarketplace">
               <option *ngFor="let company of vendorCompanies" [ngValue]="company.id">{{ company.name }}</option>
             </select>
           </div>
@@ -345,12 +361,55 @@
             </select>
           </div>
         </div>
-        
+
+        <div class="form-row" *ngIf="isGeneralDelivery">
+          <div class="form-group">
+            <label for="senderName">Sender Name</label>
+            <input type="text" id="senderName" [(ngModel)]="orderForm.senderName" name="senderName">
+          </div>
+          <div class="form-group">
+            <label for="senderPhone">Sender Phone</label>
+            <input type="text" id="senderPhone" [(ngModel)]="orderForm.senderPhone" name="senderPhone">
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="isGeneralDelivery">
+          <div class="form-group">
+            <label for="recipientName">Recipient Name *</label>
+            <input type="text" id="recipientName" [(ngModel)]="orderForm.recipientName" name="recipientName" [required]="isGeneralDelivery">
+          </div>
+          <div class="form-group">
+            <label for="recipientPhone">Recipient Phone</label>
+            <input type="text" id="recipientPhone" [(ngModel)]="orderForm.recipientPhone" name="recipientPhone">
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
-            <label for="orderValue">Order Value *</label>
-            <input type="number" id="orderValue" [(ngModel)]="orderForm.orderValue" name="orderValue" step="0.01" min="0" required>
+            <label for="pricingMode">Pricing *</label>
+            <select id="pricingMode" [(ngModel)]="orderForm.pricingMode" name="pricingMode">
+              <option [value]="PricingMode.FIXED">Exact Amount</option>
+              <option [value]="PricingMode.MIN_MAX">Proposed Range (Min/Max)</option>
+            </select>
           </div>
+          <div class="form-group" *ngIf="orderForm.pricingMode === PricingMode.FIXED">
+            <label for="orderValue">Order Value *</label>
+            <input type="number" id="orderValue" [(ngModel)]="orderForm.orderValue" name="orderValue" step="0.01" min="0" [required]="orderForm.pricingMode === PricingMode.FIXED">
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="orderForm.pricingMode === PricingMode.MIN_MAX">
+          <div class="form-group">
+            <label for="proposedMinAmount">Minimum Amount *</label>
+            <input type="number" id="proposedMinAmount" [(ngModel)]="orderForm.proposedMinAmount" name="proposedMinAmount" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="proposedMaxAmount">Maximum Amount *</label>
+            <input type="number" id="proposedMaxAmount" [(ngModel)]="orderForm.proposedMaxAmount" name="proposedMaxAmount" step="0.01" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-row">
           <div class="form-group">
             <label for="priority">Priority</label>
             <select id="priority" [(ngModel)]="orderForm.priority" name="priority">

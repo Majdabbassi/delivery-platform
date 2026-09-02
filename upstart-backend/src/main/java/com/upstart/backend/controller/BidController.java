@@ -33,18 +33,37 @@ public class BidController {
     private final DeliveryCompanyRepository deliveryCompanyRepository;
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER') or hasRole('DRIVER')")
     public ResponseEntity<Bid> submitBid(@Valid @RequestBody BidService.BidRequest bidRequest) {
-        log.info("Submitting bid for order {} by delivery company {}",
-                bidRequest.getOrderId(), bidRequest.getDeliveryCompanyId());
-        // A delivery owner may only bid for their own delivery company.
-        securityService.getOwnedDeliveryCompanyOrThrow(bidRequest.getDeliveryCompanyId());
+        log.info("Submitting bid for order {} by {}",
+                bidRequest.getOrderId(), bidRequest.getBidderType());
+        if (bidRequest.getBidderType() == Bid.BidderType.INDEPENDENT_DRIVER) {
+            if (securityService.getCurrentRole() != com.upstart.backend.entity.User.Role.DRIVER) {
+                throw new AccessDeniedException("Only drivers may submit independent driver bids");
+            }
+            com.upstart.backend.entity.DriverPerson currentDriver = securityService.getCurrentDriverPerson();
+            if (currentDriver.getDeliveryCompany() != null) {
+                throw new AccessDeniedException(
+                        "Drivers employed by a delivery company cannot bid directly. "
+                        + "Only the delivery company owner may bid on their behalf.");
+            }
+            Long currentDriverId = currentDriver.getId();
+            if (bidRequest.getDriverId() != null && !currentDriverId.equals(bidRequest.getDriverId())) {
+                throw new AccessDeniedException("Drivers may only bid on their own behalf");
+            }
+            bidRequest.setDriverId(currentDriverId);
+        } else {
+            if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.DRIVER) {
+                throw new AccessDeniedException("Drivers cannot bid on behalf of a delivery company");
+            }
+            securityService.getOwnedDeliveryCompanyOrThrow(bidRequest.getDeliveryCompanyId());
+        }
         Bid bid = bidService.submitBid(bidRequest);
         return new ResponseEntity<>(bid, HttpStatus.CREATED);
     }
 
     @GetMapping("/order/{orderId}")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('CLIENT')")
     public ResponseEntity<List<Bid>> getBidsForOrder(@PathVariable Long orderId) {
         assertCanManageBidsForOrder(orderId);
         List<Bid> bids = bidService.getBidsForOrder(orderId);
@@ -52,7 +71,7 @@ public class BidController {
     }
 
     @GetMapping("/order/{orderId}/rankings")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('CLIENT')")
     public ResponseEntity<List<BidService.BidRanking>> getBidRankings(@PathVariable Long orderId) {
         assertCanManageBidsForOrder(orderId);
         List<BidService.BidRanking> rankings = bidService.getBidRankings(orderId);
@@ -70,7 +89,7 @@ public class BidController {
     }
 
     @PostMapping("/{bidId}/accept")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('CLIENT')")
     public ResponseEntity<Bid> acceptBid(@PathVariable String bidId,
                                          @RequestParam(required = false) String message) {
         Bid bid = bidService.getBidByBidId(bidId);
@@ -80,7 +99,7 @@ public class BidController {
     }
 
     @PostMapping("/{bidId}/reject")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('CLIENT')")
     public ResponseEntity<Bid> rejectBid(@PathVariable String bidId,
                                          @RequestParam(required = false) String message) {
         Bid bid = bidService.getBidByBidId(bidId);
@@ -90,13 +109,47 @@ public class BidController {
     }
 
     @PostMapping("/{bidId}/withdraw")
-    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER') or hasRole('DRIVER')")
     public ResponseEntity<Bid> withdrawBid(@PathVariable String bidId) {
         Bid bid = bidService.getBidByBidId(bidId);
-        // A delivery owner may only withdraw their own company's bid.
-        securityService.getOwnedDeliveryCompanyOrThrow(bid.getDeliveryCompanyId());
+        if (bid.getBidderType() == Bid.BidderType.INDEPENDENT_DRIVER) {
+            // A driver may only withdraw their own bid.
+            if (securityService.getCurrentRole() != com.upstart.backend.entity.User.Role.SUPER_ADMIN
+                    && securityService.getCurrentRole() != com.upstart.backend.entity.User.Role.DRIVER) {
+                throw new AccessDeniedException("Only the bidding driver may withdraw this bid");
+            }
+            if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.DRIVER
+                    && !securityService.getCurrentDriverPerson().getId().equals(bid.getDriverId())) {
+                throw new AccessDeniedException("You may only withdraw your own bids");
+            }
+        } else {
+            // A delivery owner may only withdraw their own company's bid.
+            if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+                // allowed
+            } else {
+                securityService.getOwnedDeliveryCompanyOrThrow(bid.getDeliveryCompanyId());
+            }
+        }
         Bid withdrawn = bidService.withdrawBid(bidId);
         return ResponseEntity.ok(withdrawn);
+    }
+
+    @GetMapping("/my/driver")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DRIVER')")
+    public ResponseEntity<Page<Bid>> getMyDriverBids(
+            @RequestParam(required = false) Long driverId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        Long resolvedDriverId;
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            if (driverId == null) {
+                throw new IllegalArgumentException("driverId is required for SUPER_ADMIN");
+            }
+            resolvedDriverId = driverId;
+        } else {
+            resolvedDriverId = securityService.getCurrentDriverPerson().getId();
+        }
+        Page<Bid> bids = bidService.getBidsByDriver(resolvedDriverId, pageable);
+        return ResponseEntity.ok(bids);
     }
 
     @GetMapping("/my/stats")
@@ -105,6 +158,22 @@ public class BidController {
             @RequestParam(required = false) Long deliveryCompanyId) {
         Long companyId = resolveDeliveryCompanyId(deliveryCompanyId);
         return ResponseEntity.ok(bidService.getBidStatistics(companyId));
+    }
+
+    @GetMapping("/my/stats/driver")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DRIVER')")
+    public ResponseEntity<BidService.BidStatistics> getMyDriverBidStats(
+            @RequestParam(required = false) Long driverId) {
+        Long resolvedDriverId;
+        if (securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.SUPER_ADMIN) {
+            if (driverId == null) {
+                throw new IllegalArgumentException("driverId is required for SUPER_ADMIN");
+            }
+            resolvedDriverId = driverId;
+        } else {
+            resolvedDriverId = securityService.getCurrentDriverPerson().getId();
+        }
+        return ResponseEntity.ok(bidService.getDriverBidStatistics(resolvedDriverId));
     }
 
     // Helpers
@@ -130,6 +199,15 @@ public class BidController {
         }
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
-        securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId());
+        if (order.getVendorCompany() != null) {
+            securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId());
+            return;
+        }
+        if (order.getCustomerUser() != null
+                && securityService.getCurrentRole() == com.upstart.backend.entity.User.Role.CLIENT
+                && securityService.getCurrentUser().getId().equals(order.getCustomerUser().getId())) {
+            return; // the sender (client) may award bids on their own general-delivery order
+        }
+        throw new AccessDeniedException("You do not have permission to manage bids for this order");
     }
 }

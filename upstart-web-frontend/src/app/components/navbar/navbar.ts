@@ -14,6 +14,7 @@ interface SearchResult {
   icon: string;
   route?: string;
   action?: () => void;
+  roles?: string[];
 }
 
 interface Notification {
@@ -398,24 +399,28 @@ export class Navbar implements OnInit, OnDestroy {
     const navIndex: SearchResult[] = [
       { id: 'dashboard', title: 'Dashboard', description: 'Overview of your activity', icon: '🏠', route: '/dashboard' },
       { id: 'orders', title: 'Orders', description: 'Track and manage delivery orders', icon: '📋', route: '/orders' },
-      { id: 'customers', title: 'Customers', description: 'Manage customer accounts', icon: '👥', route: '/customers' },
-      { id: 'vendorcompanies', title: 'Vendor Companies', description: 'View vendor companies', icon: '🏢', route: '/vendorcompanies' },
-      { id: 'deliverycompanies', title: 'Delivery Companies', description: 'View delivery companies', icon: '🚛', route: '/deliverycompanies' },
-      { id: 'drivers', title: 'Drivers', description: 'Manage delivery drivers', icon: '🚗', route: '/drivers' },
-      { id: 'products', title: 'Products', description: 'Browse available products', icon: '📦', route: '/products' },
-      { id: 'partnerships', title: 'Partnerships', description: 'Vendor & delivery partnerships', icon: '🤝', route: '/partnerships' },
-      { id: 'pool', title: 'Marketplace', description: 'Browse and bid on available orders', icon: '🛒', route: '/pool' },
-      { id: 'bids', title: 'Bid Inbox', description: 'Review and manage received bids', icon: '💼', route: '/bids' },
+      { id: 'customers', title: 'Customers', description: 'Manage customer accounts', icon: '👥', route: '/customers', roles: ['SUPER_ADMIN'] },
+      { id: 'vendorcompanies', title: 'Vendor Companies', description: 'View vendor companies', icon: '🏢', route: '/vendorcompanies', roles: ['SUPER_ADMIN', 'VENDOR_OWNER'] },
+      { id: 'deliverycompanies', title: 'Delivery Companies', description: 'View delivery companies', icon: '🚛', route: '/deliverycompanies', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER'] },
+      { id: 'drivers', title: 'Drivers', description: 'Manage delivery drivers', icon: '🚗', route: '/drivers', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER'] },
+      { id: 'products', title: 'Products', description: 'Browse available products', icon: '📦', route: '/products', roles: ['SUPER_ADMIN', 'VENDOR_OWNER'] },
+      { id: 'partnerships', title: 'Partnerships', description: 'Vendor & delivery partnerships', icon: '🤝', route: '/partnerships', roles: ['SUPER_ADMIN', 'VENDOR_OWNER', 'DELIVERY_OWNER'] },
+      { id: 'pool', title: 'Marketplace', description: 'Browse and bid on available orders', icon: '🛒', route: '/pool', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER', 'DRIVER'] },
+      { id: 'bids', title: 'Bid Inbox', description: 'Review and manage received bids', icon: '💼', route: '/bids', roles: ['SUPER_ADMIN', 'VENDOR_OWNER', 'CLIENT'] },
       { id: 'tracking', title: 'Tracking', description: 'Live order & driver tracking', icon: '📍', route: '/tracking' },
       { id: 'profile', title: 'Profile', description: 'View your account information', icon: '👤', route: '/profile' },
       { id: 'notifications', title: 'Notifications', description: 'View your notifications', icon: '🔔', route: '/notifications' }
     ];
 
     const query = this.searchQuery.toLowerCase();
-    this.searchResults = navIndex.filter(result =>
-      result.title.toLowerCase().includes(query) ||
-      result.description.toLowerCase().includes(query)
-    ).slice(0, 5);
+    const role = this.currentAuthUser?.role;
+    this.searchResults = navIndex.filter(result => {
+      if (result.roles && role && !result.roles.includes(role)) {
+        return false;
+      }
+      return result.title.toLowerCase().includes(query) ||
+        result.description.toLowerCase().includes(query);
+    }).slice(0, 5);
 
     this.selectedResultIndex = -1;
   }

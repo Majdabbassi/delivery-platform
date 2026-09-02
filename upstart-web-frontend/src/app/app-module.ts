@@ -20,6 +20,7 @@ import { DriversComponent } from './pages/drivers/drivers.component';
 import { OrdersComponent } from './pages/orders/orders.component';
 import { LoginComponent } from './pages/login/login.component';
 import { RegisterComponent } from './pages/register/register.component';
+import { DriverRegisterComponent } from './pages/driver-register/driver-register.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { AccessDeniedComponent } from './pages/access-denied/access-denied.component';
 import { PartnershipsComponent } from './pages/partnerships/partnerships.component';
@@ -49,6 +50,7 @@ import { AuthInterceptor } from './interceptors/auth.interceptor';
     OrdersComponent,
     LoginComponent,
     RegisterComponent,
+    DriverRegisterComponent,
     DashboardComponent,
     AccessDeniedComponent,
     PartnershipsComponent,

@@ -92,6 +92,32 @@ export class DriverPersonService {
     throw error;
   }
 
+  // Delivery-owner scoped driver management
+  getMyCompanyDrivers(): Observable<DriverPerson[]> {
+    return this.http.get<DriverPerson[]>(`${this.baseUrl}/my/company`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  addDriverToMyCompany(driverPerson: DriverPerson): Observable<DriverPerson> {
+    return this.http.post<DriverPerson>(`${this.baseUrl}/my/company`, driverPerson).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  updateCompanyDriverAvailability(id: number, isAvailable: boolean): Observable<DriverPerson> {
+    const params = new HttpParams().set('isAvailable', isAvailable.toString());
+    return this.http.patch<DriverPerson>(`${this.baseUrl}/my/company/${id}/availability`, null, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  removeDriverFromMyCompany(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/my/company/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
   // Create operations
   createDriverPerson(driverPerson: DriverPerson): Observable<DriverPerson> {
     return this.http.post<DriverPerson>(this.baseUrl, driverPerson).pipe(
@@ -149,15 +175,21 @@ export class DriverPersonService {
   }
 
   updateAvailabilityStatus(id: number, isAvailable: boolean): Observable<DriverPerson> {
-    const body = { isAvailable };
-    return this.http.patch<DriverPerson>(`${this.baseUrl}/${id}/availability`, body).pipe(
+    const params = new HttpParams().set('isAvailable', isAvailable.toString());
+    return this.http.patch<DriverPerson>(`${this.baseUrl}/${id}/availability`, null, { params }).pipe(
       catchError(this.handleError)
     );
   }
 
   updateVerificationStatus(id: number, isVerified: boolean): Observable<DriverPerson> {
-    const body = { isVerified };
-    return this.http.patch<DriverPerson>(`${this.baseUrl}/${id}/verification`, body).pipe(
+    const params = new HttpParams().set('isVerified', isVerified.toString());
+    return this.http.patch<DriverPerson>(`${this.baseUrl}/${id}/verification`, null, { params }).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  getCurrentDriver(): Observable<DriverPerson> {
+    return this.http.get<DriverPerson>(`${this.baseUrl}/me`).pipe(
       catchError(this.handleError)
     );
   }
