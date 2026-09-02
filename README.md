@@ -1,4 +1,17 @@
-# Upstart Delivery Platform
+# SwiftDeliver Delivery Platform
+
+## Live Demo
+- **Frontend:** [deployed on Vercel — link here]
+- **Backend API:** [deployed on Render — link here]
+
+## Local Development
+```bash
+cp .env.example .env
+# Fill in values in .env
+docker compose up --build
+```
+Frontend: http://localhost
+Grafana: http://localhost:3000
 
 Full-stack delivery platform: **Spring Boot backend** (JWT auth, orders, partnerships, assignment engine), **Angular web admin**, and **React Native (Expo) mobile** app.
 
@@ -14,7 +27,7 @@ This starts:
 
 | Service  | URL                                   |
 | -------- | ------------------------------------- |
-| MySQL    | `localhost:3306` (db `upstart_db_new`) |
+| MySQL    | `localhost:3306` (db `swiftdeliver_db_new`) |
 | Backend  | `http://localhost:8080`               |
 | Web      | `http://localhost:4200`               |
 
@@ -29,7 +42,7 @@ password: REDACTED_ADMIN_PASSWORD
 
 - **Demo business dataset** when empty: 7 customers, 3 vendor owners, 2 delivery owners, 5 vendor companies, 4 delivery companies, 8 drivers, 24 products (linked to the vendor companies), 36 orders, 6 partnerships.
 - Only the **Super Admin** account exists (staff/admin sub-accounts are not seeded).
-- Demo user passwords use `Upstart@2026!` (e.g. vendor owner `naimabarka`).
+- Demo user passwords use `SwiftDeliver@2026!` (e.g. vendor owner `naimabarka`).
 
 > Change `admin`'s credentials in production by setting `ADMIN_USERNAME` / `ADMIN_PASSWORD`.
 
@@ -42,14 +55,14 @@ ADMIN_PASSWORD=REDACTED_ADMIN_PASSWORD
 JWT_SECRET=REDACTED_JWT_SECRET
 ```
 
-The web app is built with the API base baked in as `http://localhost:8080/api` (`upstart-web-frontend/src/app/config.ts`).
+The web app is built with the API base baked in as `http://localhost:8080/api` (`swiftdeliver-frontend/src/app/config.ts`).
 
 ## Local development
 
 ### Backend (Java 17+, Maven wrapper included)
 
 ```bash
-cd upstart-backend
+cd swiftdeliver-backend
 cp .env.example .env          # set DB + ADMIN_* values
 .\mvnw.cmd spring-boot:run    # *nix: ./mvnw spring-boot:run
 ```
@@ -59,7 +72,7 @@ Tests: `.\mvnw.cmd test`
 ### Web (Node 22+, Angular 20)
 
 ```bash
-cd upstart-web-frontend
+cd swiftdeliver-frontend
 npm install
 npm start                     # http://localhost:4200
 ```
@@ -69,7 +82,7 @@ Production build: `npm run build` (outputs to `dist/del/browser`).
 ### Mobile (Expo)
 
 ```bash
-cd upstart-mobile
+cd swiftdeliver-mobile
 npm install
 npx expo start
 ```

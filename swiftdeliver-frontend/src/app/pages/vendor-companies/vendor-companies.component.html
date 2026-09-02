@@ -1,0 +1,545 @@
+<div class="page">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <i class="fas fa-building"></i>
+        Vendor Companies Management
+      </h1>
+      <p class="page-subtitle">Manage your business partners and vendor companies</p>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-secondary" (click)="exportData()">
+        <i class="fas fa-download"></i>
+        Export Data
+      </button>
+      <button *ngIf="isSuperAdmin" class="btn btn-primary" (click)="openAddModal()">
+        <i class="fas fa-plus"></i>
+        Add Company
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-icon total">
+        <i class="fas fa-building"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total Vendor Companies</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon active">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.active }}</h3>
+        <p>Active Partners</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon pending">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.pending }}</h3>
+        <p>Pending Approval</p>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon revenue">
+        <i class="fas fa-dollar-sign"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ formatCurrency(stats.totalRevenue) }}</h3>
+        <p>Total Revenue</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="content-toolbar">
+    <div class="toolbar-search">
+      <i class="fas fa-search"></i>
+      <input 
+        type="text" 
+        placeholder="Search vendor companies, contacts, or emails..." 
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="onSearch($event)">
+    </div>
+    
+    <div class="filter-controls">
+      <select class="filter-select" [(ngModel)]="statusFilter" (ngModelChange)="onStatusFilter($event)">
+        <option value="all">All Status</option>
+        <option value="active">Active</option>
+        <option value="inactive">Inactive</option>
+        <option value="pending">Pending</option>
+      </select>
+      
+      <select class="filter-select" [(ngModel)]="industryFilter" (ngModelChange)="onIndustryFilter($event)">
+        <option value="all">All Industries</option>
+        <option *ngFor="let industry of industries" [value]="industry">{{ industry }}</option>
+      </select>
+      
+      <select class="filter-select" [(ngModel)]="sortBy" (ngModelChange)="onSort($event)">
+        <option value="companyName">Sort by Name</option>
+        <option value="businessAddress">Sort by Address</option>
+        <option value="totalRevenue">Sort by Revenue</option>
+        <option value="contractStartDate">Sort by Contract Date</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Companies Table -->
+  <div class="page-content">
+    <div class="table-wrapper">
+      <table class="data-table companies-table">
+        <thead>
+          <tr>
+            <th (click)="onSort('companyName')" class="sortable">
+              Company
+                <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'companyName' && sortDirection === 'asc'" 
+                  [class.fa-sort-down]="sortBy === 'companyName' && sortDirection === 'desc'"></i>
+            </th>
+            <th>Contact Info</th>
+            <th (click)="onSort('industry')" class="sortable">
+              Industry
+              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'industry' && sortDirection === 'asc'" 
+                 [class.fa-sort-down]="sortBy === 'industry' && sortDirection === 'desc'"></i>
+            </th>
+            <th>Contract</th>
+            <th (click)="onSort('totalRevenue')" class="sortable">
+              Revenue
+              <i class="fas fa-sort" [class.fa-sort-up]="sortBy === 'totalRevenue' && sortDirection === 'asc'" 
+                 [class.fa-sort-down]="sortBy === 'totalRevenue' && sortDirection === 'desc'"></i>
+            </th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let company of filteredCompanies" class="company-row">
+            <td>
+              <div class="company-info">
+                <div class="company-avatar">
+                  {{ getIndustryIcon(company.industry) }}
+                </div>
+                <div class="company-details">
+                  <div class="company-name">{{ company.name }}</div>
+                  <div class="company-website" *ngIf="company.website">
+                    <a [href]="company.website" target="_blank">{{ company.website }}</a>
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="contact-info">
+                <div class="contact-person">
+                  <i class="fas fa-user"></i>
+                  {{ company.contactPerson }}
+                </div>
+                <div class="contact-email">
+                  <i class="fas fa-envelope"></i>
+                  {{ company.email }}
+                </div>
+                <div class="contact-phone">
+                  <i class="fas fa-phone"></i>
+                  {{ company.phone }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="industry-badge">
+                <span class="industry-icon">{{ getIndustryIcon(company.industry) }}</span>
+                {{ company.industry }}
+              </div>
+            </td>
+            <td>
+              <div class="contract-info">
+                <div class="contract-start">
+                  <strong>Start:</strong> {{ formatDate(company.contractStartDate) }}
+                </div>
+                <div class="contract-end" *ngIf="company.contractEndDate">
+                  <strong>End:</strong> {{ formatDate(company.contractEndDate) }}
+                </div>
+                <div class="contract-orders">
+                  <strong>Orders:</strong> {{ company.totalOrders }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <div class="revenue-info">
+                <div class="total-revenue">{{ formatCurrency(company.totalRevenue) }}</div>
+                <div class="last-order" *ngIf="company.lastOrderDate">
+                  Last: {{ formatDate(company.lastOrderDate) }}
+                </div>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [ngClass]="getStatusClass(company.status)">
+                {{ company.status | titlecase }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-icon" (click)="openDetailsModal(company)" title="View Details">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn-icon" (click)="openEditModal(company)" title="Edit Company">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn-icon" (click)="toggleCompanyStatus(company)" title="Toggle Status">
+                  <i class="fas" [class.fa-toggle-on]="company.status === 'ACTIVE'" [class.fa-toggle-off]="company.status !== 'ACTIVE'"></i>
+                </button>
+                <button *ngIf="isSuperAdmin" class="btn-icon danger" (click)="openDeleteModal(company)" title="Delete Company">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    
+    <!-- Empty State -->
+    <div *ngIf="filteredCompanies.length === 0" class="empty-state">
+      <div class="empty-state-icon">
+        <i class="fas fa-building"></i>
+      </div>
+      <h3>No Vendor Companies Found</h3>
+      <p>No vendor companies match your current filters. Try adjusting your search criteria or add a new vendor company.</p>
+      <button *ngIf="isSuperAdmin" class="btn btn-primary" (click)="openAddModal()">
+        <i class="fas fa-plus"></i>
+        Add First Vendor Company
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Company Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeModals()">
+  <div class="modal details-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-building"></i>
+        Company Details
+      </h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body" *ngIf="selectedCompany">
+      <div class="details-grid">
+        <!-- Company Information -->
+        <div class="detail-section">
+          <h3><i class="fas fa-info-circle"></i> Company Information</h3>
+          <div class="detail-item">
+            <span class="label">Company Name:</span>
+            <span class="value">{{ selectedCompany.name }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Industry:</span>
+            <span class="value">{{ selectedCompany.industry }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Status:</span>
+            <span class="value status-badge" [ngClass]="getStatusClass(selectedCompany.status)">{{ selectedCompany.status | titlecase }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Website:</span>
+            <span class="value">
+              <a [href]="selectedCompany.website" target="_blank" *ngIf="selectedCompany.website">{{ selectedCompany.website }}</a>
+              <span *ngIf="!selectedCompany.website">Not provided</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="detail-section">
+          <h3><i class="fas fa-address-book"></i> Contact Information</h3>
+          <div class="detail-item">
+            <span class="label">Contact Person:</span>
+            <span class="value">{{ selectedCompany.contactPerson }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Email:</span>
+            <span class="value">{{ selectedCompany.email }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Phone:</span>
+            <span class="value">{{ selectedCompany.phone }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Address:</span>
+            <span class="value">{{ selectedCompany.address }}</span>
+          </div>
+        </div>
+
+        <!-- Business Performance -->
+        <div class="detail-section">
+          <h3><i class="fas fa-chart-line"></i> Business Performance</h3>
+          <div class="detail-item">
+            <span class="label">Total Orders:</span>
+            <span class="value">{{ selectedCompany.totalOrders }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Total Revenue:</span>
+            <span class="value">{{ formatCurrency(selectedCompany.totalRevenue) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">Contract Start:</span>
+            <span class="value">{{ formatDate(selectedCompany.contractStartDate) }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedCompany.contractEndDate">
+            <span class="label">Contract End:</span>
+            <span class="value">{{ formatDate(selectedCompany.contractEndDate) }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedCompany.lastOrderDate">
+            <span class="label">Last Order:</span>
+            <span class="value">{{ formatDate(selectedCompany.lastOrderDate) }}</span>
+          </div>
+        </div>
+
+        <!-- Additional Information -->
+        <div class="detail-section full-width" *ngIf="selectedCompany.notes">
+          <h3><i class="fas fa-sticky-note"></i> Notes</h3>
+          <div class="detail-item">
+            <span class="value notes-content">{{ selectedCompany.notes }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="openProductsModal(selectedCompany!)">
+        <i class="fas fa-box"></i>
+        View Products
+      </button>
+      <button class="btn btn-primary" (click)="openEditModal(selectedCompany!)">
+        <i class="fas fa-edit"></i>
+        Edit Company
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Products Management Modal -->
+<div class="modal-overlay" *ngIf="showProductsModal" (click)="closeModals()">
+  <div class="modal products-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-box"></i>
+        Products - {{ selectedCompany?.name }}
+      </h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="products-placeholder">
+        <div class="placeholder-icon">
+          <i class="fas fa-box-open"></i>
+        </div>
+        <h4>Product Management</h4>
+        <p>This feature will display and manage products for {{ selectedCompany?.name }}.</p>
+        <div class="feature-list">
+          <ul>
+            <li><i class="fas fa-check"></i> View all company products</li>
+            <li><i class="fas fa-check"></i> Add new products</li>
+            <li><i class="fas fa-check"></i> Edit product details</li>
+            <li><i class="fas fa-check"></i> Manage inventory</li>
+            <li><i class="fas fa-check"></i> Track product performance</li>
+          </ul>
+        </div>
+        <p class="note">Feature coming soon...</p>
+      </div>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">
+        Close
+      </button>
+      <button class="btn btn-primary" disabled>
+        <i class="fas fa-plus"></i>
+        Add Product
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Company Modal -->
+<div class="modal-overlay" *ngIf="showAddModal || showEditModal" (click)="closeModals()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-building"></i>
+        {{ showAddModal ? 'Add New Vendor Company' : 'Edit Vendor Company' }}
+      </h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <form class="company-form">
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="companyName">Company Name *</label>
+            <input 
+              id="companyName"
+              type="text" 
+              [(ngModel)]="companyForm.name" 
+              name="name"
+              placeholder="Enter company name"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="contactPerson">Contact Person *</label>
+            <input 
+              id="contactPerson"
+              type="text" 
+              [(ngModel)]="companyForm.contactPerson" 
+              name="contactPerson"
+              placeholder="Enter contact person name"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input 
+              id="email"
+              type="email" 
+              [(ngModel)]="companyForm.email" 
+              name="email"
+              placeholder="Enter email address"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="phone">Phone *</label>
+            <input 
+              id="phone"
+              type="tel" 
+              [(ngModel)]="companyForm.phone" 
+              name="phone"
+              placeholder="Enter phone number"
+              required>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="address">Address *</label>
+            <input 
+              id="address"
+              type="text" 
+              [(ngModel)]="companyForm.address" 
+              name="address"
+              placeholder="Enter company address"
+              required>
+          </div>
+          
+          <div class="form-group">
+            <label for="website">Website</label>
+            <input 
+              id="website"
+              type="url" 
+              [(ngModel)]="companyForm.website" 
+              name="website"
+              placeholder="https://example.com">
+          </div>
+          
+          <div class="form-group">
+            <label for="industry">Industry *</label>
+            <select 
+              id="industry"
+              [(ngModel)]="companyForm.industry" 
+              name="industry"
+              required>
+              <option value="">Select Industry</option>
+              <option *ngFor="let industry of industries" [value]="industry">{{ industry }}</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="status">Status *</label>
+            <select 
+              id="status"
+              [(ngModel)]="companyForm.status" 
+              name="status"
+              required>
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+              <option value="PENDING">Pending</option>
+              <option value="SUSPENDED">Suspended</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label for="contractStart">Contract Start Date *</label>
+            <input 
+              id="contractStart"
+              type="date" 
+              [(ngModel)]="companyForm.contractStartDate" 
+              name="contractStartDate"
+              required>
+          </div>
+          
+          <div class="form-group full-width">
+            <label for="notes">Notes</label>
+            <textarea 
+              id="notes"
+              [(ngModel)]="companyForm.notes" 
+              name="notes"
+              placeholder="Add any additional notes about this company"
+              rows="3"></textarea>
+          </div>
+        </div>
+      </form>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">
+        Cancel
+      </button>
+      <button class="btn btn-primary" (click)="saveCompany()">
+        <i class="fas fa-save"></i>
+        {{ showAddModal ? 'Add Vendor Company' : 'Save Changes' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="closeModals()">
+  <div class="modal delete-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>
+        <i class="fas fa-exclamation-triangle"></i>
+        Confirm Deletion
+      </h2>
+      <button class="modal-close" (click)="closeModals()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <p>Are you sure you want to delete <strong>{{ selectedCompany?.name }}</strong>?</p>
+      <p class="warning-text">This action cannot be undone and will remove all associated data.</p>
+    </div>
+    
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeModals()">
+        Cancel
+      </button>
+      <button class="btn btn-danger" (click)="deleteCompany()">
+        <i class="fas fa-trash"></i>
+        Delete Vendor Company
+      </button>
+    </div>
+  </div>
+</div>

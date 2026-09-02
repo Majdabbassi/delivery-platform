@@ -1,61 +1,93 @@
 services:
   db:
     image: mysql:8.0
-    container_name: upstart-db
+    container_name: swiftdeliver-db
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: upstart_db_new
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-    ports:
-      - "3306:3306"
+      MYSQL_DATABASE: swiftdeliver_db_new
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-CHANGE_ME}"]
       interval: 5s
       timeout: 5s
       retries: 20
+    networks:
+      - swiftdeliver-net
 
   backend:
-    build: ./upstart-backend
-    container_name: upstart-backend
+    build: ./swiftdeliver-backend
+    container_name: swiftdeliver-backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: jdbc:mysql://db:3306/upstart_db_new
+      DATABASE_URL: jdbc:mysql://db:3306/swiftdeliver_db_new
       DATABASE_USERNAME: root
-      DATABASE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      JWT_SECRET: ${JWT_SECRET:-REDACTED_JWT_SECRET}
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-REDACTED_ADMIN_PASSWORD}
-    ports:
-      - "8080:8080"
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    container_name: upstart-phpmyadmin
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PMA_HOST: db
-      PMA_PORT: 3306
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      UPLOAD_LIMIT: 100M
-    ports:
-      - "8081:80"
+      DATABASE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
+      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-CHANGE_ME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-CHANGE_ME}
+      SPRING_PROFILES_ACTIVE: dev
+    networks:
+      - swiftdeliver-net
 
   web:
-    build: ./upstart-web-frontend
-    container_name: upstart-web
+    build: ./swiftdeliver-frontend
+    container_name: swiftdeliver-web
     restart: unless-stopped
     depends_on:
       - backend
+    networks:
+      - swiftdeliver-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: swiftdeliver-nginx
+    restart: unless-stopped
     ports:
-      - "4200:80"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+      - web
+    networks:
+      - swiftdeliver-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: swiftdeliver-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - swiftdeliver-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: swiftdeliver-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-CHANGE_ME}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - swiftdeliver-net
+
+networks:
+  swiftdeliver-net:
+    driver: bridge
 
 volumes:
   mysql-data:
+  prometheus-data:
+  grafana-data:

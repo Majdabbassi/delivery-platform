@@ -1,0 +1,152 @@
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <span class="title-icon">📊</span>
+        Dashboard
+      </h1>
+      <p class="greeting">
+        {{ greeting }}, <strong>{{ displayName }}</strong> — {{ roleLabel }}
+      </p>
+    </div>
+    <div class="page-header-right" *ngIf="currentUser">
+      <span class="role-chip">{{ roleLabel }}</span>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="error-banner" *ngIf="errorMessage">
+    <span>⚠️</span>
+    <span>{{ errorMessage }}</span>
+  </div>
+
+  <!-- Loading state -->
+  <div class="loading-state" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Loading dashboard data...</p>
+  </div>
+
+  <!-- Main content -->
+  <ng-container *ngIf="!loading && !errorMessage">
+    <!-- Role-aware quick links for non-super-admins -->
+    <section class="card-section" *ngIf="!isSuperAdmin">
+      <h2 class="section-title">Quick Actions</h2>
+      <div class="quick-links-grid">
+        <a class="quick-link" *ngFor="let link of quickLinks" [routerLink]="link.route">
+          <div class="quick-link-icon">{{ link.icon }}</div>
+          <div class="quick-link-body">
+            <span class="quick-link-label">{{ link.label }}</span>
+            <span class="quick-link-detail">{{ link.detail }}</span>
+          </div>
+          <span class="quick-link-arrow">→</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- My activity cards for non-super-admins -->
+    <section class="card-section" *ngIf="!isSuperAdmin">
+      <h2 class="section-title">My Activity</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of myActivityCards" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Order / revenue KPIs -->
+    <section class="card-section" *ngIf="isSuperAdmin">
+      <h2 class="section-title">Business Overview</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of kpiCards" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Entity counts -->
+    <section class="card-section" *ngIf="isSuperAdmin">
+      <h2 class="section-title">Platform</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of entityCards" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Detail metrics -->
+    <section class="card-section" *ngIf="isSuperAdmin">
+      <h2 class="section-title">Live Metrics</h2>
+      <div class="cards-grid">
+        <div class="metric-card" *ngFor="let card of detailMetrics" [class]="'metric-card ' + card.color">
+          <div class="card-icon">{{ card.icon }}</div>
+          <div class="card-body">
+            <span class="card-value">{{ card.value }}</span>
+            <span class="card-label">{{ card.label }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Assignment overview (SUPER_ADMIN) -->
+    <section class="card-section" *ngIf="isSuperAdmin && assignmentStats">
+      <h2 class="section-title">Assignment Overview</h2>
+      <div class="assignment-panel">
+        <div class="assignment-top">
+          <div class="assignment-big">
+            <span class="assignment-value">{{ assignmentStats.assignmentRate.toFixed(1) }}%</span>
+            <span class="assignment-caption">Orders assigned automatically</span>
+          </div>
+          <div class="assignment-big">
+            <span class="assignment-value">{{ assignmentStats.assignmentRate > 0
+              ? assignmentStats.partnershipRate.toFixed(1) + '%' : '—' }}</span>
+            <span class="assignment-caption">Of assigned, via partnership</span>
+          </div>
+          <div class="assignment-big">
+            <span class="assignment-value">{{ assignmentStats.pendingOrders }}</span>
+            <span class="assignment-caption">Still pending assignment</span>
+          </div>
+        </div>
+        <div class="assignment-bars">
+          <div class="bar-row">
+            <span class="bar-label">Total orders</span>
+            <div class="bar-track"><div class="bar-fill bar-total" [style.width.%]="100"></div></div>
+            <span class="bar-value">{{ assignmentStats.totalOrders }}</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Assigned</span>
+            <div class="bar-track"><div class="bar-fill bar-assigned" [style.width.%]="assignmentStats.totalOrders ? (assignmentStats.assignedOrders / assignmentStats.totalOrders) * 100 : 0"></div></div>
+            <span class="bar-value">{{ assignmentStats.assignedOrders }}</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Pending</span>
+            <div class="bar-track"><div class="bar-fill bar-pending" [style.width.%]="assignmentStats.totalOrders ? (assignmentStats.pendingOrders / assignmentStats.totalOrders) * 100 : 0"></div></div>
+            <span class="bar-value">{{ assignmentStats.pendingOrders }}</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Via partnership</span>
+            <div class="bar-track"><div class="bar-fill bar-partnership" [style.width.%]="assignmentStats.assignedOrders ? (assignmentStats.partnershipOrders / assignmentStats.assignedOrders) * 100 : 0"></div></div>
+            <span class="bar-value">{{ assignmentStats.partnershipOrders }}</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Direct (no partnership)</span>
+            <div class="bar-track"><div class="bar-fill bar-direct" [style.width.%]="assignmentStats.assignedOrders ? (assignmentStats.directOrders / assignmentStats.assignedOrders) * 100 : 0"></div></div>
+            <span class="bar-value">{{ assignmentStats.directOrders }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+</div>

@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: swiftdeliver-backend
+    runtime: java
+    plan: free
+    buildCommand: cd swiftdeliver-backend && ./mvnw clean package -DskipTests
+    startCommand: java -jar swiftdeliver-backend/target/*.jar
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATABASE_URL
+        fromDatabase:
+          name: swiftdeliver-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+databases:
+  - name: swiftdeliver-db
+    plan: free
+    databaseName: swiftdeliver_db
+    user: swiftdeliver_user

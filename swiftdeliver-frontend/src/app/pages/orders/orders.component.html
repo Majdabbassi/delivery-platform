@@ -1,0 +1,601 @@
+<div class="page">
+  <!-- Header Section -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <i class="fas fa-box"></i>
+        Orders Management
+      </h1>
+      <p class="page-subtitle">Track and manage delivery orders with real-time status updates</p>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-secondary" (click)="exportData()">
+        <i class="fas fa-download"></i>
+        Export Data
+      </button>
+      <button class="btn btn-info" (click)="refreshOrders()">
+        <i class="fas fa-sync-alt"></i>
+        Refresh
+      </button>
+      <button class="btn btn-primary" (click)="openCreateModal()" *ngIf="canCreate()">
+        <i class="fas fa-plus"></i>
+        Create Order
+      </button>
+    </div>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="stats-row">
+    <div class="stat-card total">
+      <div class="stat-icon">
+        <i class="fas fa-boxes"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.total }}</h3>
+        <p>Total Orders</p>
+      </div>
+    </div>
+    <div class="stat-card pending">
+      <div class="stat-icon">
+        <i class="fas fa-clock"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.pending }}</h3>
+        <p>Pending</p>
+      </div>
+    </div>
+    <div class="stat-card in-progress">
+      <div class="stat-icon">
+        <i class="fas fa-shipping-fast"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.inProgress }}</h3>
+        <p>In Progress</p>
+      </div>
+    </div>
+    <div class="stat-card completed">
+      <div class="stat-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.completed }}</h3>
+        <p>Completed</p>
+      </div>
+    </div>
+    <div class="stat-card overdue">
+      <div class="stat-icon">
+        <i class="fas fa-exclamation-triangle"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.overdue }}</h3>
+        <p>Overdue</p>
+      </div>
+    </div>
+    <div class="stat-card urgent">
+      <div class="stat-icon">
+        <i class="fas fa-fire"></i>
+      </div>
+      <div class="stat-content">
+        <h3>{{ stats.urgent }}</h3>
+        <p>Urgent</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button class="btn btn-outline" (click)="loadPendingUnassigned()">
+      <i class="fas fa-tasks"></i>
+      Pending Unassigned
+    </button>
+    <button class="btn btn-outline" (click)="loadOverdueOrders()">
+      <i class="fas fa-exclamation-triangle"></i>
+      Overdue Orders
+    </button>
+    <button class="btn btn-outline" (click)="loadUrgentOrders()">
+      <i class="fas fa-fire"></i>
+      Urgent Orders
+    </button>
+  </div>
+
+  <!-- Filters and Search -->
+  <div class="filters-section">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" 
+             placeholder="Search by order number, tracking, customer, or address..." 
+             [(ngModel)]="searchTerm" 
+             (input)="onSearch(searchTerm)">
+    </div>
+    
+    <div class="filters">
+      <select [(ngModel)]="statusFilter" (change)="onStatusFilter(statusFilter)">
+        <option value="all">All Statuses</option>
+        <option [value]="OrderStatus.PENDING">Pending</option>
+        <option [value]="OrderStatus.OPEN_FOR_BID">Open for Bids</option>
+        <option [value]="OrderStatus.ASSIGNED">Assigned</option>
+        <option [value]="OrderStatus.CONFIRMED">Confirmed</option>
+        <option [value]="OrderStatus.IN_PROGRESS">In Progress</option>
+        <option [value]="OrderStatus.PICKED_UP">Picked Up</option>
+        <option [value]="OrderStatus.IN_TRANSIT">In Transit</option>
+        <option [value]="OrderStatus.DELIVERED">Delivered</option>
+        <option [value]="OrderStatus.CANCELLED">Cancelled</option>
+        <option [value]="OrderStatus.FAILED">Failed</option>
+      </select>
+      
+      <select [(ngModel)]="priorityFilter" (change)="onPriorityFilter(priorityFilter)">
+        <option value="all">All Priorities</option>
+        <option [value]="OrderPriority.LOW">Low</option>
+        <option [value]="OrderPriority.NORMAL">Normal</option>
+        <option [value]="OrderPriority.HIGH">High</option>
+        <option [value]="OrderPriority.URGENT">Urgent</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Error Message -->
+  <div class="error-message" *ngIf="error">
+    <i class="fas fa-exclamation-circle"></i>
+    {{ error }}
+    <button (click)="error = null" class="close-btn">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <!-- Loading Spinner -->
+  <div class="loading-spinner" *ngIf="loading">
+    <i class="fas fa-spinner fa-spin"></i>
+    <p>Loading orders...</p>
+  </div>
+
+  <!-- Orders Table -->
+  <div class="orders-table-container" *ngIf="!loading">
+    <table class="orders-table">
+      <thead>
+        <tr>
+          <th (click)="onSort('orderNumber')" class="sortable">
+            Order #
+            <i class="fas fa-sort" *ngIf="sortBy !== 'orderNumber'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'orderNumber' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'orderNumber' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('trackingNumber')" class="sortable">
+            Tracking #
+            <i class="fas fa-sort" *ngIf="sortBy !== 'trackingNumber'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'trackingNumber' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'trackingNumber' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('customerName')" class="sortable">
+            Customer
+            <i class="fas fa-sort" *ngIf="sortBy !== 'customerName'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'customerName' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'customerName' && sortDirection === 'desc'"></i>
+          </th>
+          <th>Addresses</th>
+          <th (click)="onSort('orderValue')" class="sortable">
+            Value
+            <i class="fas fa-sort" *ngIf="sortBy !== 'orderValue'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'orderValue' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'orderValue' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('status')" class="sortable">
+            Status
+            <i class="fas fa-sort" *ngIf="sortBy !== 'status'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'status' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'status' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('priority')" class="sortable">
+            Priority
+            <i class="fas fa-sort" *ngIf="sortBy !== 'priority'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'priority' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'priority' && sortDirection === 'desc'"></i>
+          </th>
+          <th (click)="onSort('orderDate')" class="sortable">
+            Date
+            <i class="fas fa-sort" *ngIf="sortBy !== 'orderDate'"></i>
+            <i class="fas fa-sort-up" *ngIf="sortBy === 'orderDate' && sortDirection === 'asc'"></i>
+            <i class="fas fa-sort-down" *ngIf="sortBy === 'orderDate' && sortDirection === 'desc'"></i>
+          </th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let order of filteredOrders" [class.overdue]="order.isOverdue">
+          <td class="order-number">
+            <strong>{{ order.orderNumber }}</strong>
+            <span class="urgent-badge" *ngIf="order.priority === OrderPriority.URGENT">
+              <i class="fas fa-fire"></i>
+            </span>
+          </td>
+          <td class="tracking-number">
+            <code>{{ order.trackingNumber }}</code>
+          </td>
+          <td class="customer-info">
+            <div class="customer-name">{{ order.customerName }}</div>
+            <div class="customer-contact">{{ order.customerPhone }}</div>
+          </td>
+          <td class="addresses">
+            <div class="pickup">
+              <i class="fas fa-map-marker-alt pickup-icon"></i>
+              <span>{{ order.pickupAddress }}</span>
+            </div>
+            <div class="delivery">
+              <i class="fas fa-map-marker-alt delivery-icon"></i>
+              <span>{{ order.deliveryAddress }}</span>
+            </div>
+          </td>
+          <td class="order-value">
+            <div class="value">${{ order.orderValue.toFixed(2) }}</div>
+            <div class="fee" *ngIf="order.deliveryFee">+${{ order.deliveryFee.toFixed(2) }} fee</div>
+          </td>
+          <td class="status">
+            <span class="status-badge" [ngClass]="getStatusClass(order.status)">
+              {{ getStatusDisplayName(order.status) }}
+            </span>
+          </td>
+          <td class="priority">
+            <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">
+              {{ getPriorityDisplayName(order.priority) }}
+            </span>
+          </td>
+          <td class="order-date">
+            {{ order.orderDate | date:'short' }}
+          </td>
+          <td class="actions">
+            <div class="action-buttons">
+              <button class="btn-action view" (click)="openDetailsModal(order)" title="View Details">
+                <i class="fas fa-eye"></i>
+              </button>
+
+              <a class="btn-action track" [routerLink]="['/tracking', order.trackingNumber]" *ngIf="order.trackingNumber" title="Track Package">
+                <i class="fas fa-map-marker-alt"></i>
+              </a>
+              
+              <!-- Status Update Dropdown -->
+              <div class="dropdown" *ngIf="canUpdateStatus()">
+                <button class="btn-action status" title="Update Status">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <div class="dropdown-content">
+                  <button *ngFor="let status of [OrderStatus.ASSIGNED, OrderStatus.CONFIRMED, OrderStatus.IN_PROGRESS, OrderStatus.PICKED_UP, OrderStatus.IN_TRANSIT, OrderStatus.DELIVERED]"
+                          (click)="updateOrderStatus(order, status)"
+                          [disabled]="order.status === status">
+                    {{ getStatusDisplayName(status) }}
+                  </button>
+                </div>
+              </div>
+              
+              <button class="btn-action rate" 
+                      (click)="openRatingModal(order)" 
+                      *ngIf="canRate() && order.status === OrderStatus.DELIVERED"
+                      title="Rate Order">
+                <i class="fas fa-star"></i>
+              </button>
+              
+              <button class="btn-action cancel" 
+                      (click)="cancelOrder(order)" 
+                      *ngIf="canCancel() && order.status !== OrderStatus.CANCELLED"
+                      title="Cancel Order">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="filteredOrders.length === 0">
+      <i class="fas fa-box-open empty-state-icon"></i>
+      <h3>No orders found</h3>
+      <p>Try adjusting your search criteria or create a new order.</p>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="pagination" *ngIf="totalPages > 1">
+    <button class="btn btn-outline" 
+            (click)="onPageChange(currentPage - 1)" 
+            [disabled]="currentPage === 0">
+      <i class="fas fa-chevron-left"></i>
+      Previous
+    </button>
+    
+    <span class="page-info">
+      Page {{ currentPage + 1 }} of {{ totalPages }} ({{ totalElements }} total)
+    </span>
+    
+    <button class="btn btn-outline" 
+            (click)="onPageChange(currentPage + 1)" 
+            [disabled]="currentPage === totalPages - 1">
+      Next
+      <i class="fas fa-chevron-right"></i>
+    </button>
+  </div>
+</div>
+
+<!-- Create Order Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Create New Order</h2>
+      <button class="close-btn" (click)="closeCreateModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form class="order-form" (ngSubmit)="createOrder()">
+      <div class="form-section">
+        <h3>Order Type &amp; Routing</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="orderType">Order Type *</label>
+            <select id="orderType" [(ngModel)]="orderForm.orderType" name="orderType" (ngModelChange)="onOrderTypeChange()">
+              <option [value]="OrderType.MARKETPLACE">Marketplace (Products)</option>
+              <option [value]="OrderType.GENERAL_DELIVERY">General Delivery</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="routingMode">Routing *</label>
+            <select id="routingMode" [(ngModel)]="orderForm.routingMode" name="routingMode">
+              <option [value]="RoutingMode.OPEN_BID">Deliver to Pool (Bidding)</option>
+              <option [value]="RoutingMode.DIRECT">Direct (Assign Now)</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group" *ngIf="isMarketplace">
+            <label for="vendorCompanyId">Vendor Company *</label>
+            <select id="vendorCompanyId" [(ngModel)]="orderForm.vendorCompanyId" name="vendorCompanyId" [required]="isMarketplace">
+              <option *ngFor="let company of vendorCompanies" [ngValue]="company.id">{{ company.name }}</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="!isClient">
+            <label for="customerUserId">Customer *</label>
+            <select id="customerUserId" [(ngModel)]="orderForm.customerUserId" name="customerUserId" required>
+              <option *ngFor="let customer of customers" [ngValue]="customer.id">
+                {{ customer.firstName }} {{ customer.lastName }} ({{ customer.username }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="isGeneralDelivery">
+          <div class="form-group">
+            <label for="senderName">Sender Name</label>
+            <input type="text" id="senderName" [(ngModel)]="orderForm.senderName" name="senderName">
+          </div>
+          <div class="form-group">
+            <label for="senderPhone">Sender Phone</label>
+            <input type="text" id="senderPhone" [(ngModel)]="orderForm.senderPhone" name="senderPhone">
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="isGeneralDelivery">
+          <div class="form-group">
+            <label for="recipientName">Recipient Name *</label>
+            <input type="text" id="recipientName" [(ngModel)]="orderForm.recipientName" name="recipientName" [required]="isGeneralDelivery">
+          </div>
+          <div class="form-group">
+            <label for="recipientPhone">Recipient Phone</label>
+            <input type="text" id="recipientPhone" [(ngModel)]="orderForm.recipientPhone" name="recipientPhone">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pricingMode">Pricing *</label>
+            <select id="pricingMode" [(ngModel)]="orderForm.pricingMode" name="pricingMode">
+              <option [value]="PricingMode.FIXED">Exact Amount</option>
+              <option [value]="PricingMode.MIN_MAX">Proposed Range (Min/Max)</option>
+            </select>
+          </div>
+          <div class="form-group" *ngIf="orderForm.pricingMode === PricingMode.FIXED">
+            <label for="orderValue">Order Value *</label>
+            <input type="number" id="orderValue" [(ngModel)]="orderForm.orderValue" name="orderValue" step="0.01" min="0" [required]="orderForm.pricingMode === PricingMode.FIXED">
+          </div>
+        </div>
+
+        <div class="form-row" *ngIf="orderForm.pricingMode === PricingMode.MIN_MAX">
+          <div class="form-group">
+            <label for="proposedMinAmount">Minimum Amount *</label>
+            <input type="number" id="proposedMinAmount" [(ngModel)]="orderForm.proposedMinAmount" name="proposedMinAmount" step="0.01" min="0" required>
+          </div>
+          <div class="form-group">
+            <label for="proposedMaxAmount">Maximum Amount *</label>
+            <input type="number" id="proposedMaxAmount" [(ngModel)]="orderForm.proposedMaxAmount" name="proposedMaxAmount" step="0.01" min="0" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="priority">Priority</label>
+            <select id="priority" [(ngModel)]="orderForm.priority" name="priority">
+              <option [value]="OrderPriority.LOW">Low</option>
+              <option [value]="OrderPriority.NORMAL">Normal</option>
+              <option [value]="OrderPriority.HIGH">High</option>
+              <option [value]="OrderPriority.URGENT">Urgent</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <h3>Addresses</h3>
+        <div class="form-group">
+          <label for="pickupAddress">Pickup Address *</label>
+          <textarea id="pickupAddress" [(ngModel)]="orderForm.pickupAddress" name="pickupAddress" required></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="deliveryAddress">Delivery Address *</label>
+          <textarea id="deliveryAddress" [(ngModel)]="orderForm.deliveryAddress" name="deliveryAddress" required></textarea>
+        </div>
+      </div>
+      
+      <div class="form-section">
+        <h3>Additional Information</h3>
+        <div class="form-group">
+          <label for="description">Description</label>
+          <textarea id="description" [(ngModel)]="orderForm.description" name="description"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="specialInstructions">Special Instructions</label>
+          <textarea id="specialInstructions" [(ngModel)]="orderForm.specialInstructions" name="specialInstructions"></textarea>
+        </div>
+      </div>
+      
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeCreateModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">Create Order</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal-overlay" *ngIf="showDetailsModal" (click)="closeDetailsModal()">
+  <div class="modal large" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Order Details</h2>
+      <button class="close-btn" (click)="closeDetailsModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <div class="order-details" *ngIf="selectedOrder">
+      <div class="details-grid">
+        <div class="detail-section">
+          <h3>Order Information</h3>
+          <div class="detail-item">
+            <label>Order Number:</label>
+            <span>{{ selectedOrder.orderNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Tracking Number:</label>
+            <span>{{ selectedOrder.trackingNumber }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Status:</label>
+            <span class="status-badge" [ngClass]="getStatusClass(selectedOrder.status)">
+              {{ getStatusDisplayName(selectedOrder.status) }}
+            </span>
+          </div>
+          <div class="detail-item">
+            <label>Priority:</label>
+            <span class="priority-badge" [ngClass]="getPriorityClass(selectedOrder.priority)">
+              {{ getPriorityDisplayName(selectedOrder.priority) }}
+            </span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3>Customer Information</h3>
+          <div class="detail-item">
+            <label>Name:</label>
+            <span>{{ selectedOrder.customerName }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Phone:</label>
+            <span>{{ selectedOrder.customerPhone }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Email:</label>
+            <span>{{ selectedOrder.customerEmail }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3>Delivery Information</h3>
+          <div class="detail-item">
+            <label>Pickup Address:</label>
+            <span>{{ selectedOrder.pickupAddress }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Delivery Address:</label>
+            <span>{{ selectedOrder.deliveryAddress }}</span>
+          </div>
+          <div class="detail-item" *ngIf="selectedOrder.driverName">
+            <label>Driver:</label>
+            <span>{{ selectedOrder.driverName }}</span>
+          </div>
+        </div>
+        
+        <div class="detail-section">
+          <h3>Financial Information</h3>
+          <div class="detail-item">
+            <label>Order Value:</label>
+            <span>${{ selectedOrder.orderValue.toFixed(2) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Delivery Fee:</label>
+            <span>${{ selectedOrder.deliveryFee.toFixed(2) }}</span>
+          </div>
+          <div class="detail-item">
+            <label>Total Amount:</label>
+            <span class="total-amount">${{ selectedOrder.totalAmount.toFixed(2) }}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="timestamps">
+        <h3>Timeline</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <label>Order Created:</label>
+            <span>{{ selectedOrder.createdAt | date:'medium' }}</span>
+          </div>
+          <div class="timeline-item" *ngIf="selectedOrder.scheduledPickupTime">
+            <label>Scheduled Pickup:</label>
+            <span>{{ selectedOrder.scheduledPickupTime | date:'medium' }}</span>
+          </div>
+          <div class="timeline-item" *ngIf="selectedOrder.actualPickupTime">
+            <label>Actual Pickup:</label>
+            <span>{{ selectedOrder.actualPickupTime | date:'medium' }}</span>
+          </div>
+          <div class="timeline-item" *ngIf="selectedOrder.estimatedDeliveryTime">
+            <label>Estimated Delivery:</label>
+            <span>{{ selectedOrder.estimatedDeliveryTime | date:'medium' }}</span>
+          </div>
+          <div class="timeline-item" *ngIf="selectedOrder.actualDeliveryTime">
+            <label>Actual Delivery:</label>
+            <span>{{ selectedOrder.actualDeliveryTime | date:'medium' }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rating Modal -->
+<div class="modal-overlay" *ngIf="showRatingModal" (click)="closeRatingModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Rate Order</h2>
+      <button class="close-btn" (click)="closeRatingModal()">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    
+    <form class="rating-form" (ngSubmit)="submitRating()">
+      <div class="form-group">
+        <label for="customerRating">Overall Rating</label>
+        <div class="star-rating">
+          <input type="number" id="customerRating" [(ngModel)]="ratingForm.customerRating" name="customerRating" min="1" max="5" step="0.1">
+          <span>/5 stars</span>
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="customerReview">Review</label>
+        <textarea id="customerReview" [(ngModel)]="ratingForm.customerReview" name="customerReview" placeholder="Share your experience..."></textarea>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" (click)="closeRatingModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading">Submit Rating</button>
+      </div>
+    </form>
+  </div>
+</div>

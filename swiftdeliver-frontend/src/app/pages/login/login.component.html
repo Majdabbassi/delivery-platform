@@ -1,0 +1,182 @@
+<div class="login-container">
+  <div class="login-wrapper">
+    <!-- Login Card -->
+    <div class="login-card">
+      <!-- Logo and Header -->
+      <div class="login-header">
+        <div class="logo">
+          <i class="fas fa-rocket"></i>
+          <h1>SwiftDeliver</h1>
+        </div>
+        <h2>Welcome Back</h2>
+        <p>Sign in to your account to continue</p>
+      </div>
+      
+      <!-- Error Message -->
+      <div class="error-message" *ngIf="error" [class.show]="error">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>{{ error }}</span>
+        <button class="close-error" (click)="clearError()">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      
+      <!-- Login Form -->
+      <form class="login-form" (ngSubmit)="onSubmit()" #loginFormRef="ngForm">
+        <!-- Username/Email Field -->
+        <div class="form-group">
+          <label for="usernameOrEmail">
+            <i class="fas fa-user"></i>
+            Username or Email
+          </label>
+          <div class="input-wrapper">
+            <input
+              type="text"
+              id="usernameOrEmail"
+              name="usernameOrEmail"
+              [(ngModel)]="loginForm.usernameOrEmail"
+              placeholder="Enter your username or email"
+              required
+              autocomplete="username"
+              [disabled]="loading"
+              class="form-input"
+            >
+            <div class="input-icon">
+              <i class="fas fa-user"></i>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Password Field -->
+        <div class="form-group">
+          <label for="password">
+            <i class="fas fa-lock"></i>
+            Password
+          </label>
+          <div class="input-wrapper">
+            <input
+              [type]="showPassword ? 'text' : 'password'"
+              id="password"
+              name="password"
+              [(ngModel)]="loginForm.password"
+              placeholder="Enter your password"
+              required
+              autocomplete="current-password"
+              [disabled]="loading"
+              class="form-input"
+            >
+            <div class="input-icon">
+              <i class="fas fa-lock"></i>
+            </div>
+            <button
+              type="button"
+              class="password-toggle"
+              (click)="togglePasswordVisibility()"
+              [disabled]="loading"
+            >
+              <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Remember Me and Forgot Password -->
+        <div class="form-options">
+          <label class="checkbox-wrapper">
+            <input
+              type="checkbox"
+              [(ngModel)]="rememberMe"
+              name="rememberMe"
+              [disabled]="loading"
+            >
+            <span class="checkmark"></span>
+            <span class="checkbox-label">Remember me</span>
+          </label>
+          
+          <button
+            type="button"
+            class="forgot-password"
+            (click)="onForgotPassword()"
+            [disabled]="loading"
+          >
+            Forgot Password?
+          </button>
+        </div>
+        
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="login-button"
+          [disabled]="loading || !loginFormRef.form.valid"
+          [class.loading]="loading"
+        >
+          <span *ngIf="!loading">
+            <i class="fas fa-sign-in-alt"></i>
+            Sign In
+          </span>
+          <span *ngIf="loading" class="loading-content">
+            <i class="fas fa-spinner fa-spin"></i>
+            Signing In...
+          </span>
+        </button>
+      </form>
+      
+      <!-- Footer -->
+      <div class="login-footer">
+        <p>Don't have an account?</p>
+        <button
+          type="button"
+          class="register-button"
+          (click)="onRegister()"
+          [disabled]="loading"
+        >
+          <i class="fas fa-user-plus"></i>
+          Create Account
+        </button>
+        <button
+          type="button"
+          class="register-button driver"
+          (click)="onDriverRegister()"
+          [disabled]="loading"
+        >
+          <i class="fas fa-truck"></i>
+          Register as a Driver
+        </button>
+      </div>
+    </div>
+    
+    <!-- Features Section -->
+    <div class="features-section">
+      <h3>Why Choose SwiftDeliver?</h3>
+      <div class="features-list">
+        <div class="feature-item">
+          <i class="fas fa-shipping-fast"></i>
+          <div>
+            <h4>Fast Delivery</h4>
+            <p>Quick and reliable delivery services</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-shield-alt"></i>
+          <div>
+            <h4>Secure Platform</h4>
+            <p>Your data is protected with enterprise-grade security</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-chart-line"></i>
+          <div>
+            <h4>Analytics Dashboard</h4>
+            <p>Comprehensive insights and reporting tools</p>
+          </div>
+        </div>
+        <div class="feature-item">
+          <i class="fas fa-headset"></i>
+          <div>
+            <h4>24/7 Support</h4>
+            <p>Round-the-clock customer support</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
