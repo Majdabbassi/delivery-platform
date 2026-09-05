@@ -181,14 +181,14 @@
               </td>
               <td>
                 <div class="experience-info">
-                  <div class="experience-badge" [class]="getExperienceBadgeClass(owner.businessExperience || 0)">
+                  <div class="experience-badge" [ngClass]="getExperienceBadgeClass(owner.businessExperience || 0)">
                     {{ owner.businessExperience || 0 }} years
                   </div>
                   <p class="experience-level">{{ getExperienceLevel(owner.businessExperience || 0) }}</p>
                 </div>
               </td>
               <td>
-                <div class="verification-badge" [class]="getVerificationBadge(owner)">
+                <div class="verification-badge" [ngClass]="getVerificationBadge(owner)">
                   <i class="fas" [class.fa-shield-check]="owner.verified" 
                      [class.fa-shield-times]="!owner.verified"></i>
                   {{ owner.verified ? 'Verified' : 'Unverified' }}
@@ -209,7 +209,7 @@
                 </div>
               </td>
               <td>
-                <div class="status-badge" [class]="getStatusClass(owner)">
+                <div class="status-badge" [ngClass]="getStatusClass(owner)">
                   {{ owner.enabled ? 'Active' : 'Inactive' }}
                 </div>
               </td>
@@ -635,7 +635,7 @@
             </div>
             <div class="detail-row">
               <label>Verification Status:</label>
-              <span class="verification-badge" [class]="getVerificationBadge(selectedOwner)">
+              <span class="verification-badge" [ngClass]="getVerificationBadge(selectedOwner)">
                 {{ selectedOwner.verified ? 'Verified' : 'Unverified' }}
               </span>
             </div>
@@ -659,7 +659,7 @@
             </div>
             <div class="detail-row">
               <label>Account Status:</label>
-              <span class="status-badge" [class]="getStatusClass(selectedOwner)">
+              <span class="status-badge" [ngClass]="getStatusClass(selectedOwner)">
                 {{ selectedOwner.enabled ? 'Active' : 'Inactive' }}
               </span>
             </div>

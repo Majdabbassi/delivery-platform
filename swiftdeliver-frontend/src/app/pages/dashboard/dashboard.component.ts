@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { AuthService, User, UserRole } from '../../services/auth.service';
@@ -25,7 +28,8 @@ interface QuickLink {
 
 @Component({
   selector: 'app-dashboard',
-  standalone: false,
+  standalone: true,
+imports: [CommonModule, FormsModule, RouterModule],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css'
 })
@@ -136,51 +140,51 @@ export class DashboardComponent implements OnInit, OnDestroy {
       o.status === OrderStatus.DELIVERED
     ).length;
 
-    this.myActivityCards = [
-      { icon: '📋', label: 'Total Orders', value: orders.length, color: 'blue' },
-      { icon: '🚚', label: 'In Progress', value: inProgress, color: 'orange' },
-      { icon: '✅', label: 'Completed', value: completed, color: 'teal' },
-      { icon: '⏳', label: 'Pending', value: orders.filter(o => o.status === OrderStatus.PENDING).length, color: 'amber' },
-      { icon: '💵', label: 'Total Value', value: this.formatCurrency(orders.reduce((sum, o) => sum + (o.totalAmount || o.orderValue || 0), 0)), color: 'green' },
-      { icon: '❌', label: 'Cancelled', value: orders.filter(o => o.status === OrderStatus.CANCELLED).length, color: 'red' }
+this.myActivityCards = [
+      { icon: 'fa-solid fa-clipboard-list', label: 'Total Orders', value: orders.length, color: 'blue' },
+      { icon: 'fa-solid fa-truck', label: 'In Progress', value: inProgress, color: 'orange' },
+      { icon: 'fa-solid fa-circle-check', label: 'Completed', value: completed, color: 'teal' },
+      { icon: 'fa-solid fa-clock', label: 'Pending', value: orders.filter(o => o.status === OrderStatus.PENDING).length, color: 'amber' },
+      { icon: 'fa-solid fa-dollar-sign', label: 'Total Value', value: this.formatCurrency(orders.reduce((sum, o) => sum + (o.totalAmount || o.orderValue || 0), 0)), color: 'green' },
+      { icon: 'fa-solid fa-ban', label: 'Cancelled', value: orders.filter(o => o.status === OrderStatus.CANCELLED).length, color: 'red' }
     ];
   }
 
   private buildQuickLinks(): void {
     const role = this.currentUser?.role;
     switch (role) {
-      case UserRole.VENDOR_OWNER:
+case UserRole.VENDOR_OWNER:
         this.quickLinks = [
-          { icon: '🏢', label: 'My Companies', detail: 'Manage vendor companies', route: '/vendorcompanies' },
-          { icon: '📦', label: 'Products', detail: 'Manage your product catalog', route: '/products' },
-          { icon: '📋', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
-          { icon: '🤝', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
+          { icon: 'fa-solid fa-building', label: 'My Companies', detail: 'Manage vendor companies', route: '/vendorcompanies' },
+          { icon: 'fa-solid fa-box', label: 'Products', detail: 'Manage your product catalog', route: '/products' },
+          { icon: 'fa-solid fa-clipboard-list', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
+          { icon: 'fa-solid fa-handshake', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
         ];
         break;
       case UserRole.DELIVERY_OWNER:
         this.quickLinks = [
-          { icon: '🚛', label: 'My Companies', detail: 'Manage delivery companies', route: '/deliverycompanies' },
-          { icon: '🛒', label: 'Marketplace', detail: 'Browse and bid on available orders', route: '/pool' },
-          { icon: '📋', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
-          { icon: '🤝', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
+          { icon: 'fa-solid fa-truck-fast', label: 'My Companies', detail: 'Manage delivery companies', route: '/deliverycompanies' },
+          { icon: 'fa-solid fa-cart-shopping', label: 'Marketplace', detail: 'Browse and bid on available orders', route: '/pool' },
+          { icon: 'fa-solid fa-clipboard-list', label: 'Orders', detail: 'View and manage orders', route: '/orders' },
+          { icon: 'fa-solid fa-handshake', label: 'Partnerships', detail: 'View partnership agreements', route: '/partnerships' }
         ];
         break;
       case UserRole.CLIENT:
         this.quickLinks = [
-          { icon: '📋', label: 'My Orders', detail: 'Track and manage your orders', route: '/orders' },
-          { icon: '🔍', label: 'Track Package', detail: 'Live location tracking', route: '/tracking' }
+          { icon: 'fa-solid fa-clipboard-list', label: 'My Orders', detail: 'Track and manage your orders', route: '/orders' },
+          { icon: 'fa-solid fa-magnifying-glass', label: 'Track Package', detail: 'Live location tracking', route: '/tracking' }
         ];
         break;
       case UserRole.DRIVER:
         this.quickLinks = [
-          { icon: '🧭', label: 'My Jobs', detail: 'Assigned delivery jobs & live updates', route: '/my-jobs' },
-          { icon: '🔍', label: 'Track Delivery', detail: 'Live location tracking', route: '/tracking' }
+          { icon: 'fa-solid fa-compass', label: 'My Jobs', detail: 'Assigned delivery jobs & live updates', route: '/my-jobs' },
+          { icon: 'fa-solid fa-magnifying-glass', label: 'Track Delivery', detail: 'Live location tracking', route: '/tracking' }
         ];
         break;
       default:
         this.quickLinks = [
-          { icon: '📋', label: 'Orders', detail: 'View orders', route: '/orders' },
-          { icon: '🔍', label: 'Track Package', detail: 'Live location tracking', route: '/tracking' }
+          { icon: 'fa-solid fa-clipboard-list', label: 'Orders', detail: 'View orders', route: '/orders' },
+          { icon: 'fa-solid fa-magnifying-glass', label: 'Track Package', detail: 'Live location tracking', route: '/tracking' }
         ];
     }
   }
@@ -226,36 +230,36 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private buildCards(overview: DashboardOverview): void {
-    this.kpiCards = [
-      { icon: '👥', label: 'Customers', value: overview.customers, color: 'blue' },
-      { icon: '📋', label: 'Total Orders', value: overview.orders, color: 'indigo' },
-      { icon: '💰', label: 'Revenue', value: this.formatCurrency(overview.totalRevenue), color: 'green' },
-      { icon: '⏳', label: 'Pending Orders', value: overview.pendingOrders, color: 'amber' },
-      { icon: '🚚', label: 'In Progress', value: overview.inProgressOrders, color: 'orange' },
-      { icon: '✅', label: 'Completed', value: overview.completedOrders, color: 'teal' },
-      { icon: '❌', label: 'Cancelled', value: overview.cancelledOrders, color: 'red' }
+this.kpiCards = [
+      { icon: 'fa-solid fa-users', label: 'Customers', value: overview.customers, color: 'blue' },
+      { icon: 'fa-solid fa-clipboard-list', label: 'Total Orders', value: overview.orders, color: 'indigo' },
+      { icon: 'fa-solid fa-dollar-sign', label: 'Revenue', value: this.formatCurrency(overview.totalRevenue), color: 'green' },
+      { icon: 'fa-solid fa-clock', label: 'Pending Orders', value: overview.pendingOrders, color: 'amber' },
+      { icon: 'fa-solid fa-truck', label: 'In Progress', value: overview.inProgressOrders, color: 'orange' },
+      { icon: 'fa-solid fa-circle-check', label: 'Completed', value: overview.completedOrders, color: 'teal' },
+      { icon: 'fa-solid fa-ban', label: 'Cancelled', value: overview.cancelledOrders, color: 'red' }
     ];
 
     this.entityCards = [
-      { icon: '🏢', label: 'Vendor Companies', value: overview.vendorCompanies, color: 'blue' },
-      { icon: '🏪', label: 'Vendor Owners', value: overview.vendorOwners, color: 'indigo' },
-      { icon: '🚛', label: 'Delivery Companies', value: overview.deliveryCompanies, color: 'green' },
-      { icon: '🚚', label: 'Delivery Owners', value: overview.deliveryOwners, color: 'amber' },
-      { icon: '🚗', label: 'Drivers', value: overview.drivers, color: 'orange' },
-      { icon: '📦', label: 'Products', value: overview.products, color: 'teal' },
-      { icon: '🔐', label: 'Admins', value: overview.admins, color: 'purple' },
-      { icon: '🤝', label: 'Partnerships', value: overview.partnerships, color: 'pink' }
+      { icon: 'fa-solid fa-building', label: 'Vendor Companies', value: overview.vendorCompanies, color: 'blue' },
+      { icon: 'fa-solid fa-shop', label: 'Vendor Owners', value: overview.vendorOwners, color: 'indigo' },
+      { icon: 'fa-solid fa-truck-fast', label: 'Delivery Companies', value: overview.deliveryCompanies, color: 'green' },
+      { icon: 'fa-solid fa-truck', label: 'Delivery Owners', value: overview.deliveryOwners, color: 'amber' },
+      { icon: 'fa-solid fa-car', label: 'Drivers', value: overview.drivers, color: 'orange' },
+      { icon: 'fa-solid fa-box', label: 'Products', value: overview.products, color: 'teal' },
+      { icon: 'fa-solid fa-lock', label: 'Admins', value: overview.admins, color: 'purple' },
+      { icon: 'fa-solid fa-handshake', label: 'Partnerships', value: overview.partnerships, color: 'pink' }
     ];
 
     this.detailMetrics = [
-      { icon: '⭐', label: 'Premium Customers', value: this.value(this.customerStats, 'premium'), color: 'amber' },
-      { icon: '📦', label: 'Customers (Multiple Orders)', value: this.value(this.customerStats, 'withMultipleOrders'), color: 'indigo' },
-      { icon: '✅', label: 'Verified Drivers', value: this.value(this.driverStats, 'verified'), color: 'green' },
-      { icon: '🏆', label: 'Experienced Drivers', value: this.value(this.driverStats, 'experienced'), color: 'teal' },
-      { icon: '🛡️', label: 'High Security Admins', value: this.value(this.superAdminStats, 'highSecurityLevel'), color: 'red' },
-      { icon: '💾', label: 'Avg Security Level', value: this.value(this.superAdminStats, 'averageSecurityLevel'), color: 'purple' },
-      { icon: '📉', label: 'Low Stock Products', value: this.value(this.productStats, 'lowStock'), color: 'orange' },
-      { icon: '🔥', label: 'High Rated Products', value: this.value(this.productStats, 'highRated'), color: 'pink' }
+      { icon: 'fa-solid fa-star', label: 'Premium Customers', value: this.value(this.customerStats, 'premium'), color: 'amber' },
+      { icon: 'fa-solid fa-box', label: 'Customers (Multiple Orders)', value: this.value(this.customerStats, 'withMultipleOrders'), color: 'indigo' },
+      { icon: 'fa-solid fa-circle-check', label: 'Verified Drivers', value: this.value(this.driverStats, 'verified'), color: 'green' },
+      { icon: 'fa-solid fa-award', label: 'Experienced Drivers', value: this.value(this.driverStats, 'experienced'), color: 'teal' },
+      { icon: 'fa-solid fa-shield-halved', label: 'High Security Admins', value: this.value(this.superAdminStats, 'highSecurityLevel'), color: 'red' },
+      { icon: 'fa-solid fa-database', label: 'Avg Security Level', value: this.value(this.superAdminStats, 'averageSecurityLevel'), color: 'purple' },
+      { icon: 'fa-solid fa-chart-line', label: 'Low Stock Products', value: this.value(this.productStats, 'lowStock'), color: 'orange' },
+      { icon: 'fa-solid fa-fire', label: 'High Rated Products', value: this.value(this.productStats, 'highRated'), color: 'pink' }
     ];
 
     this.loading = false;

@@ -3,7 +3,7 @@
   <div class="pool-header">
     <div class="header-left">
       <h1 class="page-title">
-        <span class="title-icon">🛒</span>
+        <span class="title-icon"><i class="fa-solid fa-cart-shopping"></i></span>
         Delivery Marketplace
       </h1>
       <p class="subtitle" *ngIf="ownedCompanyName && !isSuperAdmin">
@@ -29,7 +29,7 @@
 
   <!-- Error state -->
   <div class="error-banner" *ngIf="error">
-    <span class="error-icon">⚠️</span>
+    <span class="error-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
     <span>{{ error }}</span>
   </div>
 
@@ -43,8 +43,8 @@
     <!-- Pool stats -->
     <section class="card-section" *ngIf="statCards.length > 0">
       <div class="cards-grid">
-        <div class="metric-card" *ngFor="let card of statCards" [class]="'metric-card ' + card.color">
-          <div class="card-icon">{{ card.icon }}</div>
+        <div class="metric-card" *ngFor="let card of statCards" [ngClass]="'metric-card ' + card.color">
+          <div class="card-icon"><i class="{{ card.icon }}"></i></div>
           <div class="card-body">
             <span class="card-value">{{ card.value }}</span>
             <span class="card-label">{{ card.label }}</span>
@@ -58,28 +58,28 @@
       <h2 class="section-title">My Bidding Activity</h2>
       <div class="cards-grid small">
         <div class="metric-card blue">
-          <div class="card-icon">📨</div>
+          <div class="card-icon"><i class="fa-solid fa-envelope"></i></div>
           <div class="card-body">
             <span class="card-value">{{ bidStats.bidsSubmitted }}</span>
             <span class="card-label">Submitted</span>
           </div>
         </div>
         <div class="metric-card green">
-          <div class="card-icon">✅</div>
+          <div class="card-icon"><i class="fa-solid fa-circle-check"></i></div>
           <div class="card-body">
             <span class="card-value">{{ bidStats.bidsAccepted }}</span>
             <span class="card-label">Accepted</span>
           </div>
         </div>
         <div class="metric-card orange">
-          <div class="card-icon">⛔</div>
+          <div class="card-icon"><i class="fa-solid fa-ban"></i></div>
           <div class="card-body">
             <span class="card-value">{{ bidStats.bidsRejected }}</span>
             <span class="card-label">Rejected</span>
           </div>
         </div>
         <div class="metric-card gray">
-          <div class="card-icon">📊</div>
+          <div class="card-icon"><i class="fa-solid fa-chart-column"></i></div>
           <div class="card-body">
             <span class="card-value">{{ bidStats.acceptanceRate.toFixed(1) }}%</span>
             <span class="card-label">Acceptance Rate</span>
@@ -90,7 +90,7 @@
 
     <!-- Recommended orders -->
     <section class="card-section" *ngIf="recommended && recommended.length > 0 && !isDriver">
-      <h2 class="section-title">⭐ Recommended For You</h2>
+      <h2 class="section-title"><i class="fa-solid fa-star"></i> Recommended For You</h2>
       <div class="orders-grid">
         <div class="order-card" *ngFor="let order of recommended">
           <div class="order-head">
@@ -98,7 +98,7 @@
               <span class="order-vendor">{{ getOrderSourceLabel(order) }}</span>
               <span class="order-id">#{{ order.orderNumber }}</span>
             </div>
-            <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
+            <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">{{ order.priority }}</span>
           </div>
           <div class="order-route">
             <div class="route-point">
@@ -111,18 +111,18 @@
             </div>
           </div>
           <div class="order-meta">
-            <span class="meta-item">💰 {{ formatCurrency(order.orderValue) }}</span>
-            <span class="meta-item" *ngIf="order.estimatedDistance != null">📏 {{ order.estimatedDistance }} km</span>
-            <span class="meta-item" *ngIf="order.estimatedDeliveryTime">⏱ {{ formatDate(order.estimatedDeliveryTime) }}</span>
+            <span class="meta-item"><i class="fa-solid fa-dollar-sign"></i> {{ formatCurrency(order.orderValue) }}</span>
+            <span class="meta-item" *ngIf="order.estimatedDistance != null"><i class="fa-solid fa-ruler"></i> {{ order.estimatedDistance }} km</span>
+            <span class="meta-item" *ngIf="order.estimatedDeliveryTime"><i class="fa-solid fa-clock"></i> {{ formatDate(order.estimatedDeliveryTime) }}</span>
           </div>
           <div class="order-actions">
             <ng-container *ngIf="!order.myBid">
-              <button class="btn btn-bid" (click)="toggleBidForm(order)">💰 Bid Now</button>
+              <button class="btn btn-bid" (click)="toggleBidForm(order)"><i class="fa-solid fa-dollar-sign"></i> Bid Now</button>
             </ng-container>
             <ng-container *ngIf="order.myBid">
-              <span class="status-badge" [class]="bidClass(order.myBid.status)">{{ order.myBid.status }}</span>
+              <span class="status-badge" [ngClass]="bidClass(order.myBid.status)">{{ order.myBid.status }}</span>
             </ng-container>
-            <button class="btn btn-track" (click)="trackOrder(order)">📍 Track</button>
+            <button class="btn btn-track" (click)="trackOrder(order)"><i class="fa-solid fa-location-dot"></i> Track</button>
           </div>
 
           <!-- Inline bid form -->
@@ -153,7 +153,7 @@
     <!-- Browse / filter -->
     <section class="card-section">
       <div class="browse-header">
-        <h2 class="section-title">🔍 Browse the Pool</h2>
+        <h2 class="section-title"><i class="fa-solid fa-magnifying-glass"></i> Browse the Pool</h2>
         <div class="filters-bar">
           <select class="filter-select" [(ngModel)]="filters.priority">
             <option value="">All Priorities</option>
@@ -179,7 +179,7 @@
       </div>
 
       <div class="empty-state" *ngIf="browseOrders.length === 0">
-        <span class="empty-icon">📭</span>
+        <span class="empty-icon"><i class="fa-solid fa-envelope-open"></i></span>
         <p>No orders match the current filters.</p>
         <p class="empty-hint">Try widening the filter or resetting your search.</p>
       </div>
@@ -191,7 +191,7 @@
               <span class="order-vendor">{{ getOrderSourceLabel(order) }}</span>
               <span class="order-id">#{{ order.orderNumber }}</span>
             </div>
-            <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
+            <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">{{ order.priority }}</span>
           </div>
           <div class="order-route">
             <div class="route-point">
@@ -204,22 +204,22 @@
             </div>
           </div>
           <div class="order-meta">
-            <span class="meta-item">💰 {{ formatCurrency(order.orderValue) }}</span>
-            <span class="meta-item" *ngIf="order.estimatedDistance != null">📏 {{ order.estimatedDistance }} km</span>
-            <span class="meta-item">📦 {{ order.status }}</span>
+            <span class="meta-item"><i class="fa-solid fa-dollar-sign"></i> {{ formatCurrency(order.orderValue) }}</span>
+            <span class="meta-item" *ngIf="order.estimatedDistance != null"><i class="fa-solid fa-ruler"></i> {{ order.estimatedDistance }} km</span>
+            <span class="meta-item"><i class="fa-solid fa-box"></i> {{ order.status }}</span>
           </div>
           <div class="order-actions">
             <ng-container *ngIf="!order.myBid">
-              <button class="btn btn-bid" (click)="toggleBidForm(order)">💰 Bid Now</button>
+              <button class="btn btn-bid" (click)="toggleBidForm(order)"><i class="fa-solid fa-dollar-sign"></i> Bid Now</button>
             </ng-container>
             <ng-container *ngIf="order.myBid && order.myBid.status === BidStatus.SUBMITTED">
               <span class="status-badge bid-submitted">Submitted</span>
               <button class="btn btn-withdraw" (click)="withdrawBid(order)">↩ Withdraw</button>
             </ng-container>
             <ng-container *ngIf="order.myBid && order.myBid.status !== BidStatus.SUBMITTED">
-              <span class="status-badge" [class]="bidClass(order.myBid.status)">{{ order.myBid.status }}</span>
+              <span class="status-badge" [ngClass]="bidClass(order.myBid.status)">{{ order.myBid.status }}</span>
             </ng-container>
-            <button class="btn btn-track" (click)="trackOrder(order)">📍 Track</button>
+            <button class="btn btn-track" (click)="trackOrder(order)"><i class="fa-solid fa-location-dot"></i> Track</button>
           </div>
 
           <!-- Inline bid form -->

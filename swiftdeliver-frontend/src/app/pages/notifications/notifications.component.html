@@ -4,7 +4,7 @@
     <div class="header-content">
       <div class="header-left">
         <h1 class="page-title">
-          <span class="title-icon">🔔</span>
+          <span class="title-icon"><i class="fa-solid fa-bell"></i></span>
           Notifications
         </h1>
       </div>
@@ -25,7 +25,7 @@
           Mark All Read
         </button>
         <button class="action-btn danger" (click)="clearAllRead()">
-          <span class="btn-icon">🗑️</span>
+          <i class="fa-solid fa-trash-can"></i>
           Clear Read
         </button>
       </div>
@@ -38,7 +38,7 @@
       <!-- Search -->
       <div class="search-container">
         <div class="search-input-wrapper">
-          <span class="search-icon">🔍</span>
+          <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
           <input 
             type="text" 
             class="search-input" 
@@ -61,7 +61,7 @@
           <label class="filter-label">Category</label>
           <select class="filter-select" [(ngModel)]="selectedCategory" (change)="onCategoryChange(selectedCategory)">
             <option *ngFor="let category of categories" [value]="category.value">
-              {{ category.icon }} {{ category.label }}
+              {{ category.label }}
             </option>
           </select>
         </div>
@@ -71,7 +71,7 @@
           <label class="filter-label">Type</label>
           <select class="filter-select" [(ngModel)]="selectedType" (change)="onTypeChange(selectedType)">
             <option *ngFor="let type of types" [value]="type.value">
-              {{ type.icon }} {{ type.label }}
+              {{ type.label }}
             </option>
           </select>
         </div>
@@ -81,7 +81,7 @@
           <label class="filter-label">Priority</label>
           <select class="filter-select" [(ngModel)]="selectedPriority" (change)="onPriorityChange(selectedPriority)">
             <option *ngFor="let priority of priorities" [value]="priority.value">
-              {{ priority.icon }} {{ priority.label }}
+              {{ priority.label }}
             </option>
           </select>
         </div>
@@ -113,7 +113,7 @@
         
         <!-- Notification Icon -->
         <div class="notification-icon">
-          <span class="icon-emoji">{{ notification.icon }}</span>
+          <i class="{{ notification.icon }}"></i>
           <div class="priority-indicator" [ngClass]="getPriorityClass(notification.priority)"></div>
         </div>
 
@@ -157,7 +157,7 @@
             class="action-btn-small danger" 
             (click)="deleteNotification(notification)"
             title="Delete notification">
-            🗑️
+            <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>
       </div>
@@ -166,7 +166,7 @@
     <!-- No Notifications State -->
     <ng-template #noNotifications>
       <div class="empty-state">
-        <div class="empty-icon">🔔</div>
+        <div class="empty-icon"><i class="fa-solid fa-bell"></i></div>
         <h3 class="empty-title">No notifications found</h3>
         <p class="empty-description">
           <span *ngIf="searchQuery || selectedCategory !== 'all' || selectedType !== 'all' || selectedPriority !== 'all' || showUnreadOnly">

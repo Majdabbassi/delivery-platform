@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { DeliveryCompanyService, DeliveryCompany, DeliveryCompanySearchParams, DeliveryCompanyStats } from '../../services/delivery-company.service';
@@ -7,8 +10,9 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-delivery-companies',
   templateUrl: './delivery-companies.component.html',
   styleUrls: ['./delivery-companies.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class DeliveryCompaniesComponent implements OnInit, OnDestroy {
   deliveryCompanies: DeliveryCompany[] = [];
   filteredDeliveryCompanies: DeliveryCompany[] = [];
@@ -416,16 +420,16 @@ export class DeliveryCompaniesComponent implements OnInit, OnDestroy {
 
   getServiceTypeIcon(serviceType: string): string {
     const icons: { [key: string]: string } = {
-      'Express Delivery': '⚡',
-      'Standard Delivery': '📦',
-      'Same Day Delivery': '🚀',
-      'International Shipping': '🌍',
-      'Freight Transport': '🚛',
-      'Last Mile Delivery': '🏠',
-      'Cold Chain Logistics': '❄️',
-      'E-commerce Fulfillment': '🛒'
+      'Express Delivery': 'fa-solid fa-bolt',
+      'Standard Delivery': 'fa-solid fa-box',
+      'Same Day Delivery': 'fa-solid fa-rocket',
+      'International Shipping': 'fa-solid fa-globe',
+      'Freight Transport': 'fa-solid fa-truck-fast',
+      'Last Mile Delivery': 'fa-solid fa-house',
+      'Cold Chain Logistics': 'fa-solid fa-snowflake',
+      'E-commerce Fulfillment': 'fa-solid fa-cart-shopping'
     };
-    return icons[serviceType] || '🚚';
+    return icons[serviceType] || 'fa-solid fa-truck';
   }
 
   getRatingStars(rating: number | undefined): string {

@@ -1,3 +1,5 @@
+﻿import { PaginatedResponse } from '../models/paginated-response';
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -40,17 +42,6 @@ export interface VendorCompany {
   updatedAt?: string;
 }
 
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  numberOfElements: number;
-  empty: boolean;
-}
 
 export interface VendorCompanySearchParams {
   name?: string;
@@ -264,6 +255,7 @@ export class VendorCompanyService {
 
   getVendorCompaniesByOwner(ownerId: number): Observable<VendorCompany[]> {
     return this.http.get<VendorCompany[]>(`${this.baseUrl}/owner/${ownerId}`).pipe(
+      map(companies => (companies || []).map(company => this.mapCompany(company))),
       catchError(this.handleError)
     );
   }

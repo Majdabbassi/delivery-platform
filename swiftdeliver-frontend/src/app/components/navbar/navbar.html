@@ -13,7 +13,7 @@
   <!-- Left Section: Logo & Brand -->
   <div class="navbar-left">
     <a class="navbar-logo" (click)="navigateToHome()" role="button" tabindex="0">
-      <div class="navbar-logo-icon" [class.spinning]="isLoading">🏢</div>
+      <div class="navbar-logo-icon" [class.spinning]="isLoading"><i class="fa-solid fa-building"></i></div>
       <span class="navbar-brand">{{ companyName }}</span>
     </a>
   </div>
@@ -23,7 +23,7 @@
     <div class="search-container" 
          [class.focused]="isSearchFocused"
          [class.has-results]="searchResults.length > 0">
-      <div class="search-icon" aria-hidden="true">🔍</div>
+      <div class="search-icon" aria-hidden="true"><i class="fa-solid fa-magnifying-glass"></i></div>
       <input type="text" 
              class="search-input"
              placeholder="{{ searchPlaceholder }}"
@@ -53,7 +53,7 @@
              [class.highlighted]="i === selectedResultIndex"
              role="option"
              [attr.aria-selected]="i === selectedResultIndex">
-          <div class="result-icon">{{ result.icon }}</div>
+          <div class="result-icon"><i class="{{ result.icon }}"></i></div>
           <div class="result-content">
             <div class="result-title">{{ result.title }}</div>
             <div class="result-description">{{ result.description }}</div>
@@ -73,7 +73,7 @@
               [class.auto-mode]="currentTheme === 'auto'"
               [title]="getThemeTooltip()"
               [attr.aria-label]="getThemeTooltip()">
-        <span class="theme-icon">{{ getThemeIcon() }}</span>
+        <span class="theme-icon"><i class="{{ getThemeIcon() }}"></i></span>
         <span class="theme-indicator" *ngIf="currentTheme === 'auto'"></span>
       </button>
     </div>
@@ -87,7 +87,7 @@
               aria-label="Notifications"
               (click)="toggleNotificationsDropdown($event)"
               [attr.aria-expanded]="isNotificationsDropdownOpen">
-        <span class="action-icon">🔔</span>
+        <span class="action-icon"><i class="fa-solid fa-bell"></i></span>
         <span class="badge" *ngIf="unreadNotificationsCount > 0">{{ unreadNotificationsCount }}</span>
       </button>
       <div class="dropdown-content notifications-content"
@@ -102,14 +102,14 @@
         </div>
         <div class="notifications-list">
           <div class="notifications-empty" *ngIf="notifications.length === 0">
-            <span class="empty-icon">🔔</span>
+            <span class="empty-icon"><i class="fa-solid fa-bell"></i></span>
             <p>No notifications yet</p>
           </div>
           <a *ngFor="let notif of notifications" 
              (click)="openNotification(notif)"
              [class.unread]="!notif.read"
              class="notification-item">
-            <div class="notification-icon">{{ notif.icon }}</div>
+            <div class="notification-icon"><i class="{{ notif.icon }}"></i></div>
             <div class="notification-content">
               <div class="notification-title">{{ notif.title }}</div>
               <div class="notification-text">{{ notif.content }}</div>
@@ -154,16 +154,16 @@
         </div>
         <div class="dropdown-divider"></div>
         <a (click)="navigateToProfile()" class="dropdown-item">
-          <span class="item-icon">👤</span>
+          <span class="item-icon"><i class="fa-solid fa-user"></i></span>
           <span class="item-text">Profile</span>
         </a>
         <a (click)="navigateToHelp()" class="dropdown-item">
-          <span class="item-icon">❓</span>
+          <span class="item-icon"><i class="fa-solid fa-circle-question"></i></span>
           <span class="item-text">Help & Support</span>
         </a>
         <div class="dropdown-divider"></div>
         <a (click)="logout()" class="dropdown-item logout">
-          <span class="item-icon">🚪</span>
+          <span class="item-icon"><i class="fa-solid fa-right-from-bracket"></i></span>
           <span class="item-text">Sign Out</span>
         </a>
       </div>

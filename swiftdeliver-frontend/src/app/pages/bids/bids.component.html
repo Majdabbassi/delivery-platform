@@ -3,7 +3,7 @@
   <div class="bids-header">
     <div class="header-left">
       <h1 class="page-title">
-        <span class="title-icon">💼</span>
+        <span class="title-icon"><i class="fa-solid fa-briefcase"></i></span>
         Bid Inbox
       </h1>
       <p class="subtitle">Review bids from delivery companies and pick the best match for each order.</p>
@@ -15,7 +15,7 @@
 
   <!-- Error state -->
   <div class="error-banner" *ngIf="error">
-    <span class="error-icon">⚠️</span>
+    <span class="error-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
     <span>{{ error }}</span>
   </div>
 
@@ -27,7 +27,7 @@
 
   <!-- Empty state -->
   <div class="empty-state" *ngIf="!loading && orders.length === 0">
-    <span class="empty-icon">📭</span>
+    <span class="empty-icon"><i class="fa-solid fa-envelope-open"></i></span>
     <p>No orders yet.</p>
     <p class="empty-hint">Once your orders are listed, delivery companies can bid on them here.</p>
   </div>
@@ -47,14 +47,14 @@
             (click)="selectOrder(order.id)">
             <div class="order-list-head">
               <span class="order-list-id">#{{ order.orderNumber }}</span>
-              <span class="priority-badge" [class]="getPriorityClass(order.priority)">{{ order.priority }}</span>
+              <span class="priority-badge" [ngClass]="getPriorityClass(order.priority)">{{ order.priority }}</span>
             </div>
             <div class="order-list-route">
               {{ order.pickupAddress }} → {{ order.deliveryAddress }}
             </div>
             <div class="order-list-meta">
               <span>{{ formatCurrency(order.orderValue) }}</span>
-              <span class="status-badge" [class]="getStatusClass(order.status)">{{ order.status }}</span>
+              <span class="status-badge" [ngClass]="getStatusClass(order.status)">{{ order.status }}</span>
               <span *ngIf="hasActiveBid(order.id)" class="open-dot" title="Has active bids"></span>
             </div>
           </div>
@@ -75,7 +75,7 @@
                 <h2 class="panel-title">{{ selectedOrder.vendorCompanyName || 'Order' }} — #{{ selectedOrder.orderNumber }}</h2>
                 <p class="order-summary-route">{{ selectedOrder.pickupAddress }} → {{ selectedOrder.deliveryAddress }}</p>
               </div>
-              <span class="status-badge" [class]="getStatusClass(selectedOrder.status)">{{ selectedOrder.status }}</span>
+              <span class="status-badge" [ngClass]="getStatusClass(selectedOrder.status)">{{ selectedOrder.status }}</span>
             </div>
           </div>
 
@@ -85,15 +85,15 @@
                 <div>
                   <span class="bid-amount">{{ formatCurrency(bid.bidAmount) }}</span>
                   <span class="bid-company">{{ bidderLabel(bid) }}</span>
-                  <span class="bid-bidder-type" [class]="bid.bidderType === 'INDEPENDENT_DRIVER' ? 'bidder-driver' : 'bidder-company'">
+                  <span class="bid-bidder-type" [ngClass]="bid.bidderType === 'INDEPENDENT_DRIVER' ? 'bidder-driver' : 'bidder-company'">
                     {{ bid.bidderType === 'INDEPENDENT_DRIVER' ? 'Independent Driver' : 'Company' }}
                   </span>
                 </div>
-                <span class="status-badge" [class]="bidClass(bid.status)">{{ bid.status }}</span>
+                <span class="status-badge" [ngClass]="bidClass(bid.status)">{{ bid.status }}</span>
               </div>
               <div class="bid-card-meta">
-                <span class="meta-item" *ngIf="bid.estimatedDeliveryTime">⏱ Est. {{ formatDate(bid.estimatedDeliveryTime) }}</span>
-                <span class="meta-item">📅 {{ formatDate(bid.submittedAt) }}</span>
+                <span class="meta-item" *ngIf="bid.estimatedDeliveryTime"><i class="fa-solid fa-clock"></i> Est. {{ formatDate(bid.estimatedDeliveryTime) }}</span>
+                <span class="meta-item"><i class="fa-solid fa-calendar"></i> {{ formatDate(bid.submittedAt) }}</span>
               </div>
               <p class="bid-message" *ngIf="bid.message">“{{ bid.message }}”</p>
               <p class="bid-response" *ngIf="bid.responseMessage">↩ {{ bid.responseMessage }}</p>
@@ -112,14 +112,14 @@
           </div>
 
           <div class="empty-state small" *ngIf="selectedOrder && selectedBids.length === 0">
-            <span class="empty-icon">💤</span>
+            <span class="empty-icon"><i class="fa-solid fa-moon"></i></span>
             <p>No bids for this order yet.</p>
             <p class="empty-hint">The order will appear in the delivery marketplace while no bids are submitted.</p>
           </div>
 
           <!-- Rankings -->
           <div class="rankings-section" *ngIf="selectedRankings.length > 0">
-            <h2 class="panel-title">📊 Suggested Ranking</h2>
+            <h2 class="panel-title"><i class="fa-solid fa-chart-column"></i> Suggested Ranking</h2>
             <div class="ranking-list">
               <div class="ranking-item" *ngFor="let ranking of selectedRankings; let i = index">
                 <span class="ranking-pos">{{ i + 1 }}</span>

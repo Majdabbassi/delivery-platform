@@ -20,31 +20,37 @@
 
   <!-- Error banner -->
   <div class="error-banner" *ngIf="error">
-    <span>⚠️</span><span>{{ error }}</span>
+    <i class="fa-solid fa-circle-exclamation"></i><span>{{ error }}</span>
   </div>
 
   <!-- KPI Cards -->
   <div class="kpi-grid">
     <div class="kpi-card">
-      <div class="kpi-icon">🚚</div>
-      <div class="kpi-value">{{ activeJobs.length }}</div>
-      <div class="kpi-label">Active Jobs</div>
+      <div class="kpi-icon"><i class="fa-solid fa-truck"></i></div>
+      <div class="card-body">
+        <div class="kpi-value">{{ activeJobs.length }}</div>
+        <div class="kpi-label">Active Jobs</div>
+      </div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-icon">✅</div>
-      <div class="kpi-value">{{ completedJobs.length }}</div>
-      <div class="kpi-label">Completed</div>
+      <div class="kpi-icon"><i class="fa-solid fa-circle-check"></i></div>
+      <div class="card-body">
+        <div class="kpi-value">{{ completedJobs.length }}</div>
+        <div class="kpi-label">Completed</div>
+      </div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-icon">📋</div>
-      <div class="kpi-value">{{ jobs.length }}</div>
-      <div class="kpi-label">Total Jobs</div>
+      <div class="kpi-icon"><i class="fa-solid fa-clipboard-list"></i></div>
+      <div class="card-body">
+        <div class="kpi-value">{{ jobs.length }}</div>
+        <div class="kpi-label">Total Jobs</div>
+      </div>
     </div>
   </div>
 
   <!-- Location error -->
   <div class="error-banner" *ngIf="locationError">
-    <span>📍</span><span>{{ locationError }}</span>
+    <i class="fa-solid fa-location-dot"></i><span>{{ locationError }}</span>
   </div>
 
   <!-- Active Jobs -->
@@ -57,7 +63,7 @@
     </div>
 
     <div class="empty-state" *ngIf="!loading && activeJobs.length === 0">
-      <span class="empty-icon">🙌</span>
+      <span class="empty-icon"><i class="fa-solid fa-folder-open"></i></span>
       <p>No active jobs right now. You'll see assigned deliveries here.</p>
     </div>
 
@@ -68,7 +74,7 @@
             <span class="job-number">Order #{{ job.orderNumber }}</span>
             <span class="tracking-number" *ngIf="job.trackingNumber">Tracking: {{ job.trackingNumber }}</span>
           </div>
-          <span class="status-badge" [class]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
+          <span class="status-badge" [ngClass]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
         </div>
 
         <div class="route">
@@ -117,10 +123,10 @@
             </option>
           </select>
           <button class="action-btn location-btn" (click)="sendLocation(job)">
-            📍 Send Location
+            <i class="fa-solid fa-location-dot"></i> Send Location
           </button>
           <button class="action-btn track-btn" *ngIf="job.trackingNumber" (click)="trackJob(job)">
-            🗺️ Track
+            <i class="fa-solid fa-map-location-dot"></i> Track
           </button>
         </div>
       </div>
@@ -133,11 +139,11 @@
     <div class="history-list">
       <div class="history-item" *ngFor="let job of jobs">
         <ng-container *ngIf="['DELIVERED', 'CANCELLED', 'FAILED'].includes(job.status)">
-          <span class="history-status" [class]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
+          <span class="history-status" [ngClass]="getStatusClass(job.status)">{{ getStatusDisplayName(job.status) }}</span>
           <span class="history-number">Order #{{ job.orderNumber }}</span>
           <span class="history-route">{{ job.pickupAddress }} → {{ job.deliveryAddress }}</span>
           <span class="history-time">{{ formatDate(job.actualDeliveryTime || job.updatedAt) }}</span>
-          <button class="action-btn track-btn" *ngIf="job.trackingNumber" (click)="trackJob(job)">🗺️</button>
+          <button class="action-btn track-btn" *ngIf="job.trackingNumber" (click)="trackJob(job)"><i class="fa-solid fa-map-location-dot"></i></button>
         </ng-container>
       </div>
     </div>

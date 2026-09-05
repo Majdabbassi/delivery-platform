@@ -3,7 +3,7 @@
   <div class="page-header">
     <div class="page-header-left">
       <h1 class="page-title">
-        <span class="title-icon">🤝</span>
+        <span class="title-icon"><i class="fa-solid fa-handshake"></i></span>
         Partnerships
       </h1>
       <p class="page-subtitle" *ngIf="ownedCompanyName">
@@ -20,7 +20,7 @@
 
   <!-- Error state -->
   <div class="error-banner" *ngIf="error">
-    <span class="error-icon">⚠️</span>
+    <span class="error-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
     <span>{{ error }}</span>
   </div>
 
@@ -35,8 +35,8 @@
     <!-- Stats -->
     <section class="card-section">
       <div class="cards-grid">
-        <div class="metric-card" *ngFor="let card of statCards" [class]="'metric-card ' + card.color">
-          <div class="card-icon">{{ card.icon }}</div>
+        <div class="metric-card" *ngFor="let card of statCards" [ngClass]="'metric-card ' + card.color">
+          <div class="card-icon"><i class="{{ card.icon }}"></i></div>
           <div class="card-body">
             <span class="card-value">{{ card.value }}</span>
             <span class="card-label">{{ card.label }}</span>
@@ -47,7 +47,7 @@
 
     <!-- Empty state -->
     <div class="empty-state" *ngIf="partnerships.length === 0">
-      <span class="empty-icon">🤝</span>
+      <span class="empty-icon"><i class="fa-solid fa-handshake"></i></span>
       <p>No partnerships yet.</p>
       <p class="empty-hint">
         {{ isSuperAdmin
@@ -77,7 +77,7 @@
             <tr *ngFor="let partnership of partnerships">
               <td>
                 <div class="company-cell">
-                  <span class="company-icon">🏢</span>
+                  <span class="company-icon"><i class="fa-solid fa-building"></i></span>
                   <div>
                     <div class="company-name">{{ partnership.vendorCompanyName }}</div>
                     <div class="company-sub">{{ partnership.isExclusive ? 'Exclusive' : 'Standard' }} · {{ partnership.serviceAreas.join(', ') || 'All areas' }}</div>
@@ -86,14 +86,14 @@
               </td>
               <td>
                 <div class="company-cell">
-                  <span class="company-icon">🚛</span>
+                  <span class="company-icon"><i class="fa-solid fa-truck-fast"></i></span>
                   <div>
                     <div class="company-name">{{ partnership.deliveryCompanyName }}</div>
                     <div class="company-sub">Est. {{ partnership.estimatedDeliveryTimeHours ? partnership.estimatedDeliveryTimeHours + 'h' : 'n/a' }}</div>
                   </div>
                 </div>
               </td>
-              <td><span class="status-badge" [class]="getStatusClass(partnership.status)">{{ partnership.status }}</span></td>
+              <td><span class="status-badge" [ngClass]="getStatusClass(partnership.status)">{{ partnership.status }}</span></td>
               <td>{{ partnership.commissionRate }}%</td>
               <td>{{ partnership.totalOrdersCompleted }}</td>
               <td>{{ formatCurrency(partnership.totalRevenueGenerated) }}</td>

@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { ProductService, Product, ProductSearchParams, ProductStats } from '../../services/product.service';
@@ -7,8 +10,9 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-products',
   templateUrl: './products.component.html',
   styleUrls: ['./products.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class ProductsComponent implements OnInit, OnDestroy {
   products: Product[] = [];
   filteredProducts: Product[] = [];
@@ -374,18 +378,18 @@ export class ProductsComponent implements OnInit, OnDestroy {
 
   getCategoryIcon(category: string): string {
     const icons: { [key: string]: string } = {
-      'Electronics': '📱',
-      'Clothing': '👕',
-      'Home & Garden': '🏠',
-      'Sports & Outdoors': '⚽',
-      'Books': '📚',
-      'Health & Beauty': '💄',
-      'Automotive': '🚗',
-      'Food & Beverages': '🍕',
-      'Toys & Games': '🎮',
-      'Other': '📦'
+      'Electronics': 'fa-solid fa-phone',
+      'Clothing': 'fa-solid fa-shirt',
+      'Home & Garden': 'fa-solid fa-house',
+      'Sports & Outdoors': 'fa-solid fa-futbol',
+      'Books': 'fa-solid fa-book',
+      'Health & Beauty': 'fa-solid fa-palette',
+      'Automotive': 'fa-solid fa-car',
+      'Food & Beverages': 'fa-solid fa-pizza-slice',
+      'Toys & Games': 'fa-solid fa-gamepad',
+      'Other': 'fa-solid fa-box'
     };
-    return icons[category] || '📦';
+    return icons[category] || 'fa-solid fa-box';
   }
 
   generateSKU(): void {

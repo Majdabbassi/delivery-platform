@@ -125,7 +125,7 @@
             <td>
               <div class="company-info">
                 <div class="company-avatar">
-                  {{ getIndustryIcon(company.industry) }}
+                  <i class="{{ getIndustryIcon(company.industry) }}"></i>
                 </div>
                 <div class="company-details">
                   <div class="company-name">{{ company.name }}</div>
@@ -153,7 +153,7 @@
             </td>
             <td>
               <div class="industry-badge">
-                <span class="industry-icon">{{ getIndustryIcon(company.industry) }}</span>
+                <span class="industry-icon"><i class="{{ getIndustryIcon(company.industry) }}"></i></span>
                 {{ company.industry }}
               </div>
             </td>

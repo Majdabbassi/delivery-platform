@@ -1,3 +1,6 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { VendorOwner, VendorOwnerService, VendorOwnerSearchParams } from '../../services/vendor-owner.service';
@@ -30,8 +33,9 @@ interface VendorCompany {
   selector: 'app-vendor-owners',
   templateUrl: './vendor-owners.component.html',
   styleUrls: ['./vendor-owners.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class VendorOwnersComponent implements OnInit, OnDestroy {
   vendorOwners: VendorOwner[] = [];
   filteredVendorOwners: VendorOwner[] = [];

@@ -3,7 +3,7 @@
   <div class="tracking-header">
     <div class="header-left">
       <h1 class="page-title">
-        <span class="title-icon">📍</span>
+        <span class="title-icon"><i class="fa-solid fa-location-dot"></i></span>
         Package Tracking
       </h1>
       <p class="subtitle">Enter your tracking number to follow the live delivery.</p>
@@ -28,7 +28,7 @@
 
   <!-- Error state -->
   <div class="error-banner" *ngIf="error">
-    <span class="error-icon">⚠️</span>
+    <span class="error-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
     <span>{{ error }}</span>
   </div>
 
@@ -39,7 +39,7 @@
         <div class="order-number">{{ order.orderNumber }}</div>
         <div class="tracking-number">Tracking: {{ order.trackingNumber }}</div>
       </div>
-      <span class="status-badge" [class]="getStatusClass(order.status)">
+      <span class="status-badge" [ngClass]="getStatusClass(order.status)">
         {{ getStatusDisplayName(order.status) }}
       </span>
     </div>
@@ -74,7 +74,7 @@
 
   <!-- Empty / hint state -->
   <div class="empty-state" *ngIf="!order && !searching">
-    <span class="empty-icon">🚚</span>
+    <span class="empty-icon"><i class="fa-solid fa-truck"></i></span>
     <p>No package loaded yet.</p>
     <p class="empty-hint">Search with the tracking number you received when your order was placed.</p>
   </div>

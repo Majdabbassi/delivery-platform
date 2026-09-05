@@ -10,10 +10,6 @@ public class JacksonConfig {
 
     @Bean
     public Jackson2ObjectMapperBuilderCustomizer hibernate6ModuleCustomizer() {
-        return builder -> {
-            Hibernate6Module module = new Hibernate6Module();
-            module.enable(Hibernate6Module.Feature.FORCE_LAZY_LOADING);
-            builder.modulesToInstall(module);
-        };
+        return builder -> builder.modulesToInstall(new Hibernate6Module());
     }
 }

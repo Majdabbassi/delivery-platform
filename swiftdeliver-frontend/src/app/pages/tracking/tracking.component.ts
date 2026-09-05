@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -9,8 +12,9 @@ import { RealtimeService, OrderRealtimeEvent } from '../../services/realtime.ser
   selector: 'app-tracking',
   templateUrl: './tracking.component.html',
   styleUrls: ['./tracking.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class TrackingComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('mapContainer', { static: false })
   mapContainer!: ElementRef<HTMLDivElement>;
@@ -113,7 +117,7 @@ export class TrackingComponent implements OnInit, AfterViewInit, OnDestroy {
           }
         },
         error: () => {
-          // No known location yet — ignore
+          // No known location yet â€” ignore
         }
       })
     );
@@ -153,7 +157,7 @@ export class TrackingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.pickupMarker = L.marker(pickup, {
         icon: L.divIcon({
           className: 'marker-pin marker-pickup',
-          html: '📦',
+          html: '<i class="fa-solid fa-box"></i>',
           iconSize: [32, 40],
           iconAnchor: [16, 38]
         }),
@@ -169,7 +173,7 @@ export class TrackingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.deliveryMarker = L.marker(delivery, {
         icon: L.divIcon({
           className: 'marker-pin marker-delivery',
-          html: '📍',
+          html: '<i class="fa-solid fa-location-dot"></i>',
           iconSize: [32, 40],
           iconAnchor: [16, 38]
         }),
@@ -200,7 +204,7 @@ export class TrackingComponent implements OnInit, AfterViewInit, OnDestroy {
       this.driverMarker = L.marker([lat, lng], {
         icon: L.divIcon({
           className: 'driver-marker',
-          html: '🚚',
+          html: '<i class="fa-solid fa-truck"></i>',
           iconSize: [36, 36],
           iconAnchor: [18, 18]
         }),

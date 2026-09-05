@@ -1,3 +1,5 @@
+﻿import { PaginatedResponse } from '../models/paginated-response';
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -39,17 +41,6 @@ export interface DriverPerson {
   updatedBy?: string;
 }
 
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  numberOfElements: number;
-  empty: boolean;
-}
 
 export interface DriverPersonSearchParams {
   username?: string;

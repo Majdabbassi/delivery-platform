@@ -7,7 +7,7 @@
 
   <!-- Error state -->
   <div class="error-banner" *ngIf="error">
-    <span class="error-icon">⚠️</span>
+    <span class="error-icon"><i class="fa-solid fa-circle-exclamation"></i></span>
     <span>{{ error }}</span>
   </div>
 
@@ -24,7 +24,7 @@
           <div class="profile-basic-info">
             <h1 class="profile-name">{{ fullName }}</h1>
             <p class="profile-role">{{ roleLabel }}</p>
-            <p class="profile-email">✉️ {{ user.email }}</p>
+            <p class="profile-email"><i class="fa-solid fa-envelope"></i> {{ user.email }}</p>
           </div>
         </div>
         <div class="profile-status">
@@ -38,10 +38,10 @@
     <!-- Profile Navigation Tabs -->
     <div class="profile-tabs">
       <button class="tab-btn" [class.active]="activeTab === 'profile'" (click)="setActiveTab('profile')">
-        👤 Profile
+        <i class="fa-solid fa-user"></i> Profile
       </button>
       <button class="tab-btn" [class.active]="activeTab === 'security'" (click)="setActiveTab('security')">
-        🛡️ Security
+        <i class="fa-solid fa-shield-halved"></i> Security
       </button>
     </div>
 
@@ -114,7 +114,7 @@
             <h3 class="card-title">Data Management</h3>
             <div class="security-actions">
               <button class="security-btn" (click)="exportData()">
-                <span class="btn-icon">📥</span>
+                <span class="btn-icon"><i class="fa-solid fa-download"></i></span>
                 <div class="btn-content">
                   <span class="btn-title">Export My Data</span>
                   <span class="btn-description">Download a copy of your account information</span>

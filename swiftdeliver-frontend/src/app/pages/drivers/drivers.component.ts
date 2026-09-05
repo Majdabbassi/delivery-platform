@@ -1,6 +1,10 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { DriverPersonService, DriverPerson, PaginatedResponse, DriverPersonSearchParams } from '../../services/driver-person.service';
+import { DriverPersonService, DriverPerson, DriverPersonSearchParams } from '../../services/driver-person.service';
+import { PaginatedResponse } from '../../models/paginated-response';
 import { DeliveryCompanyService, DeliveryCompany } from '../../services/delivery-company.service';
 import { AuthService, User, UserRole } from '../../services/auth.service';
 
@@ -10,8 +14,9 @@ import { AuthService, User, UserRole } from '../../services/auth.service';
   selector: 'app-drivers',
   templateUrl: './drivers.component.html',
   styleUrls: ['./drivers.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class DriversComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   drivers: DriverPerson[] = [];

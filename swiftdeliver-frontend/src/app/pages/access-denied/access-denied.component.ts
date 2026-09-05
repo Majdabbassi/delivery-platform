@@ -1,3 +1,6 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
@@ -6,8 +9,9 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-access-denied',
   templateUrl: './access-denied.component.html',
   styleUrl: './access-denied.component.css',
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class AccessDeniedComponent {
   constructor(private router: Router, private authService: AuthService) {}
 

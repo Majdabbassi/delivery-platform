@@ -1,3 +1,5 @@
+﻿import { PaginatedResponse } from '../models/paginated-response';
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
@@ -243,15 +245,6 @@ export interface OrderStats {
   averageRating: number;
 }
 
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-}
 
 @Injectable({
   providedIn: 'root'

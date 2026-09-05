@@ -1,10 +1,14 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { AuthService, User } from '../../services/auth.service';
 
 @Component({
   selector: 'app-profile',
-  standalone: false,
-  templateUrl: './profile.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+,  templateUrl: './profile.component.html',
   styleUrl: './profile.component.css'
 })
 export class ProfileComponent implements OnInit {

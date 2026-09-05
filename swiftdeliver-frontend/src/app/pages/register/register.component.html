@@ -1,12 +1,5 @@
 <div class="register-container">
-  <div class="register-wrapper">
-    <div class="background-shapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-    </div>
-
-    <div class="register-card">
+  <div class="register-card">
       <div class="register-header">
         <div class="logo">
           <i class="fas fa-rocket"></i>
@@ -33,19 +26,18 @@
         </button>
       </div>
 
-      <form class="register-form" (ngSubmit)="onSubmit()" *ngIf="!success">
+      <form class="register-form" [formGroup]="registerForm" (ngSubmit)="onSubmit()" *ngIf="!success">
         <div class="form-row">
           <div class="form-group">
             <label for="firstName">First Name *</label>
             <input
               type="text"
               id="firstName"
-              name="firstName"
-              [(ngModel)]="registerForm.firstName"
+              formControlName="firstName"
               placeholder="Enter your first name"
-              required
               [disabled]="loading"
               class="form-input"
+              [class.input-error]="registerForm.get('firstName')?.touched && registerForm.get('firstName')?.invalid"
             >
           </div>
           <div class="form-group">
@@ -53,12 +45,11 @@
             <input
               type="text"
               id="lastName"
-              name="lastName"
-              [(ngModel)]="registerForm.lastName"
+              formControlName="lastName"
               placeholder="Enter your last name"
-              required
               [disabled]="loading"
               class="form-input"
+              [class.input-error]="registerForm.get('lastName')?.touched && registerForm.get('lastName')?.invalid"
             >
           </div>
         </div>
@@ -68,13 +59,12 @@
           <input
             type="text"
             id="username"
-            name="username"
-            [(ngModel)]="registerForm.username"
+            formControlName="username"
             placeholder="Choose a username"
-            required
             autocomplete="username"
             [disabled]="loading"
             class="form-input"
+            [class.input-error]="registerForm.get('username')?.touched && registerForm.get('username')?.invalid"
           >
         </div>
 
@@ -83,14 +73,16 @@
           <input
             type="email"
             id="email"
-            name="email"
-            [(ngModel)]="registerForm.email"
+            formControlName="email"
             placeholder="Enter your email address"
-            required
             autocomplete="email"
             [disabled]="loading"
             class="form-input"
+            [class.input-error]="registerForm.get('email')?.touched && registerForm.get('email')?.invalid"
           >
+          <small class="field-error" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.hasError('email')">
+            Please enter a valid email address
+          </small>
         </div>
 
         <div class="form-group">
@@ -98,8 +90,7 @@
           <input
             type="tel"
             id="phoneNumber"
-            name="phoneNumber"
-            [(ngModel)]="registerForm.phoneNumber"
+            formControlName="phoneNumber"
             placeholder="Enter your phone number"
             autocomplete="tel"
             [disabled]="loading"
@@ -113,13 +104,12 @@
             <input
               [type]="showPassword ? 'text' : 'password'"
               id="password"
-              name="password"
-              [(ngModel)]="registerForm.password"
+              formControlName="password"
               placeholder="At least 8 characters"
-              required
               autocomplete="new-password"
               [disabled]="loading"
               class="form-input"
+              [class.input-error]="registerForm.get('password')?.touched && registerForm.get('password')?.invalid"
             >
             <button
               type="button"
@@ -130,6 +120,9 @@
               <i [class]="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
             </button>
           </div>
+          <small class="field-error" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.hasError('minlength')">
+            Password must be at least 8 characters long
+          </small>
         </div>
 
         <div class="form-group">
@@ -138,21 +131,23 @@
             <input
               [type]="showPassword ? 'text' : 'password'"
               id="confirmPassword"
-              name="confirmPassword"
-              [(ngModel)]="confirmPassword"
+              formControlName="confirmPassword"
               placeholder="Re-enter your password"
-              required
               autocomplete="new-password"
               [disabled]="loading"
               class="form-input"
+              [class.input-error]="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch')"
             >
           </div>
+          <small class="field-error" *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.hasError('passwordMismatch')">
+            Passwords do not match
+          </small>
         </div>
 
         <button
           type="submit"
           class="register-button"
-          [disabled]="loading"
+          [disabled]="loading || registerForm.invalid"
           [class.loading]="loading"
         >
           <span *ngIf="!loading">
@@ -174,5 +169,4 @@
         </button>
       </div>
     </div>
-  </div>
 </div>

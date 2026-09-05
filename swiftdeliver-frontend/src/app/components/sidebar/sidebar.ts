@@ -27,22 +27,22 @@ export class Sidebar implements OnInit, OnDestroy {
   private userSubscription: Subscription = new Subscription();
 
   private fullMenuItems: MenuItem[] = [
-    { icon: '🏠', label: 'Dashboard', route: '/dashboard', badge: null, roles: null },
-    { icon: '📋', label: 'Orders', route: '/orders', badge: null, roles: null },
-    { icon: '🧭', label: 'My Jobs', route: '/my-jobs', badge: null, roles: [UserRole.DRIVER] },
-    { icon: '👥', label: 'Customers', route: '/customers', badge: null, roles: [UserRole.SUPER_ADMIN] },
-    { icon: '🏢', label: 'Vendor Companies', route: '/vendorcompanies', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
-    { icon: '🏪', label: 'Vendor Owners', route: '/vendorowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
-    { icon: '🚛', label: 'Delivery Companies', route: '/deliverycompanies', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
-    { icon: '🚚', label: 'Delivery Owners', route: '/deliveryowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
-    { icon: '🚗', label: 'Drivers', route: '/drivers', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
-    { icon: '📦', label: 'Products', route: '/products', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
-    { icon: '🤝', label: 'Partnerships', route: '/partnerships', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.DELIVERY_OWNER] },
-    { icon: '🛒', label: 'Marketplace', route: '/pool', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER] },
-    { icon: '💼', label: 'Bid Inbox', route: '/bids', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT] },
-    { icon: '📍', label: 'Tracking', route: '/tracking', badge: null, roles: null },
+    { icon: 'fa-solid fa-house', label: 'Dashboard', route: '/dashboard', badge: null, roles: null },
+    { icon: 'fa-solid fa-clipboard-list', label: 'Orders', route: '/orders', badge: null, roles: null },
+    { icon: 'fa-solid fa-compass', label: 'My Jobs', route: '/my-jobs', badge: null, roles: [UserRole.DRIVER] },
+    { icon: 'fa-solid fa-users', label: 'Customers', route: '/customers', badge: null, roles: [UserRole.SUPER_ADMIN] },
+    { icon: 'fa-solid fa-building', label: 'Vendor Companies', route: '/vendorcompanies', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
+    { icon: 'fa-solid fa-shop', label: 'Vendor Owners', route: '/vendorowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
+    { icon: 'fa-solid fa-truck-fast', label: 'Delivery Companies', route: '/deliverycompanies', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
+    { icon: 'fa-solid fa-truck', label: 'Delivery Owners', route: '/deliveryowners', badge: null, roles: [UserRole.SUPER_ADMIN] },
+    { icon: 'fa-solid fa-car', label: 'Drivers', route: '/drivers', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] },
+    { icon: 'fa-solid fa-box', label: 'Products', route: '/products', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] },
+    { icon: 'fa-solid fa-handshake', label: 'Partnerships', route: '/partnerships', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.DELIVERY_OWNER] },
+    { icon: 'fa-solid fa-cart-shopping', label: 'Marketplace', route: '/pool', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER] },
+    { icon: 'fa-solid fa-briefcase', label: 'Bid Inbox', route: '/bids', badge: null, roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT] },
+    { icon: 'fa-solid fa-location-dot', label: 'Tracking', route: '/tracking', badge: null, roles: null },
     
-    { icon: '👤', label: 'Profile', route: '/profile', badge: null, roles: null },
+    { icon: 'fa-solid fa-user', label: 'Profile', route: '/profile', badge: null, roles: null },
   ];
 
   menuItems: MenuItem[] = [];

@@ -20,7 +20,7 @@
         <a [routerLink]="item.route"
            class="nav-link"
            routerLinkActive="active">
-          <i class="nav-icon">{{ item.icon }}</i>
+          <i class="nav-icon {{ item.icon }}"></i>
           <span class="nav-text">{{ item.label }}</span>
           <span *ngIf="item.badge" class="nav-badge">{{ item.badge }}</span>
         </a>

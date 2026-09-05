@@ -1,3 +1,6 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription, forkJoin } from 'rxjs';
 import {
@@ -17,8 +20,9 @@ import { AuthService, User, UserRole } from '../../services/auth.service';
   selector: 'app-bids',
   templateUrl: './bids.component.html',
   styleUrls: ['./bids.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class BidsComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
 

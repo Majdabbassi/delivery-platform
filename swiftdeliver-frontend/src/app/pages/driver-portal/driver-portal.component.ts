@@ -1,3 +1,6 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -8,8 +11,9 @@ import { DriverPersonService, DriverPerson } from '../../services/driver-person.
 
 @Component({
   selector: 'app-driver-portal',
-  standalone: false,
-  templateUrl: './driver-portal.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+,  templateUrl: './driver-portal.component.html',
   styleUrl: './driver-portal.component.css'
 })
 export class DriverPortalComponent implements OnInit, OnDestroy {

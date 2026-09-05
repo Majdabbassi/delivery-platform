@@ -1,29 +1,27 @@
-<div class="drivers-container">
-  <!-- Header Section -->
-  <div class="drivers-header">
-    <div class="header-content">
-      <div class="header-text">
-        <h1 class="page-title">
-          <i class="fas fa-user-tie"></i>
-          Drivers Management
-        </h1>
-        <p class="page-subtitle">Manage delivery drivers, vehicles, and performance tracking</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary" (click)="exportData()">
-          <i class="fas fa-download"></i>
-          Export Data
-        </button>
-        <button class="btn btn-primary" (click)="openAddModal()">
-          <i class="fas fa-plus"></i>
-          Add Driver
-        </button>
-      </div>
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <span class="title-icon"><i class="fas fa-user-tie"></i></span>
+        Drivers Management
+      </h1>
+      <p class="page-subtitle">Manage delivery drivers, vehicles, and performance tracking</p>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-secondary" (click)="exportData()">
+        <i class="fas fa-download"></i>
+        Export Data
+      </button>
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="fas fa-plus"></i>
+        Add Driver
+      </button>
     </div>
   </div>
 
   <!-- Statistics Section -->
-  <div class="statistics-section">
+  <div class="stats-grid">
     <div class="stat-card total">
       <div class="stat-icon">
         <i class="fas fa-users"></i>
@@ -44,7 +42,7 @@
     </div>
     <div class="stat-card available">
       <div class="stat-icon">
-        <i class="fas fa-circle" style="color: #28a745;"></i>
+        <i class="fas fa-circle"></i>
       </div>
       <div class="stat-content">
         <h3>{{ stats.available }}</h3>
@@ -53,7 +51,7 @@
     </div>
     <div class="stat-card busy">
       <div class="stat-icon">
-        <i class="fas fa-circle" style="color: #ffc107;"></i>
+        <i class="fas fa-circle"></i>
       </div>
       <div class="stat-content">
         <h3>{{ stats.busy }}</h3>
@@ -196,7 +194,7 @@
 
           </td>
           <td class="status">
-            <span class="status-badge" [class]="getStatusClass(driver)">
+            <span class="status-badge" [ngClass]="getStatusClass(driver)">
               {{ driver.isVerified ? (driver.isAvailable ? 'Available' : 'On Delivery') : 'Inactive' }}
             </span>
             <div class="availability-toggle" *ngIf="driver.isVerified">
@@ -546,7 +544,7 @@
           <h3>Performance & Status</h3>
           <div class="detail-item">
             <label>Status:</label>
-            <span class="status-badge" [class]="getStatusClass(selectedDriver)">
+            <span class="status-badge" [ngClass]="getStatusClass(selectedDriver)">
               {{ selectedDriver.isVerified ? (selectedDriver.isAvailable ? 'Available' : 'On Delivery') : 'Inactive' }}
             </span>
           </div>

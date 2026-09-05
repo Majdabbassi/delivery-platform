@@ -1,3 +1,5 @@
+﻿import { PaginatedResponse } from '../models/paginated-response';
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -36,17 +38,6 @@ export interface DeliveryCompany {
   updatedAt?: string;
 }
 
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  numberOfElements: number;
-  empty: boolean;
-}
 
 export interface DeliveryCompanySearchParams {
   name?: string;
@@ -251,6 +242,7 @@ export class DeliveryCompanyService {
 
   getDeliveryCompaniesByOwner(ownerId: number): Observable<DeliveryCompany[]> {
     return this.http.get<DeliveryCompany[]>(`${this.baseUrl}/owner/${ownerId}`).pipe(
+      map(companies => (companies || []).map(company => this.mapCompany(company))),
       catchError(this.handleError)
     );
   }

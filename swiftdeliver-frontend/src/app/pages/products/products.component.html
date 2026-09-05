@@ -162,12 +162,12 @@
           </td>
           <td class="stock">
             <div class="stock-info">
-              <span class="stock-quantity" [class]="getStockStatusClass(product)">{{ product.stockQuantity }}</span>
+              <span class="stock-quantity" [ngClass]="getStockStatusClass(product)">{{ product.stockQuantity }}</span>
               <span class="stock-status">{{ getStockStatusText(product) }}</span>
             </div>
           </td>
           <td class="status">
-            <span class="status-badge" [class]="getStatusClass(product.status)">{{ product.status }}</span>
+            <span class="status-badge" [ngClass]="getStatusClass(product.status)">{{ product.status }}</span>
           </td>
           <td class="date">{{ formatDate(product.lastUpdated) }}</td>
           <td class="actions">

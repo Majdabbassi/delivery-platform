@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { VendorCompanyService, VendorCompany, VendorCompanySearchParams, VendorCompanyStats } from '../../services/vendor-company.service';
@@ -7,8 +10,9 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-vendor-companies',
   templateUrl: './vendor-companies.component.html',
   styleUrls: ['./vendor-companies.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class VendorCompaniesComponent implements OnInit, OnDestroy {
   companies: VendorCompany[] = [];
   filteredCompanies: VendorCompany[] = [];
@@ -99,7 +103,9 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.loadCompanies();
-    this.calculateStats();
+    if (!this.isVendorOwner) {
+      this.calculateStats();
+    }
   }
 
   ngOnDestroy(): void {
@@ -120,6 +126,7 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
           this.totalElements = this.companies.length;
           this.totalPages = 1;
           this.applyLocalFilter();
+          this.computeLocalStats();
           this.loading = false;
         },
         error: (error) => {
@@ -190,9 +197,10 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
     }
 
     if (this.sortBy && this.sortDirection) {
+      const sortKey = this.sortBy === 'companyName' ? 'name' : this.sortBy;
       filtered.sort((a, b) => {
-        let aVal: any = a[this.sortBy as keyof VendorCompany];
-        let bVal: any = b[this.sortBy as keyof VendorCompany];
+        let aVal: any = a[sortKey as keyof VendorCompany];
+        let bVal: any = b[sortKey as keyof VendorCompany];
         if (typeof aVal === 'string') aVal = aVal.toLowerCase();
         if (typeof bVal === 'string') bVal = bVal.toLowerCase();
         return this.sortDirection === 'asc' ? (aVal > bVal ? 1 : aVal < bVal ? -1 : 0) : (aVal < bVal ? 1 : aVal > bVal ? -1 : 0);
@@ -295,6 +303,24 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
     });
     
     this.subscriptions.push(subscription);
+  }
+
+  private computeLocalStats(): void {
+    const companies = this.companies;
+    this.stats.total = companies.length;
+    this.stats.active = companies.filter(c => c.status === 'ACTIVE').length;
+    this.stats.pending = companies.filter(c => c.status === 'PENDING').length;
+    this.stats.verified = companies.filter(c => c.isVerified).length;
+    this.stats.activeAndVerified = companies.filter(c => c.status === 'ACTIVE' && c.isVerified).length;
+    this.stats.highRated = companies.filter(c => (c.rating || 0) >= 4.5).length;
+    this.stats.withMultipleProducts = companies.filter(c => (c.totalProducts || 0) > 1).length;
+    this.stats.recentlyEstablished = companies.filter(c => {
+      const established = new Date(c.establishedDate || '');
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      return established > oneYearAgo;
+    }).length;
+    this.stats.totalRevenue = companies.reduce((sum, c) => sum + (c.totalRevenue || 0), 0);
   }
 
   // Modal operations
@@ -472,19 +498,19 @@ export class VendorCompaniesComponent implements OnInit, OnDestroy {
   }
 
   getIndustryIcon(industry: string | undefined): string {
-    if (!industry) return '🏢';
+    if (!industry) return 'fa-solid fa-building';
     const icons: { [key: string]: string } = {
-      'Technology': '💻',
-      'Healthcare': '🏥',
-      'Finance': '💰',
-      'Manufacturing': '🏭',
-      'Retail': '🛍️',
-      'Education': '🎓',
-      'Real Estate': '🏢',
-      'Food & Beverage': '🍽️',
-      'Transportation': '🚛',
-      'Other': '🏢'
+      'Technology': 'fa-solid fa-laptop',
+      'Healthcare': 'fa-solid fa-hospital',
+      'Finance': 'fa-solid fa-dollar-sign',
+      'Manufacturing': 'fa-solid fa-industry',
+      'Retail': 'fa-solid fa-bag-shopping',
+      'Education': 'fa-solid fa-graduation-cap',
+      'Real Estate': 'fa-solid fa-building',
+      'Food & Beverage': 'fa-solid fa-utensils',
+      'Transportation': 'fa-solid fa-truck-fast',
+      'Other': 'fa-solid fa-building'
     };
-    return icons[industry] || '🏢';
+    return icons[industry] || 'fa-solid fa-building';
   }
 }

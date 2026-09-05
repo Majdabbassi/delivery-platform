@@ -16,10 +16,29 @@ services:
     networks:
       - swiftdeliver-net
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: swiftdeliver-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - swiftdeliver-net
+
   backend:
     build: ./swiftdeliver-backend
     container_name: swiftdeliver-backend
     restart: unless-stopped
+    ports:
+      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -28,8 +47,8 @@ services:
       DATABASE_USERNAME: root
       DATABASE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
       JWT_SECRET: ${JWT_SECRET:-CHANGE_ME}
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-CHANGE_ME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-CHANGE_ME}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-REDACTED_ADMIN_PASSWORD}
       SPRING_PROFILES_ACTIVE: dev
     networks:
       - swiftdeliver-net
@@ -38,6 +57,7 @@ services:
     build: ./swiftdeliver-frontend
     container_name: swiftdeliver-web
     restart: unless-stopped
+    profiles: ["deploy"]
     depends_on:
       - backend
     networks:
@@ -47,6 +67,7 @@ services:
     image: nginx:alpine
     container_name: swiftdeliver-nginx
     restart: unless-stopped
+    profiles: ["deploy"]
     ports:
       - "80:80"
     volumes:

@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import {
@@ -44,8 +47,9 @@ interface BidDraft {
   selector: 'app-pool',
   templateUrl: './pool.component.html',
   styleUrls: ['./pool.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class PoolComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
 
@@ -335,13 +339,13 @@ export class PoolComponent implements OnInit, OnDestroy {
   private buildStatCards(): void {
     if (!this.stats) return;
     const dist = this.stats.priorityDistribution || {};
-    this.statCards = [
-      { icon: '📦', label: 'Available Orders', value: this.stats.currentOrderCount, color: 'blue' },
-      { icon: '💰', label: 'Pool Value', value: this.formatCurrency(this.stats.totalValue), color: 'teal' },
-      { icon: '🚨', label: 'Urgent', value: dist.URGENT || 0, color: 'red' },
-      { icon: '🔥', label: 'High Priority', value: dist.HIGH || 0, color: 'amber' },
-      { icon: '📥', label: 'Added Today', value: this.stats.ordersAdded, color: 'green' },
-      { icon: '👀', label: 'Viewed', value: this.stats.ordersViewed, color: 'indigo' }
+this.statCards = [
+      { icon: 'fa-solid fa-box', label: 'Available Orders', value: this.stats.currentOrderCount, color: 'blue' },
+      { icon: 'fa-solid fa-dollar-sign', label: 'Pool Value', value: this.formatCurrency(this.stats.totalValue), color: 'teal' },
+      { icon: 'fa-solid fa-triangle-exclamation', label: 'Urgent', value: dist.URGENT || 0, color: 'red' },
+      { icon: 'fa-solid fa-fire', label: 'High Priority', value: dist.HIGH || 0, color: 'amber' },
+      { icon: 'fa-solid fa-inbox', label: 'Added Today', value: this.stats.ordersAdded, color: 'green' },
+      { icon: 'fa-solid fa-eye', label: 'Viewed', value: this.stats.ordersViewed, color: 'indigo' }
     ];
   }
 
@@ -516,7 +520,7 @@ export class PoolComponent implements OnInit, OnDestroy {
 
   getOrderSourceLabel(order: OrderDTO): string {
     if (order.orderType === OrderType.GENERAL_DELIVERY) {
-      return order.recipientName ? `📦 → ${order.recipientName}` : 'General Delivery';
+      return order.recipientName ? `ðŸ“¦ â†’ ${order.recipientName}` : 'General Delivery';
     }
     return order.vendorCompanyName || 'Vendor';
   }

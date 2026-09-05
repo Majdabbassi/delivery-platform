@@ -1,51 +1,123 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { NotificationsComponent } from './pages/notifications/notifications.component';
-import { ProfileComponent } from './pages/profile/profile.component';
-import { VendorCompaniesComponent } from './pages/vendor-companies/vendor-companies.component';
-import { DeliveryCompaniesComponent } from './pages/delivery-companies/delivery-companies.component';
-import { CustomersComponent } from './pages/customers/customers.component';
-import { ProductsComponent } from './pages/products/products.component';
-import { DeliveryOwnersComponent } from './pages/delivery-owners/delivery-owners.component';
-import { VendorOwnersComponent } from './pages/vendor-owners/vendor-owners.component';
-import { DriversComponent } from './pages/drivers/drivers.component';
-import { OrdersComponent } from './pages/orders/orders.component';
-import { LoginComponent } from './pages/login/login.component';
-import { RegisterComponent } from './pages/register/register.component';
-import { DriverRegisterComponent } from './pages/driver-register/driver-register.component';
-import { DashboardComponent } from './pages/dashboard/dashboard.component';
-import { AccessDeniedComponent } from './pages/access-denied/access-denied.component';
-import { PartnershipsComponent } from './pages/partnerships/partnerships.component';
-import { TrackingComponent } from './pages/tracking/tracking.component';
-import { PoolComponent } from './pages/pool/pool.component';
-import { BidsComponent } from './pages/bids/bids.component';
-import { DriverPortalComponent } from './pages/driver-portal/driver-portal.component';
 import { AuthGuard } from './guards/auth.guard';
 import { RoleGuard } from './guards/role.guard';
 import { UserRole } from './services/auth.service';
 
 const routes: Routes = [
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: 'driver-register', component: DriverRegisterComponent },
-  { path: 'access-denied', component: AccessDeniedComponent, canActivate: [AuthGuard] },
-  { path: 'dashboard', component: DashboardComponent, canActivate: [AuthGuard] },
-  { path: 'tracking', component: TrackingComponent, canActivate: [AuthGuard] },
-  { path: 'tracking/:trackingNumber', component: TrackingComponent, canActivate: [AuthGuard] },
-  { path: 'partnerships', component: PartnershipsComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.DELIVERY_OWNER] } },
-  { path: 'pool', component: PoolComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER] } },
-  { path: 'bids', component: BidsComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT] } },
-  { path: 'my-jobs', component: DriverPortalComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.DRIVER] } },
-  { path: 'notifications', component: NotificationsComponent, canActivate: [AuthGuard] },
-  { path: 'profile', component: ProfileComponent, canActivate: [AuthGuard] },
-  { path: 'vendorcompanies', component: VendorCompaniesComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] } },
-  { path: 'deliverycompanies', component: DeliveryCompaniesComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] } },
-  { path: 'deliveryowners', component: DeliveryOwnersComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN] } },
-  { path: 'vendorowners', component: VendorOwnersComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN] } },
-  { path: 'customers', component: CustomersComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN] } },
-  { path: 'products', component: ProductsComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] } },
-  { path: 'drivers', component: DriversComponent, canActivate: [AuthGuard, RoleGuard], data: { roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] } },
-  { path: 'orders', component: OrdersComponent, canActivate: [AuthGuard] },
+  {
+    path: 'login',
+    loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent)
+  },
+  {
+    path: 'register',
+    loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent)
+  },
+  {
+    path: 'driver-register',
+    loadComponent: () => import('./pages/driver-register/driver-register.component').then(m => m.DriverRegisterComponent)
+  },
+  {
+    path: 'access-denied',
+    loadComponent: () => import('./pages/access-denied/access-denied.component').then(m => m.AccessDeniedComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'dashboard',
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'tracking',
+    loadComponent: () => import('./pages/tracking/tracking.component').then(m => m.TrackingComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'tracking/:trackingNumber',
+    loadComponent: () => import('./pages/tracking/tracking.component').then(m => m.TrackingComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'partnerships',
+    loadComponent: () => import('./pages/partnerships/partnerships.component').then(m => m.PartnershipsComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.DELIVERY_OWNER] }
+  },
+  {
+    path: 'pool',
+    loadComponent: () => import('./pages/pool/pool.component').then(m => m.PoolComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER, UserRole.DRIVER] }
+  },
+  {
+    path: 'bids',
+    loadComponent: () => import('./pages/bids/bids.component').then(m => m.BidsComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER, UserRole.CLIENT] }
+  },
+  {
+    path: 'my-jobs',
+    loadComponent: () => import('./pages/driver-portal/driver-portal.component').then(m => m.DriverPortalComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.DRIVER] }
+  },
+  {
+    path: 'notifications',
+    loadComponent: () => import('./pages/notifications/notifications.component').then(m => m.NotificationsComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'profile',
+    loadComponent: () => import('./pages/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [AuthGuard]
+  },
+  {
+    path: 'vendorcompanies',
+    loadComponent: () => import('./pages/vendor-companies/vendor-companies.component').then(m => m.VendorCompaniesComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] }
+  },
+  {
+    path: 'deliverycompanies',
+    loadComponent: () => import('./pages/delivery-companies/delivery-companies.component').then(m => m.DeliveryCompaniesComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] }
+  },
+  {
+    path: 'deliveryowners',
+    loadComponent: () => import('./pages/delivery-owners/delivery-owners.component').then(m => m.DeliveryOwnersComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN] }
+  },
+  {
+    path: 'vendorowners',
+    loadComponent: () => import('./pages/vendor-owners/vendor-owners.component').then(m => m.VendorOwnersComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN] }
+  },
+  {
+    path: 'customers',
+    loadComponent: () => import('./pages/customers/customers.component').then(m => m.CustomersComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN] }
+  },
+  {
+    path: 'products',
+    loadComponent: () => import('./pages/products/products.component').then(m => m.ProductsComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.VENDOR_OWNER] }
+  },
+  {
+    path: 'drivers',
+    loadComponent: () => import('./pages/drivers/drivers.component').then(m => m.DriversComponent),
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: [UserRole.SUPER_ADMIN, UserRole.DELIVERY_OWNER] }
+  },
+  {
+    path: 'orders',
+    loadComponent: () => import('./pages/orders/orders.component').then(m => m.OrdersComponent),
+    canActivate: [AuthGuard]
+  },
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
   { path: '**', redirectTo: '/dashboard' }
 ];

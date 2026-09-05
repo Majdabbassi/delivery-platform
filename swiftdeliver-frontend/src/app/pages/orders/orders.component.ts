@@ -1,3 +1,6 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { OrderService, OrderDTO, OrderStatus, OrderPriority, CreateOrderDTO, OrderRatingDTO, OrderType, RoutingMode, PricingMode } from '../../services/order.service';
@@ -10,8 +13,9 @@ import { CustomerUserService, CustomerUser } from '../../services/customer-user.
   selector: 'app-orders',
   templateUrl: './orders.component.html',
   styleUrls: ['./orders.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class OrdersComponent implements OnInit, OnDestroy {
   orders: OrderDTO[] = [];
   filteredOrders: OrderDTO[] = [];

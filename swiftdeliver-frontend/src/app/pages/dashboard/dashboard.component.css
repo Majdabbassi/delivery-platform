@@ -1,83 +1,94 @@
-/* Dashboard Page — page-specific rules only */
+/* ============================================================
+   DASHBOARD PAGE - Minimal & Airy (page-specific rules only)
+   ============================================================ */
 
-/* ── Page max-width override (dashboard needs it) ── */
 .page {
-  max-width: 1400px;
+  max-width: 1440px;
   margin: 0 auto;
+  width: 100%;
 }
 
-/* ── Title icon (dashboard-specific) ── */
 .title-icon {
-  font-size: 30px;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
-/* ── Greeting ── */
 .greeting {
   margin: 0;
   color: var(--text-tertiary);
-  font-size: 15px;
+  font-size: 0.906rem;
 }
 
-/* ── Role chip ── */
+.greeting strong {
+  color: var(--text-primary);
+}
+
 .role-chip {
-  background: var(--accent-gradient);
-  color: var(--text-inverse);
-  font-size: 13px;
+  background: var(--accent-light);
+  color: var(--accent-primary);
+  font-size: 0.8125rem;
   font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 999px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
   letter-spacing: 0.02em;
 }
 
-/* ── Card section / section title (page-specific — NOT global) ── */
+/* Card section / section title */
 .card-section {
-  margin-bottom: var(--space-2xl);
+  margin-bottom: var(--space-xl);
 }
 
 .section-title {
-  font-size: 16px;
+  font-size: 0.968rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin: 0 0 14px;
+  margin: 0 0 var(--space-md);
 }
 
-/* ── Metric cards grid ── */
+/* Metric cards grid */
 .cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: var(--space-md);
 }
 
 .metric-card {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: var(--space-md);
   background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   box-shadow: var(--shadow-sm);
-  border-left: 4px solid transparent;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  transition: box-shadow var(--transition-fast);
 }
 
 .metric-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
 
-.metric-card.blue { border-left-color: var(--info); }
-.metric-card.indigo { border-left-color: var(--accent-primary); }
-.metric-card.green { border-left-color: var(--success); }
-.metric-card.teal { border-left-color: var(--success); }
-.metric-card.amber { border-left-color: var(--warning); }
-.metric-card.orange { border-left-color: var(--warning); }
-.metric-card.red { border-left-color: var(--error); }
-.metric-card.purple { border-left-color: var(--accent-primary); }
-.metric-card.pink { border-left-color: var(--accent-secondary); }
+.metric-card.blue .card-icon,
+.metric-card.indigo .card-icon,
+.metric-card.purple .card-icon { background: var(--accent-light); color: var(--accent-primary); }
+.metric-card.green .card-icon,
+.metric-card.teal .card-icon   { background: #dcefde; color: #2f6b45; }
+.metric-card.amber .card-icon,
+.metric-card.orange .card-icon { background: #f5e9cd; color: #8a6116; }
+.metric-card.red .card-icon    { background: #f4dedc; color: #8c3c35; }
+.metric-card.pink .card-icon   { background: #e8e6f4; color: #5d55a6; }
 
 .card-icon {
-  font-size: 26px;
-  line-height: 1;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  background: var(--accent-light);
+  color: var(--accent-primary);
 }
 
 .card-body {
@@ -87,20 +98,21 @@
 }
 
 .card-value {
-  font-size: 22px;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1.2;
+  white-space: nowrap;
 }
 
 .card-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-tertiary);
   margin-top: 2px;
   word-break: break-word;
 }
 
-/* ── Quick links ── */
+/* Quick links */
 .quick-links-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -114,20 +126,19 @@
   background: var(--bg-elevated);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   text-decoration: none;
   color: inherit;
-  transition: transform var(--transition-fast), box-shadow var(--transition-fast), border-color var(--transition-fast);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .quick-link:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-primary);
+  border-color: var(--border-accent);
   box-shadow: var(--shadow-md);
 }
 
 .quick-link-icon {
-  font-size: 24px;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
@@ -139,13 +150,13 @@
 }
 
 .quick-link-label {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .quick-link-detail {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-tertiary);
   white-space: nowrap;
   overflow: hidden;
@@ -154,12 +165,13 @@
 
 .quick-link-arrow {
   color: var(--text-muted);
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
-/* ── Assignment overview panel ── */
+/* Assignment overview panel */
 .assignment-panel {
   background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
   box-shadow: var(--shadow-sm);
@@ -178,13 +190,13 @@
 }
 
 .assignment-value {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 700;
   color: var(--text-primary);
 }
 
 .assignment-caption {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-tertiary);
   margin-top: 2px;
 }
@@ -203,32 +215,32 @@
 }
 
 .bar-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-primary);
   text-align: right;
 }
 
 .bar-track {
-  height: 12px;
+  height: 10px;
   background: var(--bg-tertiary);
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   overflow: hidden;
 }
 
 .bar-fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   transition: width 0.4s ease;
 }
 
-.bar-total { background: var(--text-muted); }
-.bar-assigned { background: var(--accent-primary); }
-.bar-pending { background: var(--warning); }
+.bar-total      { background: var(--text-muted); }
+.bar-assigned   { background: var(--accent-primary); }
+.bar-pending    { background: var(--warning); }
 .bar-partnership { background: var(--success); }
-.bar-direct { background: var(--info); }
+.bar-direct     { background: var(--info); }
 
 .bar-value {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--text-primary);
 }

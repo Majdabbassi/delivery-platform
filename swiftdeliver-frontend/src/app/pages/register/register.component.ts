@@ -1,53 +1,78 @@
+﻿import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule } from '@angular/forms';
 import { Component } from '@angular/core';
-import { Router } from '@angular/router';
+import { FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router, RouterModule } from '@angular/router';
 import { AuthService, RegisterRequest } from '../../services/auth.service';
 
 @Component({
   selector: 'app-register',
   templateUrl: './register.component.html',
   styleUrl: './register.component.css',
-  standalone: false
+  standalone: true,
+  imports: [CommonModule, ReactiveFormsModule, RouterModule]
 })
 export class RegisterComponent {
-  registerForm: RegisterRequest = {
-    username: '',
-    email: '',
-    password: '',
-    firstName: '',
-    lastName: '',
-    phoneNumber: ''
-  };
+  registerForm: FormGroup;
 
-  confirmPassword = '';
   loading = false;
   success = false;
   error = '';
   showPassword = false;
 
-  constructor(private authService: AuthService, private router: Router) {}
+  constructor(private authService: AuthService, private router: Router, private fb: FormBuilder) {
+    this.registerForm = this.fb.group(
+      {
+        firstName: ['', [Validators.required]],
+        lastName: ['', [Validators.required]],
+        username: ['', [Validators.required]],
+        email: ['', [Validators.required, Validators.email]],
+        phoneNumber: [''],
+        password: ['', [Validators.required, Validators.minLength(8)]],
+        confirmPassword: ['', [Validators.required]]
+      },
+      { validators: this.passwordMatchValidator }
+    );
+  }
+
+  private passwordMatchValidator(form: FormGroup): Record<string, boolean> | null {
+    const password = form.get('password');
+    const confirmPassword = form.get('confirmPassword');
+    if (password && confirmPassword && password.value !== confirmPassword.value) {
+      return { passwordMismatch: true };
+    }
+    return null;
+  }
 
   onSubmit(): void {
     this.error = '';
     this.success = false;
 
-    if (!this.registerForm.firstName || !this.registerForm.lastName ||
-        !this.registerForm.email || !this.registerForm.username || !this.registerForm.password) {
-      this.error = 'Please fill in all required fields';
+    if (this.registerForm.invalid) {
+      if (this.registerForm.get('email')?.hasError('email')) {
+        this.error = 'Please enter a valid email address';
+      } else if (this.registerForm.get('password')?.hasError('minlength')) {
+        this.error = 'Password must be at least 8 characters long';
+      } else if (this.registerForm.errors?.['passwordMismatch']) {
+        this.error = 'Passwords do not match';
+      } else {
+        this.error = 'Please fill in all required fields';
+      }
       return;
     }
 
-    if (this.registerForm.password.length < 8) {
-      this.error = 'Password must be at least 8 characters long';
-      return;
-    }
-
-    if (this.registerForm.password !== this.confirmPassword) {
-      this.error = 'Passwords do not match';
-      return;
-    }
+    const form = this.registerForm.getRawValue();
+    const request: RegisterRequest = {
+      firstName: form.firstName,
+      lastName: form.lastName,
+      username: form.username,
+      email: form.email,
+      phoneNumber: form.phoneNumber,
+      password: form.password
+    };
 
     this.loading = true;
-    this.authService.register(this.registerForm).subscribe({
+    this.authService.register(request).subscribe({
       next: () => {
         this.loading = false;
         this.success = true;

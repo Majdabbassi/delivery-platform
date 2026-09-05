@@ -1,3 +1,6 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { RealtimeService, OrderRealtimeEvent } from '../../services/realtime.service';
@@ -16,8 +19,9 @@ interface Notification {
 
 @Component({
   selector: 'app-notifications',
-  standalone: false,
-  templateUrl: './notifications.component.html',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+,  templateUrl: './notifications.component.html',
   styleUrl: './notifications.component.css'
 })
 export class NotificationsComponent implements OnInit, OnDestroy {
@@ -33,27 +37,27 @@ export class NotificationsComponent implements OnInit, OnDestroy {
   searchQuery: string = '';
 
   categories = [
-    { value: 'all', label: 'All Categories', icon: '📋' },
-    { value: 'system', label: 'System', icon: '⚙️' },
-    { value: 'order', label: 'Orders', icon: '📦' },
-    { value: 'reminder', label: 'Reminders', icon: '⏰' },
-    { value: 'security', label: 'Security', icon: '🔒' }
+    { value: 'all', label: 'All Categories' },
+    { value: 'system', label: 'System' },
+    { value: 'order', label: 'Orders' },
+    { value: 'reminder', label: 'Reminders' },
+    { value: 'security', label: 'Security' }
   ];
 
   types = [
-    { value: 'all', label: 'All Types', icon: '📄' },
-    { value: 'info', label: 'Info', icon: 'ℹ️' },
-    { value: 'success', label: 'Success', icon: '✅' },
-    { value: 'warning', label: 'Warning', icon: '⚠️' },
-    { value: 'error', label: 'Error', icon: '❌' }
+    { value: 'all', label: 'All Types' },
+    { value: 'info', label: 'Info' },
+    { value: 'success', label: 'Success' },
+    { value: 'warning', label: 'Warning' },
+    { value: 'error', label: 'Error' }
   ];
 
   priorities = [
-    { value: 'all', label: 'All Priorities', icon: '📊' },
-    { value: 'low', label: 'Low', icon: '🟢' },
-    { value: 'medium', label: 'Medium', icon: '🟡' },
-    { value: 'high', label: 'High', icon: '🟠' },
-    { value: 'urgent', label: 'Urgent', icon: '🔴' }
+    { value: 'all', label: 'All Priorities' },
+    { value: 'low', label: 'Low' },
+    { value: 'medium', label: 'Medium' },
+    { value: 'high', label: 'High' },
+    { value: 'urgent', label: 'Urgent' }
   ];
 
   constructor(private realtimeService: RealtimeService) {}
@@ -90,7 +94,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `New Order Received: ${orderRef}`,
           content: `Order ${orderRef} has been created and is being processed.`,
-          icon: '📦',
+          icon: 'fa-solid fa-box',
           read: false,
           timestamp: new Date(),
           type: 'success',
@@ -104,7 +108,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           content: event.driverName
             ? `Driver ${event.driverName} has been assigned to order ${orderRef}.`
             : `A driver has been assigned to order ${orderRef}.`,
-          icon: '🚚',
+          icon: 'fa-solid fa-truck',
           read: false,
           timestamp: new Date(),
           type: 'info',
@@ -116,7 +120,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `Order Status Updated: ${orderRef}`,
           content: `Order ${orderRef} status is now ${event.status || 'updated'}.`,
-          icon: '🔄',
+          icon: 'fa-solid fa-arrows-rotate',
           read: false,
           timestamp: new Date(),
           type: 'warning',
@@ -128,7 +132,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `Order Delivered: ${orderRef}`,
           content: `Order ${orderRef} has been delivered successfully.`,
-          icon: '✅',
+          icon: 'fa-solid fa-circle-check',
           read: false,
           timestamp: new Date(),
           type: 'success',
@@ -140,7 +144,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `Order Cancelled: ${orderRef}`,
           content: `Order ${orderRef} was cancelled.`,
-          icon: '🚫',
+          icon: 'fa-solid fa-ban',
           read: false,
           timestamp: new Date(),
           type: 'error',
@@ -152,7 +156,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `New Bid: ${orderRef}`,
           content: `Order ${orderRef} received a new bid.`,
-          icon: '💼',
+          icon: 'fa-solid fa-briefcase',
           read: false,
           timestamp: new Date(),
           type: 'info',
@@ -164,7 +168,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `Bid Accepted: ${orderRef}`,
           content: `Your bid for order ${orderRef} was accepted.`,
-          icon: '🎉',
+          icon: 'fa-solid fa-circle-check',
           read: false,
           timestamp: new Date(),
           type: 'success',
@@ -176,7 +180,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `Bid Rejected: ${orderRef}`,
           content: `Your bid for order ${orderRef} was rejected.`,
-          icon: '❌',
+          icon: 'fa-solid fa-circle-xmark',
           read: false,
           timestamp: new Date(),
           type: 'error',
@@ -188,7 +192,7 @@ export class NotificationsComponent implements OnInit, OnDestroy {
           id: this.notificationSequence++,
           title: `Location Update: ${orderRef}`,
           content: `Driver location updated for order ${orderRef}.`,
-          icon: '📍',
+          icon: 'fa-solid fa-location-dot',
           read: false,
           timestamp: new Date(),
           type: 'info',

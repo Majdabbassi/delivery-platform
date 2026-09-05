@@ -1,3 +1,6 @@
+﻿import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { DeliveryOwner, DeliveryOwnerService, DeliveryOwnerSearchParams } from '../../services/delivery-owner.service';
@@ -32,8 +35,9 @@ interface DeliveryCompany {
   selector: 'app-delivery-owners',
   templateUrl: './delivery-owners.component.html',
   styleUrls: ['./delivery-owners.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class DeliveryOwnersComponent implements OnInit, OnDestroy {
   deliveryOwners: DeliveryOwner[] = [];
   filteredDeliveryOwners: DeliveryOwner[] = [];

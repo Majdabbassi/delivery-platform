@@ -1,19 +1,13 @@
-/* Delivery Companies Component Styles */
+/* ============================================================
+   DELIVERY COMPANIES PAGE - Minimal & Airy
+   ============================================================ */
 
-/* --- Stat card icon variants --- */
-.stat-card.active .stat-icon {
-  background: var(--success);
-}
+/* Stat card icon variants */
+.stat-card.active .stat-icon   { background: #dcefde; color: var(--success); }
+.stat-card.pending .stat-icon  { background: #f5e9cd; color: var(--warning); }
+.stat-card.revenue .stat-icon  { background: var(--accent-light); color: var(--info); }
 
-.stat-card.pending .stat-icon {
-  background: var(--warning);
-}
-
-.stat-card.revenue .stat-icon {
-  background: var(--info);
-}
-
-/* --- Filters & Search --- */
+/* Search & filters */
 .search-box {
   position: relative;
   width: 100%;
@@ -26,7 +20,7 @@
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted);
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .search-box input {
@@ -34,10 +28,10 @@
   padding: 10px 16px 10px 48px;
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  font-size: 15px;
+  font-size: 0.9375rem;
   background: var(--bg-elevated);
   color: var(--text-primary);
-  transition: all var(--transition-normal);
+  transition: all var(--transition-fast);
 }
 
 .search-box input:focus {
@@ -62,9 +56,9 @@
   border-radius: var(--radius-md);
   background: var(--bg-elevated);
   color: var(--text-primary);
-  font-size: 14px;
+  font-size: 0.875rem;
   min-width: 150px;
-  transition: all var(--transition-normal);
+  transition: all var(--transition-fast);
 }
 
 .filter-controls select:focus {
@@ -73,7 +67,7 @@
   box-shadow: 0 0 0 3px var(--accent-light);
 }
 
-/* --- Table --- */
+/* Table */
 .table-wrapper {
   overflow-x: auto;
 }
@@ -92,27 +86,31 @@
   background: var(--bg-tertiary);
 }
 
-.company-row:hover {
+.company-row:hover td {
   background: var(--bg-secondary);
 }
 
-/* --- Company Info --- */
+/* Company info */
 .company-info {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
+.company-details {
+  min-width: 0;
+}
+
 .company-name {
   margin: 0 0 4px 0;
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .company-website {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--text-secondary);
 }
 
@@ -126,10 +124,10 @@
   text-decoration: underline;
 }
 
-/* --- Contact Info --- */
+/* Contact info */
 .contact-info p {
   margin: 0 0 4px 0;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--text-primary);
   display: flex;
   align-items: center;
@@ -141,7 +139,7 @@
   color: var(--text-muted);
 }
 
-/* --- Service Type Badge --- */
+/* Service type badge */
 .service-type-badge {
   display: inline-flex;
   align-items: center;
@@ -149,19 +147,19 @@
   background: var(--bg-secondary);
   color: var(--text-primary);
   padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  border-radius: var(--radius-full);
+  font-size: 0.875rem;
   font-weight: 500;
   border: 1px solid var(--border-primary);
 }
 
 .service-icon {
-  font-size: 16px;
+  font-size: 1rem;
 }
 
-/* --- Coverage Info --- */
+/* Coverage info */
 .coverage-info {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .coverage-areas,
@@ -176,7 +174,7 @@
   margin-bottom: 2px;
 }
 
-/* --- Rating Info --- */
+/* Rating */
 .rating-info {
   text-align: center;
 }
@@ -188,18 +186,18 @@
 }
 
 .rating-value {
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   color: var(--text-primary);
   font-weight: 600;
 }
 
-/* --- Delivery Info --- */
+/* Delivery info */
 .delivery-info {
   text-align: center;
 }
 
 .total-deliveries {
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
   margin-bottom: 4px;
 }
 
@@ -214,38 +212,24 @@
   color: var(--text-secondary);
 }
 
-/* --- Status Badge --- */
+/* Status badge */
 .status-badge {
   display: inline-block;
   padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.8rem;
+  border-radius: var(--radius-full);
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
-.status-active {
-  background: #D1FAE5;
-  color: #065F46;
-}
+.status-active    { background: #dcefde; color: #2f6b45; }
+.status-inactive  { background: var(--bg-tertiary); color: var(--text-tertiary); }
+.status-pending   { background: #f5e9cd; color: #8a6116; }
+.status-suspended { background: #f6e8d3; color: #9a6b1e; }
 
-.status-inactive {
-  background: var(--bg-tertiary);
-  color: var(--text-tertiary);
-}
-
-.status-pending {
-  background: #FEF3C7;
-  color: #92400E;
-}
-
-.status-suspended {
-  background: #FFEDD5;
-  color: #C2410C;
-}
-
-/* --- Action Buttons --- */
+/* Action buttons */
 .action-buttons {
   display: flex;
   gap: 8px;
@@ -261,10 +245,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 0.875rem;
   background: var(--bg-secondary);
   color: var(--text-primary);
-  transition: all var(--transition-normal);
+  transition: all var(--transition-fast);
 }
 
 .btn-icon:hover {
@@ -273,9 +257,8 @@
 }
 
 .btn-icon.info {
-  background: #DBEAFE;
-  color: #1E40AF;
-  border-color: var(--info);
+  background: rgba(122, 160, 205, 0.12);
+  color: var(--info);
 }
 
 .btn-icon.info:hover {
@@ -284,9 +267,8 @@
 }
 
 .btn-icon.warning {
-  background: #FEF3C7;
-  color: #92400E;
-  border-color: var(--warning);
+  background: #f5e9cd;
+  color: var(--warning);
 }
 
 .btn-icon.warning:hover {
@@ -295,9 +277,8 @@
 }
 
 .btn-icon.danger {
-  background: #FEE2E2;
-  color: #991B1B;
-  border-color: var(--error);
+  background: #f4dedc;
+  color: var(--error);
 }
 
 .btn-icon.danger:hover {
@@ -305,34 +286,14 @@
   color: var(--text-inverse);
 }
 
-/* --- Modal close --- */
-.modal-close {
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  transition: all var(--transition-normal);
-}
-
-.modal-close:hover {
-  background: var(--bg-tertiary);
-  color: var(--text-primary);
-}
-
-/* --- Empty state icon --- */
+/* Empty state icon */
 .empty-icon {
   font-size: 3rem;
-  opacity: 0.5;
+  opacity: 0.4;
   color: var(--text-muted);
 }
 
-/* --- Company Details Modal --- */
+/* Company details modal */
 .details-modal {
   max-width: 900px;
   width: 90vw;
@@ -341,12 +302,13 @@
 .details-body {
   max-height: 70vh;
   overflow-y: auto;
+  padding: var(--space-lg);
 }
 
 .details-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
 .detail-section {
@@ -363,7 +325,7 @@
 .detail-section h3 {
   margin: 0 0 16px 0;
   color: var(--text-primary);
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -384,13 +346,13 @@
 .detail-item label {
   font-weight: 600;
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .detail-item span,
 .detail-item a {
   color: var(--text-primary);
-  font-size: 1rem;
+  font-size: 0.9375rem;
 }
 
 .detail-item a {
@@ -404,7 +366,7 @@
 
 .metric-value {
   font-weight: 600;
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
 }
 
 .metric-value.revenue {
@@ -437,14 +399,14 @@
 
 .notes-content {
   background: var(--bg-elevated);
-  padding: 16px;
+  padding: var(--space-md);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
   color: var(--text-primary);
   line-height: 1.5;
 }
 
-/* --- Analytics Modal --- */
+/* Analytics modal */
 .analytics-modal {
   max-width: 800px;
   width: 90vw;
@@ -468,12 +430,12 @@
 .analytics-placeholder h3 {
   margin: 0 0 12px 0;
   color: var(--text-primary);
-  font-size: 1.5rem;
+  font-size: 1.375rem;
 }
 
 .analytics-placeholder p {
   margin: 0 0 24px 0;
-  font-size: 1.1rem;
+  font-size: 1.0625rem;
 }
 
 .feature-list {
@@ -487,7 +449,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 16px;
+  padding: var(--space-md);
   background: var(--bg-secondary);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-primary);
@@ -501,10 +463,9 @@
 .feature-item span {
   color: var(--text-primary);
   font-weight: 500;
-  justify-content: center;
 }
 
-/* --- Form Styles --- */
+/* Form styles */
 .delivery-company-form {
   width: 100%;
 }
@@ -512,7 +473,7 @@
 .form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: var(--space-xl);
+  gap: var(--space-lg);
 }
 
 .form-group.full-width {
@@ -526,11 +487,11 @@
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--border-primary);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 0.875rem;
   background: var(--bg-elevated);
   color: var(--text-primary);
   font-family: inherit;
-  transition: all var(--transition-normal);
+  transition: all var(--transition-fast);
 }
 
 .form-group input:focus,
@@ -552,18 +513,18 @@
   color: var(--text-muted);
 }
 
-/* --- Delete Modal --- */
+/* Delete modal */
 .delete-modal {
   max-width: 500px;
 }
 
 .warning-text {
   color: var(--error);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   margin: 8px 0 0 0;
 }
 
-/* --- Responsive Design --- */
+/* Responsive */
 @media (max-width: 768px) {
   .stats-row {
     grid-template-columns: 1fr;
@@ -584,18 +545,9 @@
   .data-table {
     min-width: 800px;
   }
-
-  .data-table th,
-  .data-table td {
-    padding: 12px 8px;
-  }
 }
 
 @media (max-width: 480px) {
-  .action-buttons {
-    flex-direction: column;
-  }
-
   .data-table {
     min-width: 700px;
   }

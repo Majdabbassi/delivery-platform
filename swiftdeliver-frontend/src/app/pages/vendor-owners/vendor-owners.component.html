@@ -1,24 +1,22 @@
-<div class="vendor-owners-container">
-  <!-- Header Section -->
-  <div class="vendor-owners-header">
-    <div class="header-content">
-      <div class="header-text">
-        <h1 class="page-title">
-          <i class="bi bi-shop"></i>
-          Vendor Owners Management
-        </h1>
-        <p class="page-subtitle">Manage vendor business owners and their retail operations</p>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn-secondary" (click)="exportData()">
-          <i class="bi bi-download"></i>
-          Export Data
-        </button>
-        <button class="btn btn-primary" (click)="openAddModal()">
-          <i class="bi bi-plus-lg"></i>
-          Add Vendor Owner
-        </button>
-      </div>
+<div class="page">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1 class="page-title">
+        <span class="title-icon"><i class="bi bi-shop"></i></span>
+        Vendor Owners Management
+      </h1>
+      <p class="page-subtitle">Manage vendor business owners and their retail operations</p>
+    </div>
+    <div class="page-header-right">
+      <button class="btn btn-secondary" (click)="exportData()">
+        <i class="bi bi-download"></i>
+        Export Data
+      </button>
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <i class="bi bi-plus-lg"></i>
+        Add Vendor Owner
+      </button>
     </div>
   </div>
 
@@ -177,14 +175,14 @@
               </td>
               <td>
                 <div class="experience-info">
-                  <div class="experience-badge" [class]="getExperienceBadgeClass(owner.businessExperienceYears)">
+                  <div class="experience-badge" [ngClass]="getExperienceBadgeClass(owner.businessExperienceYears)">
                     {{ owner.businessExperienceYears }} years
                   </div>
                   <p class="experience-level">{{ getExperienceLevel(owner.businessExperienceYears) }}</p>
                 </div>
               </td>
               <td>
-                <div class="verification-badge" [class]="getVerificationBadge(owner)">
+                <div class="verification-badge" [ngClass]="getVerificationBadge(owner)">
                   <i class="bi" [class.bi-shield-check]="owner.isVerifiedOwner" [class.bi-shield-x]="!owner.isVerifiedOwner"></i>
                   {{ owner.isVerifiedOwner ? 'Verified' : 'Unverified' }}
                 </div>
@@ -211,7 +209,7 @@
                 </div>
               </td>
               <td>
-                <div class="status-badge" [class]="getStatusBadge(owner)">
+                <div class="status-badge" [ngClass]="getStatusBadge(owner)">
                   <i class="fas" [class.fa-check-circle]="owner.isEnabled" 
                      [class.fa-times-circle]="!owner.isEnabled"></i>
                   {{ owner.isEnabled ? 'Active' : 'Inactive' }}
@@ -504,10 +502,10 @@
             <h4>{{ getFullName(selectedOwner) }}</h4>
             <p>{{ '@' + selectedOwner.username }}</p>
             <div class="profile-badges">
-              <span class="badge" [class]="getStatusBadge(selectedOwner)">
+              <span class="badge" [ngClass]="getStatusBadge(selectedOwner)">
                 {{ selectedOwner.isEnabled ? 'Active' : 'Inactive' }}
               </span>
-              <span class="badge" [class]="getVerificationBadge(selectedOwner)">
+              <span class="badge" [ngClass]="getVerificationBadge(selectedOwner)">
                 {{ selectedOwner.isVerifiedOwner ? 'Verified' : 'Unverified' }}
               </span>
             </div>

@@ -1,6 +1,10 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
-import { CustomerUserService, CustomerUser, PaginatedResponse as CustomerUserPaginatedResponse } from '../../services/customer-user.service';
+import { CustomerUserService, CustomerUser } from '../../services/customer-user.service';
+import { PaginatedResponse as CustomerUserPaginatedResponse } from '../../models/paginated-response';
 import { AuthService } from '../../services/auth.service';
 
 // Customer interface is now imported from CustomerService
@@ -9,8 +13,9 @@ import { AuthService } from '../../services/auth.service';
   selector: 'app-customers',
   templateUrl: './customers.component.html',
   styleUrls: ['./customers.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class CustomersComponent implements OnInit, OnDestroy {
   customers: CustomerUser[] = [];
   filteredCustomers: CustomerUser[] = [];
@@ -465,15 +470,15 @@ export class CustomersComponent implements OnInit, OnDestroy {
 
   getRoleIcon(role: string): string {
     switch(role) {
-      case 'VENDOR_OWNER': return '🏪';
-      case 'DELIVERY_OWNER': return '🚚';
-      case 'DRIVER': return '🚗';
-      default: return '👤';
+      case 'VENDOR_OWNER': return 'fa-solid fa-shop';
+      case 'DELIVERY_OWNER': return 'fa-solid fa-truck';
+      case 'DRIVER': return 'fa-solid fa-car';
+      default: return 'fa-solid fa-user';
     }
   }
 
   getPremiumBadge(isPremium: boolean): string {
-    return isPremium ? '⭐' : '';
+    return isPremium ? 'fa-solid fa-star' : '';
   }
 
   parseNotificationPreferences(preferences: string): any {

@@ -2,6 +2,7 @@ package com.swiftdeliver.backend.config;
 
 import com.swiftdeliver.backend.entity.*;
 import com.swiftdeliver.backend.repository.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +19,14 @@ import java.util.Map;
 @Configuration
 public class DataInitializer {
 
-    private static final String DEMO_PASSWORD = "azerty";
+    @Value("${ADMIN_USERNAME:admin}")
+    private String adminUsername;
+
+    @Value("${ADMIN_PASSWORD:REDACTED_ADMIN_PASSWORD}")
+    private String adminPassword;
+
+    @Value("${DEMO_PASSWORD:SwiftDeliver@2026!}")
+    private String demoPassword;
 
     @Bean
     CommandLineRunner seedData(
@@ -49,23 +57,19 @@ public class DataInitializer {
               ProductRepository productRepository, PartnershipRepository partnershipRepository,
               OrderRepository orderRepository, BidRepository bidRepository,
               PooledOrderRepository pooledOrderRepository) {
-        String password = passwordEncoder.encode(DEMO_PASSWORD);
+        String password = passwordEncoder.encode(demoPassword);
 
-        SuperAdmin admin = userRepository.findByUsername("demo.admin")
+        SuperAdmin admin = userRepository.findByUsername(adminUsername)
                 .filter(SuperAdmin.class::isInstance)
                 .map(SuperAdmin.class::cast)
-                .or(() -> userRepository.findByEmail("admin@swiftdeliver.demo")
-                        .filter(SuperAdmin.class::isInstance)
-                        .map(SuperAdmin.class::cast))
                 .orElseGet(() -> {
-                    SuperAdmin value = new SuperAdmin("demo.admin", "admin@swiftdeliver.demo", password, "Maya", "Admin");
+                    SuperAdmin value = new SuperAdmin(adminUsername, "admin@swiftdeliver.demo", passwordEncoder.encode(adminPassword), "Maya", "Admin");
                     value.setPhoneNumber("+212600000001");
                     value.setSystemPermissions("{\"users\":true,\"companies\":true,\"reports\":true}");
                     value.setLastSystemAccess(LocalDateTime.now());
                     return userRepository.save(value);
                 });
-        admin.setPassword(password);
-        admin.setUsername("admin");
+        admin.setPassword(passwordEncoder.encode(adminPassword));
         admin.setEmail("admin@swiftdeliver.demo");
         admin.setFirstName("super");
         admin.setLastName("Admin");
@@ -126,7 +130,9 @@ public class DataInitializer {
     }
 
     private VendorOwner vendorOwner(String username, String email, String firstName, String lastName, String phone, String nationalId, String category, VendorOwnerRepository repository, String password) {
-        return repository.findByNationalId(nationalId).orElseGet(() -> {
+        return repository.findByNationalId(nationalId)
+                .map(existing -> { existing.setPassword(password); return repository.save(existing); })
+                .orElseGet(() -> {
             VendorOwner owner = new VendorOwner(username, email, password, firstName, lastName, phone, nationalId);
             owner.setDateOfBirth(LocalDate.of(1988, 4, 12)); owner.setAddress("Casablanca, Morocco"); owner.setEmergencyContact("+212611111111");
             owner.setBusinessExperienceYears(8); owner.setPreferredBusinessCategory(category); owner.setIsVerifiedOwner(true);
@@ -135,7 +141,9 @@ public class DataInitializer {
     }
 
     private DeliveryOwner deliveryOwner(String username, String email, String firstName, String lastName, String phone, String nationalId, String regions, DeliveryOwnerRepository repository, String password) {
-        return repository.findByNationalId(nationalId).orElseGet(() -> {
+        return repository.findByNationalId(nationalId)
+                .map(existing -> { existing.setPassword(password); return repository.save(existing); })
+                .orElseGet(() -> {
             DeliveryOwner owner = new DeliveryOwner(username, email, password, firstName, lastName, phone, nationalId);
             owner.setDateOfBirth(LocalDate.of(1985, 9, 22)); owner.setAddress("Morocco"); owner.setEmergencyContact("+212622222222");
             owner.setLogisticsExperienceYears(10); owner.setPreferredServiceRegions(regions); owner.setTransportLicenseNumber("TRANSPORT-" + nationalId); owner.setIsVerifiedOwner(true);
@@ -144,7 +152,9 @@ public class DataInitializer {
     }
 
     private CustomerUser customer(String username, String email, String firstName, String lastName, String phone, String address, CustomerUserRepository repository, String password) {
-        return repository.findByUsername(username).orElseGet(() -> {
+        return repository.findByUsername(username)
+                .map(existing -> { existing.setPassword(password); return repository.save(existing); })
+                .orElseGet(() -> {
             CustomerUser customer = new CustomerUser(username, email, password, firstName, lastName, phone, address);
             customer.setDateOfBirth(LocalDate.of(1992, 6, 15)); customer.setGender("PREFER_NOT_TO_SAY"); customer.setPreferredPaymentMethod("CARD");
             customer.setNotificationPreferences("{\"email\":true,\"sms\":true,\"push\":true}"); return repository.save(customer);
@@ -152,7 +162,9 @@ public class DataInitializer {
     }
 
     private DriverPerson driver(String username, String email, String firstName, String lastName, String license, DriverPerson.VehicleType vehicleType, String plate, String phone, DeliveryCompany company, DriverPersonRepository repository, String password) {
-        return repository.findByLicenseNumber(license).orElseGet(() -> {
+        return repository.findByLicenseNumber(license)
+                .map(existing -> { existing.setPassword(password); return repository.save(existing); })
+                .orElseGet(() -> {
             DriverPerson driver = new DriverPerson(username, email, password, firstName, lastName, license, vehicleType, plate, phone);
             driver.setDeliveryCompany(company); driver.setCurrentLocation(company.getServiceRegion()); driver.setDeliveryZone(company.getServiceRegion());
             driver.setVehicleModel(vehicleType == DriverPerson.VehicleType.BIKE ? "City Bike" : "Urban Express"); driver.setVehicleColor("White"); driver.setEmergencyContact("+212633333333");

@@ -1,3 +1,5 @@
+﻿import { PaginatedResponse } from '../models/paginated-response';
+
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
@@ -36,16 +38,6 @@ export interface VendorOwner {
 }
 
 // Paginated Response Interface
-export interface PaginatedResponse<T> {
-  content: T[];
-  totalElements: number;
-  totalPages: number;
-  size: number;
-  number: number;
-  first: boolean;
-  last: boolean;
-  numberOfElements: number;
-}
 
 // Search Parameters Interface
 export interface VendorOwnerSearchParams {

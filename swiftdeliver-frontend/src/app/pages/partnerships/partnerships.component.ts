@@ -1,10 +1,13 @@
+import { RouterModule } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Subscription } from 'rxjs';
 import {
   PartnershipService,
-  Partnership,
-  PaginatedResponse
+  Partnership
 } from '../../services/partnership.service';
+import { PaginatedResponse } from '../../models/paginated-response';
 import { VendorCompanyService } from '../../services/vendor-company.service';
 import { DeliveryCompanyService } from '../../services/delivery-company.service';
 import { AuthService, User, UserRole } from '../../services/auth.service';
@@ -44,8 +47,9 @@ interface StatCard {
   selector: 'app-partnerships',
   templateUrl: './partnerships.component.html',
   styleUrls: ['./partnerships.component.css'],
-  standalone: false
-})
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterModule]
+  })
 export class PartnershipsComponent implements OnInit, OnDestroy {
   currentUser: User | null = null;
   partnerships: PartnershipView[] = [];
@@ -264,14 +268,14 @@ export class PartnershipsComponent implements OnInit, OnDestroy {
       ? (rated.reduce((sum, p) => sum + (p.averageRating || 0), 0) / rated.length).toFixed(1)
       : '—';
 
-    this.statCards = [
-      { icon: '🤝', label: 'Total Partnerships', value: this.partnerships.length, color: 'blue' },
-      { icon: '✅', label: 'Active', value: active, color: 'green' },
-      { icon: '⏳', label: 'Pending', value: pending, color: 'amber' },
-      { icon: '⛔', label: 'Suspended', value: suspended, color: 'orange' },
-      { icon: '📦', label: 'Orders Completed', value: totalOrders, color: 'indigo' },
-      { icon: '💰', label: 'Total Revenue', value: this.formatCurrency(totalRevenue), color: 'teal' },
-      { icon: '⭐', label: 'Avg Rating', value: avgRating, color: 'pink' }
+this.statCards = [
+      { icon: 'fa-solid fa-handshake', label: 'Total Partnerships', value: this.partnerships.length, color: 'blue' },
+      { icon: 'fa-solid fa-circle-check', label: 'Active', value: active, color: 'green' },
+      { icon: 'fa-solid fa-clock', label: 'Pending', value: pending, color: 'amber' },
+      { icon: 'fa-solid fa-ban', label: 'Suspended', value: suspended, color: 'orange' },
+      { icon: 'fa-solid fa-box', label: 'Orders Completed', value: totalOrders, color: 'indigo' },
+      { icon: 'fa-solid fa-dollar-sign', label: 'Total Revenue', value: this.formatCurrency(totalRevenue), color: 'teal' },
+      { icon: 'fa-solid fa-star', label: 'Avg Rating', value: avgRating, color: 'pink' }
     ];
   }
 

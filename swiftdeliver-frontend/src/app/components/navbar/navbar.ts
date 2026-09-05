@@ -98,12 +98,12 @@ export class Navbar implements OnInit, OnDestroy {
   // Language settings
   currentLanguage = 'en';
   languages: Language[] = [
-    { code: 'en', name: 'English', flag: '🇺🇸' },
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'es', name: 'Español', flag: '🇪🇸' },
-    { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
-    { code: 'zh', name: '中文', flag: '🇨🇳' },
-    { code: 'ja', name: '日本語', flag: '🇯🇵' }
+    { code: 'en', name: 'English', flag: 'fa-solid fa-globe' },
+    { code: 'fr', name: 'Français', flag: 'fa-solid fa-globe' },
+    { code: 'es', name: 'Español', flag: 'fa-solid fa-globe' },
+    { code: 'de', name: 'Deutsch', flag: 'fa-solid fa-globe' },
+    { code: 'zh', name: '中文', flag: 'fa-solid fa-globe' },
+    { code: 'ja', name: '日本語', flag: 'fa-solid fa-globe' }
   ];
   
   // Navigation
@@ -195,15 +195,15 @@ export class Navbar implements OnInit, OnDestroy {
       'ORDER_CANCELLED': 'Order Cancelled'
     };
     const iconMap: Record<string, string> = {
-      'ORDER_CREATED': '📦',
-      'ORDER_STATUS_CHANGED': '🔄',
-      'DRIVER_ASSIGNED': '🚚',
-      'DRIVER_LOCATION_UPDATE': '📍',
-      'ORDER_DELIVERED': '✅',
-      'BID_SUBMITTED': '💼',
-      'BID_ACCEPTED': '🎉',
-      'BID_REJECTED': '❌',
-      'ORDER_CANCELLED': '🚫'
+      'ORDER_CREATED': 'fa-solid fa-box',
+      'ORDER_STATUS_CHANGED': 'fa-solid fa-arrows-rotate',
+      'DRIVER_ASSIGNED': 'fa-solid fa-truck',
+      'DRIVER_LOCATION_UPDATE': 'fa-solid fa-location-dot',
+      'ORDER_DELIVERED': 'fa-solid fa-circle-check',
+      'BID_SUBMITTED': 'fa-solid fa-briefcase',
+      'BID_ACCEPTED': 'fa-solid fa-gift',
+      'BID_REJECTED': 'fa-solid fa-ban',
+      'ORDER_CANCELLED': 'fa-solid fa-ban'
     };
     const typeMap: Record<string, Notification['type']> = {
       'ORDER_CREATED': 'success',
@@ -224,7 +224,7 @@ export class Navbar implements OnInit, OnDestroy {
       id: Date.now() + Math.random(),
       title,
       content,
-      icon: iconMap[event.type] || '🔔',
+      icon: iconMap[event.type] || 'fa-solid fa-bell',
       read: false,
       timestamp: new Date(event.timestamp || Date.now()),
       type: typeMap[event.type] || 'info'
@@ -397,19 +397,19 @@ export class Navbar implements OnInit, OnDestroy {
 
     // Search index built from the real, role-restricted app navigation pages
     const navIndex: SearchResult[] = [
-      { id: 'dashboard', title: 'Dashboard', description: 'Overview of your activity', icon: '🏠', route: '/dashboard' },
-      { id: 'orders', title: 'Orders', description: 'Track and manage delivery orders', icon: '📋', route: '/orders' },
-      { id: 'customers', title: 'Customers', description: 'Manage customer accounts', icon: '👥', route: '/customers', roles: ['SUPER_ADMIN'] },
-      { id: 'vendorcompanies', title: 'Vendor Companies', description: 'View vendor companies', icon: '🏢', route: '/vendorcompanies', roles: ['SUPER_ADMIN', 'VENDOR_OWNER'] },
-      { id: 'deliverycompanies', title: 'Delivery Companies', description: 'View delivery companies', icon: '🚛', route: '/deliverycompanies', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER'] },
-      { id: 'drivers', title: 'Drivers', description: 'Manage delivery drivers', icon: '🚗', route: '/drivers', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER'] },
-      { id: 'products', title: 'Products', description: 'Browse available products', icon: '📦', route: '/products', roles: ['SUPER_ADMIN', 'VENDOR_OWNER'] },
-      { id: 'partnerships', title: 'Partnerships', description: 'Vendor & delivery partnerships', icon: '🤝', route: '/partnerships', roles: ['SUPER_ADMIN', 'VENDOR_OWNER', 'DELIVERY_OWNER'] },
-      { id: 'pool', title: 'Marketplace', description: 'Browse and bid on available orders', icon: '🛒', route: '/pool', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER', 'DRIVER'] },
-      { id: 'bids', title: 'Bid Inbox', description: 'Review and manage received bids', icon: '💼', route: '/bids', roles: ['SUPER_ADMIN', 'VENDOR_OWNER', 'CLIENT'] },
-      { id: 'tracking', title: 'Tracking', description: 'Live order & driver tracking', icon: '📍', route: '/tracking' },
-      { id: 'profile', title: 'Profile', description: 'View your account information', icon: '👤', route: '/profile' },
-      { id: 'notifications', title: 'Notifications', description: 'View your notifications', icon: '🔔', route: '/notifications' }
+      { id: 'dashboard', title: 'Dashboard', description: 'Overview of your activity', icon: 'fa-solid fa-house', route: '/dashboard' },
+      { id: 'orders', title: 'Orders', description: 'Track and manage delivery orders', icon: 'fa-solid fa-clipboard-list', route: '/orders' },
+      { id: 'customers', title: 'Customers', description: 'Manage customer accounts', icon: 'fa-solid fa-users', route: '/customers', roles: ['SUPER_ADMIN'] },
+      { id: 'vendorcompanies', title: 'Vendor Companies', description: 'View vendor companies', icon: 'fa-solid fa-building', route: '/vendorcompanies', roles: ['SUPER_ADMIN', 'VENDOR_OWNER'] },
+      { id: 'deliverycompanies', title: 'Delivery Companies', description: 'View delivery companies', icon: 'fa-solid fa-truck-fast', route: '/deliverycompanies', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER'] },
+      { id: 'drivers', title: 'Drivers', description: 'Manage delivery drivers', icon: 'fa-solid fa-car', route: '/drivers', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER'] },
+      { id: 'products', title: 'Products', description: 'Browse available products', icon: 'fa-solid fa-box', route: '/products', roles: ['SUPER_ADMIN', 'VENDOR_OWNER'] },
+      { id: 'partnerships', title: 'Partnerships', description: 'Vendor & delivery partnerships', icon: 'fa-solid fa-handshake', route: '/partnerships', roles: ['SUPER_ADMIN', 'VENDOR_OWNER', 'DELIVERY_OWNER'] },
+      { id: 'pool', title: 'Marketplace', description: 'Browse and bid on available orders', icon: 'fa-solid fa-cart-shopping', route: '/pool', roles: ['SUPER_ADMIN', 'DELIVERY_OWNER', 'DRIVER'] },
+      { id: 'bids', title: 'Bid Inbox', description: 'Review and manage received bids', icon: 'fa-solid fa-briefcase', route: '/bids', roles: ['SUPER_ADMIN', 'VENDOR_OWNER', 'CLIENT'] },
+      { id: 'tracking', title: 'Tracking', description: 'Live order & driver tracking', icon: 'fa-solid fa-location-dot', route: '/tracking' },
+      { id: 'profile', title: 'Profile', description: 'View your account information', icon: 'fa-solid fa-user', route: '/profile' },
+      { id: 'notifications', title: 'Notifications', description: 'View your notifications', icon: 'fa-solid fa-bell', route: '/notifications' }
     ];
 
     const query = this.searchQuery.toLowerCase();
@@ -463,13 +463,13 @@ export class Navbar implements OnInit, OnDestroy {
   getThemeIcon(): string {
     switch (this.currentTheme) {
       case 'light':
-        return '☀️';
+        return 'fa-solid fa-sun';
       case 'dark':
-        return '🌙';
+        return 'fa-solid fa-moon';
       case 'auto':
-        return '🌓';
+        return 'fa-solid fa-circle-half-stroke';
       default:
-        return '☀️';
+        return 'fa-solid fa-sun';
     }
   }
   

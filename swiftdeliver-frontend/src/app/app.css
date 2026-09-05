@@ -1,8 +1,7 @@
-/* ========================================
-   MODERN APP LAYOUT - Professional Design
-   ======================================== */
+/* ============================================================
+   APP SHELL LAYOUT - Minimal & Airy
+   ============================================================ */
 
-/* App Root Layout */
 app-root {
   display: flex;
   height: 100vh;
@@ -37,7 +36,6 @@ app-sidebar {
   height: 100vh;
   overflow: hidden;
   position: relative;
-  background: var(--bg-secondary);
 }
 
 /* Navbar positioned at top of content area */
@@ -50,20 +48,14 @@ app-navbar {
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* Main Content Area with Modern Styling */
+/* Main Content Area */
 .main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-primary);
   position: relative;
-  margin: var(--space-md);
-  margin-top: 0;
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: var(--shadow-xl);
-  border: 1px solid var(--border-primary);
-  transition: all var(--transition-normal);
+  min-width: 0;
 }
 
 /* Content Container with Smooth Scrolling */
@@ -71,8 +63,7 @@ app-navbar {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-xl);
-  background: var(--bg-elevated);
+  background: var(--bg-secondary);
   position: relative;
 }
 
@@ -99,19 +90,12 @@ router-outlet + * {
   to { opacity: 0; }
 }
 
-/* ========================================
-   RESPONSIVE DESIGN - Mobile First Approach
-   ======================================== */
+/* ============================================================
+   RESPONSIVE LAYOUT
+   ============================================================ */
 
 /* Mobile: 320px - 767px */
 @media (max-width: 767px) {
-  /* Full screen layout for mobile */
-  app-root {
-    height: 100vh;
-    width: 100vw;
-  }
-
-  /* Sidebar hidden by default on mobile */
   app-sidebar {
     position: fixed;
     left: 0;
@@ -126,12 +110,10 @@ router-outlet + * {
     border-right: 1px solid var(--border-primary);
   }
 
-  /* Sidebar visible when .show class added */
   app-sidebar.show {
     transform: translateX(0);
   }
 
-  /* Overlay when sidebar is open */
   .app-layout.sidebar-open::before {
     content: '';
     position: fixed;
@@ -139,69 +121,21 @@ router-outlet + * {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.4);
     z-index: 99;
   }
 
-  /* Content area takes full width on mobile */
-  .content-area {
-    height: 100vh;
-    width: 100%;
-  }
-
-  /* Navbar adjustments for mobile */
   app-navbar {
     position: sticky;
     top: 0;
-    padding: 0 var(--space-md);
-    height: auto;
   }
 
-  /* Main content takes full viewport on mobile */
-  .main-content {
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-  }
-
-  /* Reduce padding on mobile */
-  .content-container {
-    padding: var(--space-md);
-  }
-
-  /* Touch-friendly button sizes */
   button {
-    min-height: 44px;
-    min-width: 44px;
-    padding: 12px 16px;
-    font-size: 16px; /* Prevents auto-zoom on iOS */
+    min-height: 40px;
+    padding: 10px 14px;
+    font-size: 16px;
   }
 
-  /* Hamburger menu button styling */
-  .hamburger-menu {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    width: 44px;
-    height: 44px;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .hamburger-menu span {
-    display: block;
-    width: 24px;
-    height: 2px;
-    background: var(--text-primary);
-    margin: 4px 0;
-    transition: all var(--transition-fast);
-  }
-
-  /* Adjust dropdown menus on mobile */
   .dropdown-menu {
     position: fixed !important;
     top: auto !important;
@@ -211,7 +145,6 @@ router-outlet + * {
     max-width: 300px;
   }
 
-  /* Mobile-friendly tables */
   table {
     font-size: 14px;
   }
@@ -220,43 +153,22 @@ router-outlet + * {
     padding: 8px 4px;
   }
 
-  /* Stack form fields on mobile */
   .form-row {
     flex-direction: column !important;
   }
 
-  .form-group {
-    width: 100% !important;
-    margin-bottom: var(--space-md);
-  }
-
-  /* Modals: Full screen on mobile */
-  .modal-content {
+  .modal-content,
+  .modal {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
-    border-radius: 16px 16px 0 0 !important;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0 !important;
   }
 
-  /* Cards: Stack on mobile */
   .card-grid {
     grid-template-columns: 1fr !important;
   }
 
-  /* Responsive typography on mobile */
-  h1 {
-    font-size: 24px;
-  }
-
-  h2 {
-    font-size: 20px;
-  }
-
-  h3 {
-    font-size: 18px;
-  }
-
-  /* Input fields: Full width on mobile */
   input,
   select,
   textarea {
@@ -264,12 +176,10 @@ router-outlet + * {
     font-size: 16px;
   }
 
-  /* Flex layout: Stack on mobile */
   .flex-layout {
     flex-direction: column !important;
   }
 
-  /* Grid layout: 1 column on mobile */
   [class*='grid'],
   .dashboard-grid {
     grid-template-columns: 1fr !important;
@@ -278,110 +188,51 @@ router-outlet + * {
 
 /* Tablet: 768px - 1023px */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .content-container {
-    padding: var(--space-lg);
-  }
-
-  /* 2-column grid on tablet */
   .card-grid {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 
-  /* Reduce sidebar width on tablet */
   app-sidebar {
     width: 240px;
-  }
-
-  /* Adjust main content spacing */
-  .main-content {
-    margin: var(--space-lg);
   }
 }
 
 /* Desktop: 1024px+ */
 @media (min-width: 1024px) {
-  /* Normal desktop layout */
   .hamburger-menu {
     display: none;
   }
 
-  /* Show sidebar by default on desktop */
   app-sidebar {
     position: relative;
     transform: translateX(0);
   }
 
-  /* Desktop grid layouts */
   .card-grid {
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) !important;
   }
 }
 
-/* Large Desktop: 1440px+ */
-@media (min-width: 1440px) {
-  .content-container {
-    padding: var(--space-2xl);
-  }
-
-  .card-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
-  }
-}
-
-/* Extra Large: 1920px+ */
-@media (min-width: 1920px) {
-  .card-grid {
-    grid-template-columns: repeat(5, 1fr) !important;
-  }
-
-  .content-container {
-    max-width: 1920px;
-    margin: 0 auto;
-  }
-}
-
-/* Landscape orientation on mobile/tablet */
-@media (max-height: 600px) {
-  app-navbar {
-    padding: 8px 12px;
-  }
-
-  .content-container {
-    padding: var(--space-sm);
-  }
-
-  button {
-    min-height: 36px;
-    padding: 8px 12px;
-    font-size: 14px;
-  }
-}
-
-/* High DPI / Retina Displays */
-@media (min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
-  * {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
+/* ============================================================
+   SHARED SURFACE UTILITIES
+   ============================================================ */
 
 /* Modern Glass Effect for Elevated Elements */
 .glass-effect {
   background: var(--bg-overlay);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--border-accent);
+  border: 1px solid var(--border-primary);
 }
 
 /* Floating Action Elements */
 .floating-element {
   position: relative;
-  transition: all var(--transition-normal);
+  transition: box-shadow var(--transition-normal), transform var(--transition-normal);
 }
 
 .floating-element:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-xl);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Content Grid System */
@@ -399,76 +250,9 @@ router-outlet + * {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-/* ========================================
-   RESPONSIVE DESIGN
-   ======================================== */
-
-/* Tablet Styles */
-@media (max-width: 1024px) {
-  .main-content {
-    margin: var(--space-sm);
-    margin-top: 0;
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  }
-  
-  .content-container {
-    padding: var(--space-lg);
-  }
-  
-  .content-grid {
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: var(--space-md);
-  }
-}
-
-/* Mobile Styles */
-@media (max-width: 768px) {
-  .app-layout {
-    flex-direction: column;
-  }
-  
-  app-sidebar {
-    order: 2;
-    height: auto;
-    z-index: 200;
-  }
-  
-  .content-area {
-    order: 1;
-    flex: 1;
-  }
-  
-  .main-content {
-    margin: 0;
-    border-radius: 0;
-    box-shadow: none;
-    border: none;
-  }
-  
-  .content-container {
-    padding: var(--space-md);
-  }
-  
-  .content-grid {
-    grid-template-columns: 1fr;
-    gap: var(--space-sm);
-  }
-}
-
-/* Small Mobile Styles */
-@media (max-width: 480px) {
-  .content-container {
-    padding: var(--space-sm);
-  }
-  
-  .floating-element:hover {
-    transform: none; /* Disable hover effects on touch devices */
-  }
-}
-
-/* ========================================
-   AUTHENTICATION LAYOUT STYLES
-   ======================================== */
+/* ============================================================
+   AUTHENTICATION LAYOUT
+   ============================================================ */
 
 /* Full width layout when sidebar/navbar are hidden */
 .content-area.full-width {
@@ -479,14 +263,10 @@ router-outlet + * {
 /* Login page specific styles */
 .main-content.login-content {
   margin: 0;
-  border-radius: 0;
-  box-shadow: none;
-  border: none;
   background: transparent;
   overflow: auto;
 }
 
-/* Hide scrollbars on login page */
 .main-content.login-content::-webkit-scrollbar {
   display: none;
 }
@@ -496,27 +276,9 @@ router-outlet + * {
   scrollbar-width: none;
 }
 
-/* Ensure login page takes full viewport */
-.app-layout:has(.login-content) {
-  height: 100vh;
-  overflow: hidden;
-}
-
-/* Responsive adjustments for authentication pages */
-@media (max-width: 768px) {
-  .content-area.full-width {
-    height: 100vh;
-  }
-  
-  .main-content.login-content {
-    height: 100vh;
-  }
-}
-
-/* ========================================
+/* ============================================================
    LOADING STATES
-   ======================================== */
-
+   ============================================================ */
 .loading-overlay {
   position: absolute;
   top: 0;
@@ -533,39 +295,18 @@ router-outlet + * {
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 3px solid var(--accent-light);
   border-top: 3px solid var(--accent-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
-/* ========================================
-   ACCESSIBILITY ENHANCEMENTS
-   ======================================== */
-
-/* Reduced Motion Support */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  
-  .floating-element:hover {
-    transform: none;
-  }
-}
-
-/* High Contrast Mode Support */
+/* ============================================================
+   ACCESSIBILITY
+   ============================================================ */
 @media (prefers-contrast: high) {
-  .main-content {
-    border: 2px solid var(--text-primary);
-  }
-  
   .glass-effect {
     background: var(--bg-elevated);
     backdrop-filter: none;
@@ -573,7 +314,6 @@ router-outlet + * {
   }
 }
 
-/* Focus Management */
 .skip-link {
   position: absolute;
   top: -40px;
