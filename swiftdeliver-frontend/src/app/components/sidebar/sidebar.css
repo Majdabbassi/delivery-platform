@@ -10,6 +10,17 @@
   --sidebar-item-height: 48px;
   --sidebar-transition: all var(--transition-normal);
   --sidebar-z-index: 100;
+  
+  /* Sidebar Colors - Subtle Peach */
+  --sidebar-bg: #ffffff;
+  --sidebar-hover-bg: #fff7ed;
+  --sidebar-active-bg: #fff7ed;
+}
+
+body.night-mode {
+  --sidebar-bg: #1a0f08;
+  --sidebar-hover-bg: #2d1a10;
+  --sidebar-active-bg: #2d1a10;
 }
 
 /* ============================================================
@@ -23,7 +34,7 @@
   height: 100vh;
   flex-shrink: 0;
 
-  background: var(--bg-primary);
+  background: var(--sidebar-bg);
   color: var(--text-primary);
   border-right: 1px solid var(--border-primary);
 
@@ -214,12 +225,12 @@
 
 .nav-link:hover {
   color: var(--accent-primary);
-  background: var(--accent-light);
+  background: var(--sidebar-hover-bg);
 }
 
 .nav-link.active {
   color: var(--accent-primary);
-  background: var(--accent-light);
+  background: var(--sidebar-active-bg);
   font-weight: 600;
   border-color: var(--border-accent);
 }

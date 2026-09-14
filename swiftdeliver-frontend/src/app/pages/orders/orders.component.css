@@ -171,6 +171,7 @@
   border-bottom: 1px solid var(--border-primary);
   vertical-align: middle;
   color: var(--text-primary);
+  line-height: 1.4;
 }
 
 .orders-table tr:last-child td {
@@ -191,6 +192,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 24px;
 }
 
 .urgent-badge {
@@ -204,17 +206,21 @@
   border-radius: var(--radius-sm);
   font-family: var(--font-family-mono);
   font-size: 0.875rem;
+  display: inline-block;
+  line-height: 1.4;
 }
 
 .customer-info .customer-name {
   font-weight: 600;
   margin-bottom: 4px;
   color: var(--text-primary);
+  line-height: 1.4;
 }
 
 .customer-info .customer-contact {
   font-size: 0.875rem;
   color: var(--text-tertiary);
+  line-height: 1.4;
 }
 
 .addresses {
@@ -228,6 +234,7 @@
   gap: 8px;
   margin-bottom: 8px;
   font-size: 0.875rem;
+  line-height: 1.4;
 }
 
 .pickup-icon {
@@ -260,6 +267,7 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   white-space: nowrap;
+  line-height: 1.4;
 }
 
 .status-pending       { background: #f5e9cd; color: #8a6116; }

@@ -141,7 +141,7 @@
             </td>
             <td>
               <div class="service-type-badge">
-                <span class="service-icon">{{ getServiceTypeIcon(company.serviceType) }}</span>
+                <span class="service-icon"><i class="{{ getServiceTypeIcon(company.serviceType) }}"></i></span>
                 {{ company.serviceType }}
               </div>
             </td>
@@ -421,7 +421,7 @@
           <div class="detail-item">
             <label>Service Type:</label>
             <span class="service-type-badge">
-              <span class="service-icon">{{ getServiceTypeIcon(selectedDeliveryCompany.serviceType) }}</span>
+              <span class="service-icon"><i class="{{ getServiceTypeIcon(selectedDeliveryCompany.serviceType) }}"></i></span>
               {{ selectedDeliveryCompany.serviceType }}
             </span>
           </div>
