@@ -46,12 +46,10 @@ public class DriverTrackingController {
         }
 
         realtimeTrackingService.broadcastDriverLocation(
-                orderId,
-                order.getOrderNumber(),
+                order,
                 locationUpdate.getLatitude(),
                 locationUpdate.getLongitude(),
-                locationUpdate.getSpeedKmh(),
-                order.getDriverPerson() != null ? order.getDriverPerson().getId() : null);
+                locationUpdate.getSpeedKmh());
 
         return ResponseEntity.ok(order);
     }
@@ -60,6 +58,8 @@ public class DriverTrackingController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DRIVER') or hasRole('CLIENT')")
     @Operation(summary = "Get last known order location", description = "Returns the most recent driver location broadcast for an order, if any")
     public ResponseEntity<OrderRealtimeEvent> getOrderLocation(@PathVariable Long orderId) {
+        Order order = orderService.getOrderById(orderId);
+        orderService.assertCanReadOrderLocation(order);
         OrderRealtimeEvent location = realtimeTrackingService.getLastLocation(orderId);
         if (location == null) {
             return ResponseEntity.noContent().build();

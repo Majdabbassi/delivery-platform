@@ -1,5 +1,7 @@
 package com.swiftdeliver.backend.exception;
 
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -73,9 +75,44 @@ public class GlobalExceptionHandler {
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.BAD_REQUEST.value());
         response.put("error", "Bad Request");
-        response.put("message", ex.getMessage());
+        response.put("message", "The request could not be processed");
         response.put("path", request.getDescription(false));
-        
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    /**
+     * Translates persistence / constraint violations into a clean 409 without
+     * leaking SQL, table/column names or Hibernate internals in the response.
+     */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(
+            DataIntegrityViolationException ex, WebRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.CONFLICT.value());
+        response.put("error", "Data Conflict");
+        response.put("message", "The request conflicts with existing data");
+        response.put("path", request.getDescription(false));
+
+        return new ResponseEntity<>(response, HttpStatus.CONFLICT);
+    }
+
+    /**
+     * Catches all other Spring DAO / Hibernate / JPA wrapper exceptions
+     * (InvalidDataAccessApiUsageException, etc.) that might leak raw SQL or
+     * Hibernate internals if echoed verbatim.
+     */
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<Map<String, Object>> handleDataAccessException(
+            DataAccessException ex, WebRequest request) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("error", "Invalid Request");
+        response.put("message", "The request data could not be processed");
+        response.put("path", request.getDescription(false));
+
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
     

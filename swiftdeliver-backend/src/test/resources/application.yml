@@ -1,0 +1,52 @@
+# Test configuration. This file lives in src/test/resources so it shadows the
+# main application.yml on the test classpath. It must be self-contained so
+# tests never touch MySQL, never activate the `dev` profile (DataInitializer)
+# and never require unset external env vars like JWT_SECRET.
+spring:
+  application:
+    name: swiftdeliver-backend
+
+  # H2 in MySQL compatibility mode so entity DDL (TEXT columns, @ElementCollection,
+  # enums as VARCHAR) matches what Hibernate generates for the project's MySQL schema.
+  datasource:
+    url: jdbc:h2:mem:swiftdeliver_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    open-in-view: false
+
+server:
+  port: 0
+
+jwt:
+  secret: test-jwt-secret-test-jwt-secret-test-jwt-secret-1234567890
+  expiration: 86400000
+  refresh:
+    expiration: 604800000
+  issuer: swiftdeliver-backend
+
+security:
+  rate-limiting:
+    max-attempts: 5
+    lockout-duration-minutes: 15
+    cleanup-interval-minutes: 60
+    trusted-proxies:
+
+swiftdeliver:
+  orders:
+    rate-limit:
+      per-minute: 1000
+  assignment:
+    general:
+      auto-assignment-enabled: false
+      auto-assign-on-create: false
+      prefer-partnerships: false
+      max-assignment-attempts: 1
+      assignment-timeout-seconds: 5
+      audit-logging-enabled: false
+      min-score-threshold: 0.0

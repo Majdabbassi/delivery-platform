@@ -1,6 +1,8 @@
 package com.swiftdeliver.backend.controller;
 
+import com.swiftdeliver.backend.entity.User;
 import com.swiftdeliver.backend.entity.VendorCompany;
+import com.swiftdeliver.backend.service.SecurityService;
 import com.swiftdeliver.backend.service.VendorCompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -29,6 +31,9 @@ public class VendorCompanyController {
     @Autowired
     private VendorCompanyService vendorCompanyService;
 
+    @Autowired
+    private SecurityService securityService;
+
     // Create operations
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     @PostMapping
@@ -50,7 +55,7 @@ public class VendorCompanyController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     @GetMapping("/{id}")
     public ResponseEntity<VendorCompany> getVendorCompanyById(@PathVariable Long id) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(id);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(id);
         return ResponseEntity.ok(vendorCompany);
     }
 
@@ -218,7 +223,8 @@ public class VendorCompanyController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     @GetMapping("/owner/{ownerId}")
     public ResponseEntity<List<VendorCompany>> getByOwner(@PathVariable Long ownerId) {
-        List<VendorCompany> vendorCompanies = vendorCompanyService.findByOwnerId(ownerId);
+        Long requestedOwnerId = securityService.resolveOwnerIdForCurrentUser(ownerId, User.Role.VENDOR_OWNER);
+        List<VendorCompany> vendorCompanies = vendorCompanyService.findByOwnerId(requestedOwnerId);
         return ResponseEntity.ok(vendorCompanies);
     }
 
@@ -228,9 +234,9 @@ public class VendorCompanyController {
             @PathVariable Long ownerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        
+        Long requestedOwnerId = securityService.resolveOwnerIdForCurrentUser(ownerId, User.Role.VENDOR_OWNER);
         Pageable pageable = PageRequest.of(page, size);
-        Page<VendorCompany> vendorCompanies = vendorCompanyService.findByOwner(ownerId, pageable);
+        Page<VendorCompany> vendorCompanies = vendorCompanyService.findByOwner(requestedOwnerId, pageable);
         return ResponseEntity.ok(vendorCompanies);
     }
 
@@ -240,6 +246,7 @@ public class VendorCompanyController {
     public ResponseEntity<VendorCompany> updateVendorCompany(
             @PathVariable Long id,
             @Valid @RequestBody VendorCompany vendorCompany) {
+        securityService.getOwnedVendorCompanyOrThrow(id);
         VendorCompany updatedVendorCompany = vendorCompanyService.updateVendorCompany(id, vendorCompany);
         return ResponseEntity.ok(updatedVendorCompany);
     }

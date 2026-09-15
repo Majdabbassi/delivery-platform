@@ -15,7 +15,7 @@ import jakarta.validation.constraints.Positive;
 public class JwtProperties {
     
     @NotBlank(message = "JWT secret is required")
-    private String secret = "REDACTED_JWT_SECRET";
+    private String secret;
     
     @Positive(message = "JWT expiration must be positive")
     private Long expiration = 86400000L; // 24 hours in milliseconds

@@ -88,7 +88,8 @@ public class PartnershipSpecifications {
     }
 
     /**
-     * Filter partnerships by service area (contains)
+     * Filter partnerships by service area (contains). serviceAreas is an
+     * @ElementCollection so the collection path must be joined before LIKE.
      */
     public static Specification<Partnership> hasServiceArea(String serviceArea) {
         return (root, query, criteriaBuilder) -> {
@@ -96,7 +97,7 @@ public class PartnershipSpecifications {
                 return criteriaBuilder.conjunction();
             }
             return criteriaBuilder.like(
-                criteriaBuilder.lower(root.get("serviceAreas")),
+                criteriaBuilder.lower(root.join("serviceAreas")),
                 "%" + serviceArea.toLowerCase() + "%"
             );
         };
@@ -124,7 +125,7 @@ public class PartnershipSpecifications {
     }
 
     /**
-     * Filter partnerships by minimum order value range
+     * Filter partnerships by minimum order value range (column: minimum_order_value)
      */
     public static Specification<Partnership> hasMinOrderValueBetween(BigDecimal minValue, BigDecimal maxValue) {
         return (root, query, criteriaBuilder) -> {
@@ -132,12 +133,12 @@ public class PartnershipSpecifications {
             
             if (minValue != null) {
                 predicate = criteriaBuilder.and(predicate,
-                    criteriaBuilder.greaterThanOrEqualTo(root.get("minOrderValue"), minValue));
+                    criteriaBuilder.greaterThanOrEqualTo(root.get("minimumOrderValue"), minValue));
             }
             
             if (maxValue != null) {
                 predicate = criteriaBuilder.and(predicate,
-                    criteriaBuilder.lessThanOrEqualTo(root.get("minOrderValue"), maxValue));
+                    criteriaBuilder.lessThanOrEqualTo(root.get("minimumOrderValue"), maxValue));
             }
             
             return predicate;
@@ -145,24 +146,12 @@ public class PartnershipSpecifications {
     }
 
     /**
-     * Filter partnerships by maximum order value range
+     * No maximum order value constraint exists on the Partnership entity
+     * (getMaxOrderValue() is a virtual accessor that always returns null), so
+     * this filter is a no-op kept for API compatibility.
      */
     public static Specification<Partnership> hasMaxOrderValueBetween(BigDecimal minValue, BigDecimal maxValue) {
-        return (root, query, criteriaBuilder) -> {
-            Predicate predicate = criteriaBuilder.conjunction();
-            
-            if (minValue != null) {
-                predicate = criteriaBuilder.and(predicate,
-                    criteriaBuilder.greaterThanOrEqualTo(root.get("maxOrderValue"), minValue));
-            }
-            
-            if (maxValue != null) {
-                predicate = criteriaBuilder.and(predicate,
-                    criteriaBuilder.lessThanOrEqualTo(root.get("maxOrderValue"), maxValue));
-            }
-            
-            return predicate;
-        };
+        return (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
     }
 
     /**
@@ -241,26 +230,26 @@ public class PartnershipSpecifications {
     }
 
     /**
-     * Filter partnerships by minimum total orders
+     * Filter partnerships by minimum total orders (column: total_orders_completed)
      */
     public static Specification<Partnership> hasTotalOrdersGreaterThan(Long minOrders) {
         return (root, query, criteriaBuilder) -> {
             if (minOrders == null) {
                 return criteriaBuilder.conjunction();
             }
-            return criteriaBuilder.greaterThan(root.get("totalOrders"), minOrders);
+            return criteriaBuilder.greaterThan(root.get("totalOrdersCompleted"), minOrders);
         };
     }
 
     /**
-     * Filter partnerships by minimum total revenue
+     * Filter partnerships by minimum total revenue (column: total_revenue_generated)
      */
     public static Specification<Partnership> hasTotalRevenueGreaterThan(BigDecimal minRevenue) {
         return (root, query, criteriaBuilder) -> {
             if (minRevenue == null) {
                 return criteriaBuilder.conjunction();
             }
-            return criteriaBuilder.greaterThan(root.get("totalRevenue"), minRevenue);
+            return criteriaBuilder.greaterThan(root.get("totalRevenueGenerated"), minRevenue);
         };
     }
 
@@ -277,7 +266,9 @@ public class PartnershipSpecifications {
     }
 
     /**
-     * Filter partnerships that can handle orders within specified value range
+     * Filter partnerships that can handle orders within specified value range.
+     * The only persisted constraint is minimumOrderValue (column
+     * minimum_order_value); there is no maximum order value on the entity.
      */
     public static Specification<Partnership> canHandleOrderValue(BigDecimal orderValue) {
         return (root, query, criteriaBuilder) -> {
@@ -285,37 +276,28 @@ public class PartnershipSpecifications {
                 return criteriaBuilder.conjunction();
             }
             
-            return criteriaBuilder.and(
-                criteriaBuilder.or(
-                    criteriaBuilder.isNull(root.get("minOrderValue")),
-                    criteriaBuilder.lessThanOrEqualTo(root.get("minOrderValue"), orderValue)
-                ),
-                criteriaBuilder.or(
-                    criteriaBuilder.isNull(root.get("maxOrderValue")),
-                    criteriaBuilder.greaterThanOrEqualTo(root.get("maxOrderValue"), orderValue)
-                )
+            return criteriaBuilder.or(
+                criteriaBuilder.isNull(root.get("minimumOrderValue")),
+                criteriaBuilder.lessThanOrEqualTo(root.get("minimumOrderValue"), orderValue)
             );
         };
     }
 
     /**
-     * Filter partnerships that can handle orders within specified distance range
+     * Filter partnerships that can handle orders within specified distance range.
+     * The only persisted distance constraint is maximumDeliveryDistanceKm
+     * (column maximum_delivery_distance_km); there is no minimum distance.
      */
     public static Specification<Partnership> canHandleDeliveryDistance(BigDecimal distance) {
         return (root, query, criteriaBuilder) -> {
             if (distance == null) {
                 return criteriaBuilder.conjunction();
             }
-            
-            return criteriaBuilder.and(
-                criteriaBuilder.or(
-                    criteriaBuilder.isNull(root.get("minDeliveryDistance")),
-                    criteriaBuilder.lessThanOrEqualTo(root.get("minDeliveryDistance"), distance)
-                ),
-                criteriaBuilder.or(
-                    criteriaBuilder.isNull(root.get("maxDeliveryDistance")),
-                    criteriaBuilder.greaterThanOrEqualTo(root.get("maxDeliveryDistance"), distance)
-                )
+
+            Double distanceKm = distance.doubleValue();
+            return criteriaBuilder.or(
+                criteriaBuilder.isNull(root.get("maximumDeliveryDistanceKm")),
+                criteriaBuilder.greaterThanOrEqualTo(root.get("maximumDeliveryDistanceKm"), distanceKm)
             );
         };
     }
@@ -334,7 +316,7 @@ public class PartnershipSpecifications {
                 if (area != null && !area.trim().isEmpty()) {
                     predicate = criteriaBuilder.or(predicate,
                         criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get("serviceAreas")),
+                            criteriaBuilder.lower(root.join("serviceAreas")),
                             "%" + area.toLowerCase() + "%"
                         )
                     );

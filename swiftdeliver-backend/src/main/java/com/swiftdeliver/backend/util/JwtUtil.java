@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JwtUtil {
 
-    @Value("${jwt.secret:REDACTED_JWT_SECRET}")
+    @Value("${jwt.secret}")
     private String secret;
 
     @Value("${jwt.expiration:86400000}") // 24 hours in milliseconds

@@ -1,5 +1,6 @@
 package com.swiftdeliver.backend.config;
 
+import com.swiftdeliver.backend.repository.OrderRepository;
 import com.swiftdeliver.backend.repository.UserRepository;
 import com.swiftdeliver.backend.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
+    private final OrderRepository orderRepository;
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
@@ -28,12 +30,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
                 .setAllowedOriginPatterns("*")
-                .addInterceptors(new StompHandshakeInterceptor(jwtUtil, userRepository))
                 .withSockJS();
     }
 
     @Override
     public void configureClientInboundChannel(ChannelRegistration registration) {
-        registration.interceptors(new StompChannelInterceptor());
+        // Authentication happens at the STOMP CONNECT frame, which reliably
+        // carries headers over every SockJS transport (handshake query params do not).
+        registration.interceptors(new StompChannelInterceptor(jwtUtil, userRepository, orderRepository));
     }
 }

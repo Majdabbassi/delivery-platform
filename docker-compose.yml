@@ -20,8 +20,9 @@ services:
     image: phpmyadmin:latest
     container_name: swiftdeliver-phpmyadmin
     restart: unless-stopped
+    profiles: ["dev"]
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
@@ -46,9 +47,9 @@ services:
       DATABASE_URL: jdbc:mysql://db:3306/swiftdeliver_db_new
       DATABASE_USERNAME: root
       DATABASE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
-      JWT_SECRET: ${JWT_SECRET:-CHANGE_ME}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set (see .env.example)}
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-REDACTED_ADMIN_PASSWORD}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set (see .env.example)}
       SPRING_PROFILES_ACTIVE: dev
     networks:
       - swiftdeliver-net

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,8 +25,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,6 +43,15 @@ public class AuthController {
     private final RateLimitingService rateLimitingService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AuditLogService auditLogService;
+
+    /**
+     * Comma-separated allowlist of reverse-proxy IPs that MAY set
+     * X-Forwarded-For / X-Real-IP. When the direct peer is not on this list,
+     * proxy headers are ignored to prevent clients from spoofing their IP and
+     * bypassing the login rate limiter.
+     */
+    @Value("${security.rate-limiting.trusted-proxies:}")
+    private String trustedProxies;
     
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDto> authenticateUser(@Valid @RequestBody LoginDto loginDto, HttpServletRequest request) {
@@ -224,20 +237,36 @@ public class AuthController {
     }
     
     /**
-     * Extract client IP address from request, considering proxy headers
+     * Extract client IP address from request. Proxy headers are only trusted
+     * when the request came directly from a configured trusted proxy; otherwise
+     * the socket peer address is used so clients cannot spoof their identity.
      */
     private String getClientIpAddress(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
-            return xForwardedFor.split(",")[0].trim();
+        String remoteAddr = request.getRemoteAddr();
+        if (remoteAddr != null && isTrustedProxy(remoteAddr)) {
+            String xForwardedFor = request.getHeader("X-Forwarded-For");
+            if (xForwardedFor != null && !xForwardedFor.isEmpty() && !"unknown".equalsIgnoreCase(xForwardedFor)) {
+                return xForwardedFor.split(",")[0].trim();
+            }
+
+            String xRealIp = request.getHeader("X-Real-IP");
+            if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
+                return xRealIp;
+            }
         }
-        
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty() && !"unknown".equalsIgnoreCase(xRealIp)) {
-            return xRealIp;
+        return remoteAddr;
+    }
+
+    private boolean isTrustedProxy(String remoteAddr) {
+        if (trustedProxies == null || trustedProxies.trim().isEmpty()) {
+            return false;
         }
-        
-        return request.getRemoteAddr();
+        Set<String> allowed = new HashSet<>();
+        Arrays.stream(trustedProxies.split(","))
+                .map(String::trim)
+                .filter(entry -> !entry.isEmpty())
+                .forEach(allowed::add);
+        return allowed.contains(remoteAddr);
     }
 
 }

@@ -2,9 +2,11 @@ package com.swiftdeliver.backend.controller;
 
 import com.swiftdeliver.backend.entity.DeliveryCompany;
 import com.swiftdeliver.backend.entity.Partnership;
+import com.swiftdeliver.backend.entity.User;
 import com.swiftdeliver.backend.entity.VendorCompany;
 import com.swiftdeliver.backend.service.DeliveryCompanyService;
 import com.swiftdeliver.backend.service.PartnershipService;
+import com.swiftdeliver.backend.service.SecurityService;
 import com.swiftdeliver.backend.service.VendorCompanyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ public class PartnershipController {
     private final PartnershipService partnershipService;
     private final VendorCompanyService vendorCompanyService;
     private final DeliveryCompanyService deliveryCompanyService;
+    private final SecurityService securityService;
     
     // Create operations
     @PostMapping
@@ -37,6 +40,7 @@ public class PartnershipController {
     public ResponseEntity<Partnership> createPartnership(@Valid @RequestBody Partnership partnership) {
         log.info("Creating new partnership between vendor {} and delivery company {}", 
                 partnership.getVendorCompany().getId(), partnership.getDeliveryCompany().getId());
+        assertCanCreatePartnership(partnership);
         Partnership createdPartnership = partnershipService.createPartnership(partnership);
         return new ResponseEntity<>(createdPartnership, HttpStatus.CREATED);
     }
@@ -47,6 +51,7 @@ public class PartnershipController {
     public ResponseEntity<Partnership> getPartnershipById(@PathVariable Long id) {
         log.debug("Fetching partnership with ID: {}", id);
         Partnership partnership = partnershipService.getPartnershipById(id);
+        assertCanManagePartnership(partnership);
         return ResponseEntity.ok(partnership);
     }
     
@@ -55,6 +60,7 @@ public class PartnershipController {
     public ResponseEntity<Partnership> getPartnershipByCompanies(@RequestParam Long vendorCompanyId, 
                                                                @RequestParam Long deliveryCompanyId) {
         log.debug("Fetching partnership between vendor {} and delivery company {}", vendorCompanyId, deliveryCompanyId);
+        assertCanAccessCompanies(vendorCompanyId, deliveryCompanyId);
         VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
         DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
         
@@ -76,6 +82,8 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Partnership> updatePartnership(@PathVariable Long id, @Valid @RequestBody Partnership partnershipDetails) {
         log.info("Updating partnership with ID: {}", id);
+        Partnership existing = partnershipService.getPartnershipById(id);
+        assertCanManagePartnership(existing);
         Partnership updatedPartnership = partnershipService.updatePartnership(id, partnershipDetails);
         return ResponseEntity.ok(updatedPartnership);
     }
@@ -84,6 +92,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Partnership> updatePartnershipStatus(@PathVariable Long id, @RequestParam Partnership.PartnershipStatus status) {
         log.info("Updating partnership status for ID: {} to: {}", id, status);
+        assertCanManagePartnership(partnershipService.getPartnershipById(id));
         Partnership updatedPartnership = partnershipService.updatePartnershipStatus(id, status);
         return ResponseEntity.ok(updatedPartnership);
     }
@@ -92,6 +101,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Partnership> activatePartnership(@PathVariable Long id) {
         log.info("Activating partnership with ID: {}", id);
+        assertCanManagePartnership(partnershipService.getPartnershipById(id));
         Partnership updatedPartnership = partnershipService.activatePartnership(id);
         return ResponseEntity.ok(updatedPartnership);
     }
@@ -100,6 +110,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Partnership> suspendPartnership(@PathVariable Long id) {
         log.info("Suspending partnership with ID: {}", id);
+        assertCanManagePartnership(partnershipService.getPartnershipById(id));
         Partnership updatedPartnership = partnershipService.suspendPartnership(id);
         return ResponseEntity.ok(updatedPartnership);
     }
@@ -108,6 +119,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Partnership> terminatePartnership(@PathVariable Long id) {
         log.info("Terminating partnership with ID: {}", id);
+        assertCanManagePartnership(partnershipService.getPartnershipById(id));
         Partnership updatedPartnership = partnershipService.terminatePartnership(id);
         return ResponseEntity.ok(updatedPartnership);
     }
@@ -161,7 +173,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<List<Partnership>> getPartnershipsByVendorCompany(@PathVariable Long vendorCompanyId) {
         log.debug("Fetching partnerships for vendor company: {}", vendorCompanyId);
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         List<Partnership> partnerships = partnershipService.getPartnershipsByVendorCompany(vendorCompany);
         return ResponseEntity.ok(partnerships);
     }
@@ -170,7 +182,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<List<Partnership>> getPartnershipsByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
         log.debug("Fetching partnerships for delivery company: {}", deliveryCompanyId);
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         List<Partnership> partnerships = partnershipService.getPartnershipsByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(partnerships);
     }
@@ -179,7 +191,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<List<Partnership>> getActivePartnershipsByVendorCompany(@PathVariable Long vendorCompanyId) {
         log.debug("Fetching active partnerships for vendor company: {}", vendorCompanyId);
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         List<Partnership> partnerships = partnershipService.getActivePartnershipsByVendorCompany(vendorCompany);
         return ResponseEntity.ok(partnerships);
     }
@@ -188,7 +200,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<List<Partnership>> getActivePartnershipsByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
         log.debug("Fetching active partnerships for delivery company: {}", deliveryCompanyId);
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         List<Partnership> partnerships = partnershipService.getActivePartnershipsByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(partnerships);
     }
@@ -197,7 +209,7 @@ public class PartnershipController {
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<Partnership> getExclusivePartnershipByVendorCompany(@PathVariable Long vendorCompanyId) {
         log.debug("Fetching exclusive partnership for vendor company: {}", vendorCompanyId);
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         Optional<Partnership> partnership = partnershipService.getExclusivePartnershipByVendorCompany(vendorCompany);
         return partnership.map(ResponseEntity::ok)
                          .orElse(ResponseEntity.notFound().build());
@@ -252,7 +264,7 @@ public class PartnershipController {
                                                                            @RequestParam(required = false) BigDecimal orderValue,
                                                                            @RequestParam(required = false) Double distance) {
         log.debug("Fetching eligible partnerships for order from vendor: {}", vendorCompanyId);
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         List<Partnership> partnerships = partnershipService.getEligiblePartnershipsForOrder(vendorCompany, serviceArea, orderValue, distance);
         return ResponseEntity.ok(partnerships);
     }
@@ -277,7 +289,7 @@ public class PartnershipController {
     @GetMapping("/stats/count/vendor-company/{vendorCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<Long> countPartnershipsByVendorCompany(@PathVariable Long vendorCompanyId) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         long count = partnershipService.countPartnershipsByVendorCompany(vendorCompany);
         return ResponseEntity.ok(count);
     }
@@ -285,7 +297,7 @@ public class PartnershipController {
     @GetMapping("/stats/count/delivery-company/{deliveryCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Long> countPartnershipsByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         long count = partnershipService.countPartnershipsByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(count);
     }
@@ -300,7 +312,7 @@ public class PartnershipController {
     @GetMapping("/stats/count/active/vendor-company/{vendorCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<Long> countActivePartnershipsByVendorCompany(@PathVariable Long vendorCompanyId) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         long count = partnershipService.countActivePartnershipsByVendorCompany(vendorCompany);
         return ResponseEntity.ok(count);
     }
@@ -308,7 +320,7 @@ public class PartnershipController {
     @GetMapping("/stats/count/active/delivery-company/{deliveryCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Long> countActivePartnershipsByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         long count = partnershipService.countActivePartnershipsByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(count);
     }
@@ -316,7 +328,7 @@ public class PartnershipController {
     @GetMapping("/stats/revenue/vendor-company/{vendorCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<BigDecimal> getTotalRevenueByVendorCompany(@PathVariable Long vendorCompanyId) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         BigDecimal revenue = partnershipService.calculateTotalRevenueByVendorCompany(vendorCompany);
         return ResponseEntity.ok(revenue);
     }
@@ -324,7 +336,7 @@ public class PartnershipController {
     @GetMapping("/stats/revenue/delivery-company/{deliveryCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<BigDecimal> getTotalRevenueByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         BigDecimal revenue = partnershipService.calculateTotalRevenueByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(revenue);
     }
@@ -332,7 +344,7 @@ public class PartnershipController {
     @GetMapping("/stats/rating/vendor-company/{vendorCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<Double> getAverageRatingByVendorCompany(@PathVariable Long vendorCompanyId) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         Double rating = partnershipService.calculateAverageRatingByVendorCompany(vendorCompany);
         return ResponseEntity.ok(rating);
     }
@@ -340,7 +352,7 @@ public class PartnershipController {
     @GetMapping("/stats/rating/delivery-company/{deliveryCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Double> getAverageRatingByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         Double rating = partnershipService.calculateAverageRatingByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(rating);
     }
@@ -348,7 +360,7 @@ public class PartnershipController {
     @GetMapping("/stats/orders/vendor-company/{vendorCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<Long> getTotalOrdersByVendorCompany(@PathVariable Long vendorCompanyId) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         Long orders = partnershipService.calculateTotalOrdersByVendorCompany(vendorCompany);
         return ResponseEntity.ok(orders);
     }
@@ -356,7 +368,7 @@ public class PartnershipController {
     @GetMapping("/stats/orders/delivery-company/{deliveryCompanyId}")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Long> getTotalOrdersByDeliveryCompany(@PathVariable Long deliveryCompanyId) {
-        DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
+        DeliveryCompany deliveryCompany = securityService.getOwnedDeliveryCompanyOrThrow(deliveryCompanyId);
         Long orders = partnershipService.calculateTotalOrdersByDeliveryCompany(deliveryCompany);
         return ResponseEntity.ok(orders);
     }
@@ -365,6 +377,7 @@ public class PartnershipController {
     @GetMapping("/exists")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Boolean> existsPartnershipBetween(@RequestParam Long vendorCompanyId, @RequestParam Long deliveryCompanyId) {
+        assertCanAccessCompanies(vendorCompanyId, deliveryCompanyId);
         VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
         DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
         boolean exists = partnershipService.existsPartnershipBetween(vendorCompany, deliveryCompany);
@@ -374,6 +387,7 @@ public class PartnershipController {
     @GetMapping("/exists/active")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER') or hasRole('DELIVERY_OWNER')")
     public ResponseEntity<Boolean> existsActivePartnershipBetween(@RequestParam Long vendorCompanyId, @RequestParam Long deliveryCompanyId) {
+        assertCanAccessCompanies(vendorCompanyId, deliveryCompanyId);
         VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
         DeliveryCompany deliveryCompany = deliveryCompanyService.getDeliveryCompanyById(deliveryCompanyId);
         boolean exists = partnershipService.existsActivePartnershipBetween(vendorCompany, deliveryCompany);
@@ -383,7 +397,7 @@ public class PartnershipController {
     @GetMapping("/vendor-company/{vendorCompanyId}/has-exclusive")
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasRole('VENDOR_OWNER')")
     public ResponseEntity<Boolean> hasExclusivePartnership(@PathVariable Long vendorCompanyId) {
-        VendorCompany vendorCompany = vendorCompanyService.getVendorCompanyById(vendorCompanyId);
+        VendorCompany vendorCompany = securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
         boolean hasExclusive = partnershipService.hasExclusivePartnership(vendorCompany);
         return ResponseEntity.ok(hasExclusive);
     }
@@ -395,5 +409,69 @@ public class PartnershipController {
         log.info("Updating expired partnerships");
         partnershipService.updateExpiredPartnerships();
         return ResponseEntity.ok().build();
+    }
+
+    // Ownership helpers ------------------------------------------------------
+
+    private void assertCanCreatePartnership(Partnership partnership) {
+        User.Role role = securityService.getCurrentRole();
+        if (role == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (partnership.getVendorCompany() == null || partnership.getDeliveryCompany() == null) {
+            throw new IllegalArgumentException("Both vendor and delivery company are required");
+        }
+        if (role == User.Role.VENDOR_OWNER) {
+            securityService.getOwnedVendorCompanyOrThrow(partnership.getVendorCompany().getId());
+            return;
+        }
+        if (role == User.Role.DELIVERY_OWNER) {
+            securityService.getOwnedDeliveryCompanyOrThrow(partnership.getDeliveryCompany().getId());
+            return;
+        }
+        throw new org.springframework.security.access.AccessDeniedException("You cannot create partnerships");
+    }
+
+    /**
+     * Grants access when the caller is a SUPER_ADMIN or owns at least one of
+     * the two referenced companies (a vendor owner may query a partnership
+     * between their own vendor company and a delivery company they do not own).
+     */
+    private void assertCanAccessCompanies(Long vendorCompanyId, Long deliveryCompanyId) {
+        User.Role role = securityService.getCurrentRole();
+        if (role == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (role == User.Role.VENDOR_OWNER && securityService.canAccessVendorCompany(vendorCompanyId)) {
+            return;
+        }
+        if (role == User.Role.DELIVERY_OWNER && securityService.canAccessDeliveryCompany(deliveryCompanyId)) {
+            return;
+        }
+        throw new org.springframework.security.access.AccessDeniedException("You do not have access to these companies");
+    }
+
+    /**
+     * Grants access to a partnership when the caller is a SUPER_ADMIN or owns
+     * either of the two companies taking part in the partnership.
+     */
+    private void assertCanManagePartnership(Partnership partnership) {
+        User.Role role = securityService.getCurrentRole();
+        if (role == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (role == User.Role.VENDOR_OWNER
+                && partnership.getVendorCompany() != null
+                && partnership.getVendorCompany().getId() != null
+                && securityService.canAccessVendorCompany(partnership.getVendorCompany().getId())) {
+            return;
+        }
+        if (role == User.Role.DELIVERY_OWNER
+                && partnership.getDeliveryCompany() != null
+                && partnership.getDeliveryCompany().getId() != null
+                && securityService.canAccessDeliveryCompany(partnership.getDeliveryCompany().getId())) {
+            return;
+        }
+        throw new org.springframework.security.access.AccessDeniedException("You do not have access to this partnership");
     }
 }

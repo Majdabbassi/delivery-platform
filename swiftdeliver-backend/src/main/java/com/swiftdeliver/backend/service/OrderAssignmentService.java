@@ -145,7 +145,7 @@ public class OrderAssignmentService {
                 );
 
         return partnershipRepository.findAll(spec, 
-                Sort.by(Sort.Direction.DESC, "averageRating", "totalOrders"));
+                Sort.by(Sort.Direction.DESC, "averageRating", "totalOrdersCompleted"));
     }
 
     /**

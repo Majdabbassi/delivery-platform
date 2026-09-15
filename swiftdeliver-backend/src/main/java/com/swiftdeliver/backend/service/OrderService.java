@@ -86,13 +86,31 @@ public class OrderService {
 
         // Tenant binding: a CLIENT may only create orders for themselves,
         // and a VENDOR_OWNER may only create orders for their own company.
+        // The bound managed entities are loaded from the database and replace
+        // any client-supplied (possibly detached) references so a raw payload
+        // cannot trigger Hibernate persist/merge errors later.
         if (currentUser.getRole() == User.Role.CLIENT) {
-            order.setCustomerUser(securityService.getCurrentCustomerUser());
+            CustomerUser customer = securityService.getCurrentCustomerUser();
+            if (customer == null) {
+                throw new IllegalArgumentException("Client profile not found; cannot create an order");
+            }
+            order.setCustomerUser(customer);
+            // Users can only put themselves on their own orders; clear any
+            // vendor/delivery company references sent by the caller.
+            if (!isGeneralDelivery) {
+                order.setVendorCompany(null);
+                order.setDeliveryCompany(null);
+                order.setPartnership(null);
+            }
         } else if (currentUser.getRole() == User.Role.VENDOR_OWNER && !isGeneralDelivery) {
             if (order.getVendorCompany() == null) {
                 throw new IllegalArgumentException("Vendor company is required for marketplace orders");
             }
-            securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId());
+            VendorCompany managed = securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId());
+            order.setVendorCompany(managed);
+        } else if (currentUser.getRole() == User.Role.SUPER_ADMIN && order.getVendorCompany() != null
+                && order.getVendorCompany().getId() != null) {
+            order.setVendorCompany(securityService.getOwnedVendorCompanyOrThrow(order.getVendorCompany().getId()));
         }
         
         // Generate order number if not provided
@@ -736,6 +754,47 @@ public class OrderService {
             }
         }
         throw new AccessDeniedException("You do not have permission to view this order");
+    }
+
+    /**
+     * Grants read access to an order's LIVE GPS LOCATION to the involved
+     * parties only: the SUPER_ADMIN, the customer, the assigned driver, the
+     * vendor company owner and the delivery company owner. Unlike
+     * {@link #assertCanReadOrder(Order)}, OPEN_FOR_BID viewers are NOT allowed:
+     * live coordinates are only meant for the parties engaged in the delivery.
+     */
+    public void assertCanReadOrderLocation(Order order) {
+        User currentUser = securityService.getCurrentUser();
+        if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
+            return;
+        }
+        if (order.getCreatedByUserId() != null && currentUser.getId().equals(order.getCreatedByUserId())) {
+            return;
+        }
+        Long userId = currentUser.getId();
+        if (currentUser.getRole() == User.Role.CLIENT
+                && order.getCustomerUser() != null
+                && userId.equals(order.getCustomerUser().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.DRIVER
+                && order.getDriverPerson() != null
+                && userId.equals(order.getDriverPerson().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.VENDOR_OWNER
+                && order.getVendorCompany() != null
+                && order.getVendorCompany().getOwner() != null
+                && userId.equals(order.getVendorCompany().getOwner().getId())) {
+            return;
+        }
+        if (currentUser.getRole() == User.Role.DELIVERY_OWNER
+                && order.getDeliveryCompany() != null
+                && order.getDeliveryCompany().getOwner() != null
+                && userId.equals(order.getDeliveryCompany().getOwner().getId())) {
+            return;
+        }
+        throw new AccessDeniedException("You do not have permission to view this order's live location");
     }
 
     /**

@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RealtimeTrackingService {
 
     private static final String TOPIC_ORDER = "/topic/orders";
-    private static final String TOPIC_ORDER_LOCATION = "/topic/orders/location";
     private static final String TOPIC_USER = "/topic/users";
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -40,22 +39,29 @@ public class RealtimeTrackingService {
         send(event);
     }
 
-    public void broadcastDriverLocation(Long orderId, String orderNumber, Double latitude,
-                                        Double longitude, Double speedKmh, Long driverPersonId) {
+    public void broadcastDriverLocation(Order order, Double latitude,
+                                        Double longitude, Double speedKmh) {
         OrderRealtimeEvent event = OrderRealtimeEvent.builder()
                 .type("DRIVER_LOCATION_UPDATE")
-                .orderId(orderId)
-                .orderNumber(orderNumber)
+                .orderId(order.getId())
+                .orderNumber(order.getOrderNumber())
                 .latitude(latitude)
                 .longitude(longitude)
                 .speedKmh(speedKmh)
-                .driverPersonId(driverPersonId)
+                .driverPersonId(order.getDriverPerson() != null ? order.getDriverPerson().getId() : null)
                 .timestamp(LocalDateTime.now())
+                .involvedUserIds(involvedUserIds(order))
                 .build();
 
-        lastLocations.put(orderId, event);
-        messagingTemplate.convertAndSend(TOPIC_ORDER_LOCATION, event);
-        messagingTemplate.convertAndSend(orderTopic(orderId), event);
+        lastLocations.put(order.getId(), event);
+        // Live GPS is never broadcast globally; it is delivered only to the
+        // per-order topic and the private topics of the users involved.
+        messagingTemplate.convertAndSend(orderTopic(order.getId()), event);
+        if (event.getInvolvedUserIds() != null) {
+            for (Long userId : event.getInvolvedUserIds()) {
+                messagingTemplate.convertAndSend(userTopic(userId), event);
+            }
+        }
     }
 
     public OrderRealtimeEvent getLastLocation(Long orderId) {

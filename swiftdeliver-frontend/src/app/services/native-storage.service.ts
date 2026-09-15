@@ -1,11 +1,12 @@
 import { Injectable } from '@angular/core';
-import { Storage } from '@capacitor/storage';
 import { BehaviorSubject } from 'rxjs';
 
 /**
  * Native Storage Service
- * Provides persistent offline caching using Capacitor Storage
- * Better than browser localStorage for mobile apps (more reliable, more space)
+ * Provides persistent offline caching using browser localStorage.
+ * (The abandoned @capacitor/storage plugin was removed; localStorage is the
+ * drop-in equivalent for browser targets — see @capacitor/preferences for
+ * future native-only needs.)
  */
 @Injectable({
   providedIn: 'root'
@@ -42,7 +43,7 @@ export class NativeStorageService {
   async set(key: string, value: any): Promise<void> {
     try {
       const serialized = typeof value === 'string' ? value : JSON.stringify(value);
-      await Storage.set({ key, value: serialized });
+      localStorage.setItem(key, serialized);
 
       // Update in-memory cache
       const cache = this.cacheSubject.value;
@@ -59,18 +60,18 @@ export class NativeStorageService {
    */
   async get(key: string): Promise<any> {
     try {
-      const result = await Storage.get({ key });
-      
-      if (result.value) {
+      const value = localStorage.getItem(key);
+
+      if (value != null) {
         try {
           // Try to parse as JSON
-          return JSON.parse(result.value);
+          return JSON.parse(value);
         } catch {
           // If not JSON, return as-is
-          return result.value;
+          return value;
         }
       }
-      
+
       return null;
     } catch (error) {
       console.error(`Error getting storage key ${key}:`, error);
@@ -83,7 +84,7 @@ export class NativeStorageService {
    */
   async remove(key: string): Promise<void> {
     try {
-      await Storage.remove({ key });
+      localStorage.removeItem(key);
 
       // Update in-memory cache
       const cache = this.cacheSubject.value;
@@ -100,7 +101,7 @@ export class NativeStorageService {
    */
   async clear(): Promise<void> {
     try {
-      await Storage.clear();
+      localStorage.clear();
       this.cacheSubject.next(new Map());
     } catch (error) {
       console.error('Error clearing storage:', error);
@@ -113,8 +114,7 @@ export class NativeStorageService {
    */
   async keys(): Promise<string[]> {
     try {
-      const result = await Storage.keys();
-      return result.keys || [];
+      return Object.keys(localStorage);
     } catch (error) {
       console.error('Error getting storage keys:', error);
       return [];

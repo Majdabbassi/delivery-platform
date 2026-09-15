@@ -2,6 +2,11 @@ spring:
   application:
     name: swiftdeliver-backend
 
+  # Local `mvnw spring-boot:run` runs under `dev` (demo seeding, dev-only tools);
+  # an explicit SPRING_PROFILES_ACTIVE (docker compose `dev`, Render `prod`) overrides this default.
+  profiles:
+    default: dev
+
   # Database — defaults target a local dev MySQL; DATABASE_URL overrides in compose/prod.
   datasource:
     url: ${DATABASE_URL:jdbc:mysql://localhost:3306/swiftdeliver_db_new}
@@ -54,7 +59,7 @@ logging:
 
 # JWT
 jwt:
-  secret: ${JWT_SECRET:REDACTED_JWT_SECRET}
+  secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION:86400000}          # access token, 24h
   refresh:
     expiration: ${JWT_REFRESH_EXPIRATION:604800000} # refresh token, 7d
@@ -71,6 +76,11 @@ security:
     max-attempts: ${RATE_LIMIT_MAX_ATTEMPTS:5}
     lockout-duration-minutes: ${RATE_LIMIT_LOCKOUT_DURATION:15}
     cleanup-interval-minutes: ${RATE_LIMIT_CLEANUP_INTERVAL:60}
+    # Comma-separated allowlist of reverse-proxy IPs allowed to set
+    # X-Forwarded-For / X-Real-IP. Leave empty (default) to only use the real
+    # socket peer IP, so clients cannot spoof their address past the limiter.
+    # When deployed behind a proxy, set RATE_LIMIT_TRUSTED_PROXIES to it.
+    trusted-proxies: ${RATE_LIMIT_TRUSTED_PROXIES:}
 
 # CORS — consumed by SecurityConfig (single source of truth)
 app:

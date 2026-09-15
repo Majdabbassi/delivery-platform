@@ -3,8 +3,8 @@
     {
       "name": "jwt.secret",
       "type": "java.lang.String",
-      "description": "Secret key used for JWT token signing and verification. Should be at least 256 bits (32 characters) for HS256.",
-      "defaultValue": "REDACTED_JWT_SECRET"
+      "description": "Secret key used for JWT token signing and verification. Required — the application will not start without it. Should be at least 256 bits (32 characters) for HS256.",
+      "defaultValue": "${JWT_SECRET}"
     },
     {
       "name": "jwt.expiration",

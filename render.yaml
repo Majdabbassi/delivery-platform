@@ -1,26 +1,33 @@
+# Render blueprint for the SwiftDeliver BACKEND.
+#
+# NOTE: the application is MySQL-only (MySQL8Dialect + com.mysql connector-j).
+# Render's built-in managed database service is PostgreSQL, so it CANNOT be
+# used here. Provision a MySQL database elsewhere (e.g. Aiven, PlanetScale,
+# DigitalOcean Managed MySQL) and set DATABASE_URL/DATABASE_USERNAME/
+# DATABASE_PASSWORD as manually-entered environment variables pointing at it.
+
 services:
   - type: web
     name: swiftdeliver-backend
     runtime: java
     plan: free
     buildCommand: cd swiftdeliver-backend && ./mvnw clean package -DskipTests
-    startCommand: java -jar swiftdeliver-backend/target/*.jar
+    startCommand: java -jar swiftdeliver-backend/target/swiftdeliver-backend-0.0.1-SNAPSHOT.jar
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
+      # External MySQL JDBC URL, e.g. jdbc:mysql://host:3306/swiftdeliver_db?useSSL=true
+      # Set this in the Render dashboard (Value: "Manual" / ignore-sync).
       - key: DATABASE_URL
-        fromDatabase:
-          name: swiftdeliver-db
-          property: connectionString
+        sync: false
+      - key: DATABASE_USERNAME
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
       - key: JWT_SECRET
         generateValue: true
+      # The app refuses to start without a real JWT_SECRET; keep the generated one.
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD
         sync: false
-
-databases:
-  - name: swiftdeliver-db
-    plan: free
-    databaseName: swiftdeliver_db
-    user: swiftdeliver_user

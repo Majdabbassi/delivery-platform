@@ -92,6 +92,7 @@ export class TrackingComponent implements OnInit, AfterViewInit, OnDestroy {
         next: (order) => {
           this.order = order;
           this.loadedOrderId = order.id;
+          this.realtimeService.subscribeToOrder(order.id);
           this.searching = false;
           this.loadLastLocation(order.id);
           window.setTimeout(() => {

@@ -33,11 +33,11 @@ This starts:
 
 On first startup the backend auto-creates the schema and seeds a full demo dataset:
 
-- **Super Admin** account:
+- **Super Admin** account (credentials come from `ADMIN_USERNAME` / `ADMIN_PASSWORD` in `.env`):
 
 ```
 username: admin
-password: REDACTED_ADMIN_PASSWORD
+password: <set ADMIN_PASSWORD in .env>
 ```
 
 - **Demo business dataset** when empty: 7 customers, 3 vendor owners, 2 delivery owners, 5 vendor companies, 4 delivery companies, 8 drivers, 24 products (linked to the vendor companies), 36 orders, 6 partnerships.
@@ -51,8 +51,8 @@ Optional overrides (create a `.env` beside `docker-compose.yml` or export):
 ```bash
 MYSQL_ROOT_PASSWORD=root
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=REDACTED_ADMIN_PASSWORD
-JWT_SECRET=REDACTED_JWT_SECRET
+ADMIN_PASSWORD=change_me
+JWT_SECRET=$(openssl rand -base64 32)   # REQUIRED — backend refuses to start without it
 ```
 
 The web app is built with the API base baked in as `http://localhost:8080/api` (`swiftdeliver-frontend/src/app/config.ts`).

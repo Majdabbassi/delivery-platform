@@ -49,6 +49,25 @@ public class SecurityService {
         return getCurrentUser().getRole();
     }
 
+    /**
+     * Returns the owner ID to scope a query to. Super admins may query any
+     * owner; everyone else is pinned to their own account so they cannot browse
+     * another owner's resources.
+     */
+    public Long resolveOwnerIdForCurrentUser(Long requestedOwnerId, User.Role allowedRole) {
+        User currentUser = getCurrentUser();
+        if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
+            if (requestedOwnerId == null) {
+                throw new IllegalArgumentException("ownerId is required for SUPER_ADMIN");
+            }
+            return requestedOwnerId;
+        }
+        if (currentUser.getRole() != allowedRole) {
+            throw new AccessDeniedException("Current user is not a " + allowedRole);
+        }
+        return currentUser.getId();
+    }
+
     public VendorOwner getCurrentVendorOwner() {
         User user = getCurrentUser();
         if (user instanceof VendorOwner vendorOwner) {
@@ -94,7 +113,9 @@ public class SecurityService {
         if (user.getRole() == User.Role.SUPER_ADMIN) {
             return company;
         }
-        if (user instanceof VendorOwner owner && owner.getId().equals(company.getOwner().getId())) {
+        if (user instanceof VendorOwner owner
+                && company.getOwner() != null
+                && owner.getId().equals(company.getOwner().getId())) {
             return company;
         }
         throw new AccessDeniedException("You do not have access to this vendor company");
@@ -113,7 +134,9 @@ public class SecurityService {
         if (user.getRole() == User.Role.SUPER_ADMIN) {
             return company;
         }
-        if (user instanceof DeliveryOwner owner && owner.getId().equals(company.getOwner().getId())) {
+        if (user instanceof DeliveryOwner owner
+                && company.getOwner() != null
+                && owner.getId().equals(company.getOwner().getId())) {
             return company;
         }
         throw new AccessDeniedException("You do not have access to this delivery company");

@@ -1,0 +1,20 @@
+# Root environment / secrets — NEVER commit
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.jks
+*.key
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Docker local data
+mysql-data/
