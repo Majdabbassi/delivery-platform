@@ -1,0 +1,58 @@
+name: Deploy web app to GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "swiftdeliver-frontend/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: swiftdeliver-frontend
+    env:
+      # Set the repository variable SWIFT_API_URL to your real Render URL if it differs.
+      API_URL: ${{ vars.SWIFT_API_URL || 'https://swiftdeliver-api.onrender.com' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: swiftdeliver-frontend/package-lock.json
+      - name: Install
+        run: npm ci --legacy-peer-deps
+      - name: Point the app at the hosted API
+        run: |
+          printf 'window.__SWIFT_CONFIG__ = { apiUrl: "%s/api" };\n' "${API_URL}" > public/config.js
+          cat public/config.js
+      - name: Build (served from /delivery-platform/)
+        run: npm run build -- --base-href /delivery-platform/
+      - name: SPA fallback (deep links)
+        run: cp dist/del/browser/index.html dist/del/browser/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: swiftdeliver-frontend/dist/del/browser
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

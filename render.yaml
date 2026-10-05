@@ -1,6 +1,6 @@
 # Render blueprint: the SwiftDeliver API on the free plan, built from its Dockerfile.
 # (Render has no native Java runtime, and the app speaks MySQL, so this uses Docker + an external MySQL.)
-# The web app is deployed separately to Vercel (swiftdeliver-frontend/vercel.json).
+# The web app is deployed separately to GitHub Pages (.github/workflows/pages.yml).
 services:
   - type: web
     name: swiftdeliver-api
@@ -23,9 +23,8 @@ services:
       # 512 MB instance: keep the heap small.
       - key: JAVA_TOOL_OPTIONS
         value: -Xmx320m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m
-      # the web app's address, e.g. https://swiftdeliver.vercel.app (set in the Render dashboard)
       - key: CORS_ALLOWED_ORIGINS
-        sync: false
+        value: https://majdabbassi.github.io
       - key: JWT_SECRET
         generateValue: true
       # --- set these in the Render dashboard (never commit them) ---
