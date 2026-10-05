@@ -9,7 +9,7 @@ import com.swiftdeliver.backend.repository.DeliveryCompanyRepository;
 import com.swiftdeliver.backend.repository.DriverPersonRepository;
 import com.swiftdeliver.backend.repository.OrderRepository;
 import com.swiftdeliver.backend.specification.DeliveryCompanySpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,16 +26,16 @@ import java.util.Optional;
 @Transactional
 public class DeliveryCompanyService {
 
-    @Autowired
+    @Resource
     private DeliveryCompanyRepository deliveryCompanyRepository;
 
-    @Autowired
+    @Resource
     private DeliveryOwnerService deliveryOwnerService;
 
-    @Autowired
+    @Resource
     private DriverPersonRepository driverPersonRepository;
 
-    @Autowired
+    @Resource
     private OrderRepository orderRepository;
 
     // Create operations

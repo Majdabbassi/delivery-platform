@@ -3,7 +3,6 @@ package com.swiftdeliver.backend.controller;
 import com.swiftdeliver.backend.entity.DeliveryCompany;
 import com.swiftdeliver.backend.service.DeliveryCompanyService;
 import com.swiftdeliver.backend.service.SecurityService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
@@ -15,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.annotation.Resource;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,10 +28,10 @@ import java.util.Optional;
 @RequestMapping("/api/delivery-companies")
 public class DeliveryCompanyController {
 
-    @Autowired
+    @Resource
     private DeliveryCompanyService deliveryCompanyService;
 
-    @Autowired
+    @Resource
     private SecurityService securityService;
 
     private void assertCompanyReadAccess(Long companyId) {

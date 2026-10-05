@@ -5,7 +5,7 @@ import com.swiftdeliver.backend.exception.ResourceNotFoundException;
 import com.swiftdeliver.backend.repository.VendorCompanyRepository;
 import com.swiftdeliver.backend.repository.VendorOwnerRepository;
 import com.swiftdeliver.backend.specification.VendorOwnerSpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,13 +25,13 @@ import com.swiftdeliver.backend.dto.VendorOwnerDTO;
 @Transactional
 public class VendorOwnerService {
 
-    @Autowired
+    @Resource
     private VendorOwnerRepository vendorOwnerRepository;
 
-    @Autowired
+    @Resource
     private VendorCompanyRepository vendorCompanyRepository;
 
-    @Autowired
+    @Resource
     private PasswordEncoder passwordEncoder;
 
     // Create operations

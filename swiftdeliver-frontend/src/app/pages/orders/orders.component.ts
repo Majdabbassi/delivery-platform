@@ -223,6 +223,8 @@ export class OrdersComponent implements OnInit, OnDestroy {
             this.totalPages = response.totalPages;
             this.totalElements = response.totalElements;
             this.applyFilters();
+            this.calculateStats();
+            this.stats.total = response.totalElements;
             this.loading = false;
           },
           error: (error) => this.handleLoadError(error)
@@ -236,6 +238,7 @@ export class OrdersComponent implements OnInit, OnDestroy {
             this.totalPages = 1;
             this.totalElements = orders.length;
             this.applyFilters();
+            this.calculateStats();
             this.loading = false;
           },
           error: (error) => this.handleLoadError(error)

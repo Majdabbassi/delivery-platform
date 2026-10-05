@@ -1,32 +1,38 @@
-# Render blueprint for the SwiftDeliver BACKEND.
-#
-# NOTE: the application is MySQL-only (MySQL8Dialect + com.mysql connector-j).
-# Render's built-in managed database service is PostgreSQL, so it CANNOT be
-# used here. Provision a MySQL database elsewhere (e.g. Aiven, PlanetScale,
-# DigitalOcean Managed MySQL) and set DATABASE_URL/DATABASE_USERNAME/
-# DATABASE_PASSWORD as manually-entered environment variables pointing at it.
-
+# Render blueprint: the SwiftDeliver API on the free plan, built from its Dockerfile.
+# (Render has no native Java runtime, and the app speaks MySQL, so this uses Docker + an external MySQL.)
+# The web app is deployed separately to GitHub Pages (.github/workflows/pages.yml).
 services:
   - type: web
-    name: swiftdeliver-backend
-    runtime: java
+    name: swiftdeliver-api
+    runtime: docker
     plan: free
-    buildCommand: cd swiftdeliver-backend && ./mvnw clean package -DskipTests
-    startCommand: java -jar swiftdeliver-backend/target/swiftdeliver-backend-0.0.1-SNAPSHOT.jar
+    dockerfilePath: ./swiftdeliver-backend/Dockerfile
+    dockerContext: ./swiftdeliver-backend
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    # Only rebuild (and restart) for backend changes.
+    buildFilter:
+      paths:
+        - swiftdeliver-backend/**
+        - render.yaml
     envVars:
+      # "prod": the backend refuses to start with a weak or public JWT secret.
       - key: SPRING_PROFILES_ACTIVE
         value: prod
-      # External MySQL JDBC URL, e.g. jdbc:mysql://host:3306/swiftdeliver_db?useSSL=true
-      # Set this in the Render dashboard (Value: "Manual" / ignore-sync).
-      - key: DATABASE_URL
+      # 512 MB instance: keep the heap small.
+      - key: JAVA_TOOL_OPTIONS
+        value: -Xmx320m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://majdabbassi.github.io
+      - key: JWT_SECRET
+        generateValue: true
+      # --- set these in the Render dashboard (never commit them) ---
+      - key: DATABASE_URL      # jdbc:mysql://HOST:PORT/DB?sslMode=VERIFY_IDENTITY (TLS for managed MySQL)
         sync: false
       - key: DATABASE_USERNAME
         sync: false
       - key: DATABASE_PASSWORD
         sync: false
-      - key: JWT_SECRET
-        generateValue: true
-      # The app refuses to start without a real JWT_SECRET; keep the generated one.
       - key: ADMIN_USERNAME
         sync: false
       - key: ADMIN_PASSWORD

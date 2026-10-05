@@ -18,6 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class RealtimeTrackingService {
 
     private static final String TOPIC_ORDER = "/topic/orders";
+    private static final String TOPIC_ORDER_LOCATION = "/topic/orders/location";
     private static final String TOPIC_USER = "/topic/users";
 
     private final SimpMessagingTemplate messagingTemplate;
@@ -39,28 +40,28 @@ public class RealtimeTrackingService {
         send(event);
     }
 
-    public void broadcastDriverLocation(Order order, Double latitude,
-                                        Double longitude, Double speedKmh) {
+    public void broadcastDriverLocation(Order order, Double latitude, Double longitude, Double speedKmh) {
+        Long orderId = order.getId();
+        Long driverPersonId = order.getDriverPerson() != null ? order.getDriverPerson().getId() : null;
         OrderRealtimeEvent event = OrderRealtimeEvent.builder()
                 .type("DRIVER_LOCATION_UPDATE")
-                .orderId(order.getId())
+                .orderId(orderId)
                 .orderNumber(order.getOrderNumber())
                 .latitude(latitude)
                 .longitude(longitude)
                 .speedKmh(speedKmh)
-                .driverPersonId(order.getDriverPerson() != null ? order.getDriverPerson().getId() : null)
+                .driverPersonId(driverPersonId)
                 .timestamp(LocalDateTime.now())
                 .involvedUserIds(involvedUserIds(order))
                 .build();
 
-        lastLocations.put(order.getId(), event);
-        // Live GPS is never broadcast globally; it is delivered only to the
-        // per-order topic and the private topics of the users involved.
-        messagingTemplate.convertAndSend(orderTopic(order.getId()), event);
-        if (event.getInvolvedUserIds() != null) {
-            for (Long userId : event.getInvolvedUserIds()) {
-                messagingTemplate.convertAndSend(userTopic(userId), event);
-            }
+        lastLocations.put(orderId, event);
+        messagingTemplate.convertAndSend(TOPIC_ORDER_LOCATION, event);   // admins only
+        messagingTemplate.convertAndSend(orderTopic(orderId), event);    // anyone allowed to read the order
+        // The people involved in the order get it on their private topic, which is all the
+        // non-admin frontend subscribes to.
+        for (Long userId : event.getInvolvedUserIds()) {
+            messagingTemplate.convertAndSend(userTopic(userId), event);
         }
     }
 

@@ -2,6 +2,7 @@ package com.swiftdeliver.backend.service;
 
 import com.swiftdeliver.backend.entity.*;
 import com.swiftdeliver.backend.repository.OrderRepository;
+import com.swiftdeliver.backend.repository.UserRepository;
 import com.swiftdeliver.backend.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class OrderService {
     
     private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
     private final RealtimeTrackingService realtimeTrackingService;
     private final SecurityService securityService;
     private final OrderAssignmentService orderAssignmentService;
@@ -51,6 +53,7 @@ public class OrderService {
         User currentUser = securityService.getCurrentUser();
         assertOrderCreateRateLimit(currentUser.getUsername());
         order.setCreatedByUserId(currentUser.getId());
+        resetServerManagedFields(order);
 
         // Defaults for the new order-type / routing fields.
         if (order.getOrderType() == null) {
@@ -151,8 +154,11 @@ public class OrderService {
             order.setOrderAmount(order.getProposedMinAmount());
         }
         
-        // Calculate total amount if not provided
-        if (order.getTotalAmount() == null && order.getOrderAmount() != null) {
+        // The total is money: always derived here, never taken from the client.
+        if (order.getDeliveryFee() != null && order.getDeliveryFee().compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Delivery fee cannot be negative");
+        }
+        if (order.getOrderAmount() != null) {
             BigDecimal deliveryFee = order.getDeliveryFee() != null ? order.getDeliveryFee() : BigDecimal.ZERO;
             order.setTotalAmount(order.getOrderAmount().add(deliveryFee));
         }
@@ -187,6 +193,29 @@ public class OrderService {
         }
         
         return savedOrder;
+    }
+
+    /**
+     * The request body is a JPA entity, so a client could otherwise set fields that only the server
+     * may decide: forge a rating or review, create an order that is already DELIVERED, pre-assign a
+     * driver, or pick its own order and tracking numbers. Everything lifecycle-related is reset
+     * here; the assignment, bidding and status endpoints are the only ways to change it later.
+     */
+    private void resetServerManagedFields(Order order) {
+        order.setId(null);
+        order.setStatus(null);
+        order.setOrderNumber(null);
+        order.setTrackingNumber(null);
+        order.setDeliveryCompany(null);
+        order.setDriverPerson(null);
+        order.setPartnership(null);
+        order.setAssignedAt(null);
+        order.setActualPickupTime(null);
+        order.setActualDeliveryTime(null);
+        order.setCancellationReason(null);
+        order.setRating(null);
+        order.setReview(null);
+        order.setTotalAmount(null);
     }
 
     /**
@@ -715,45 +744,61 @@ public class OrderService {
      * readable by delivery owners and independent drivers so they can bid.
      */
     public void assertCanReadOrder(Order order) {
-        User currentUser = securityService.getCurrentUser();
+        if (!canRead(securityService.getCurrentUser(), order)) {
+            throw new AccessDeniedException("You do not have permission to view this order");
+        }
+    }
+
+    /**
+     * The same rule for a user who is not the current HTTP request's principal, e.g. a WebSocket
+     * session deciding whether it may subscribe to an order's live feed.
+     */
+    @Transactional(readOnly = true)
+    public boolean canUserReadOrder(Long userId, Long orderId) {
+        User user = userRepository.findById(userId).orElse(null);
+        Order order = orderRepository.findById(orderId).orElse(null);
+        return user != null && order != null && canRead(user, order);
+    }
+
+    private boolean canRead(User currentUser, Order order) {
         if (currentUser.getRole() == User.Role.SUPER_ADMIN) {
-            return;
+            return true;
         }
         if (order.getCreatedByUserId() != null && currentUser.getId().equals(order.getCreatedByUserId())) {
-            return;
+            return true;
         }
         boolean isOpenForBid = order.getStatus() == Order.OrderStatus.OPEN_FOR_BID;
         Long userId = currentUser.getId();
         if (currentUser.getRole() == User.Role.CLIENT
                 && order.getCustomerUser() != null
                 && userId.equals(order.getCustomerUser().getId())) {
-            return;
+            return true;
         }
         if (currentUser.getRole() == User.Role.DRIVER) {
             if (order.getDriverPerson() != null && userId.equals(order.getDriverPerson().getId())) {
-                return;
+                return true;
             }
             if (isOpenForBid) {
-                return; // any independent/company driver may view and bid on pooled orders
+                return true; // any independent/company driver may view and bid on pooled orders
             }
         }
         if (currentUser.getRole() == User.Role.VENDOR_OWNER
                 && order.getVendorCompany() != null
                 && order.getVendorCompany().getOwner() != null
                 && userId.equals(order.getVendorCompany().getOwner().getId())) {
-            return;
+            return true;
         }
         if (currentUser.getRole() == User.Role.DELIVERY_OWNER) {
             if (order.getDeliveryCompany() != null
                     && order.getDeliveryCompany().getOwner() != null
                     && userId.equals(order.getDeliveryCompany().getOwner().getId())) {
-                return;
+                return true;
             }
             if (isOpenForBid) {
-                return; // delivery owners may view pooled orders they bid on
+                return true; // delivery owners may view pooled orders they bid on
             }
         }
-        throw new AccessDeniedException("You do not have permission to view this order");
+        return false;
     }
 
     /**

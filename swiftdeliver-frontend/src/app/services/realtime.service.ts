@@ -2,7 +2,7 @@ import { Injectable, OnDestroy } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
-import { AuthService, User } from './auth.service';
+import { AuthService, User, UserRole } from './auth.service';
 import { API_BASE_URL } from '../config';
 
 export interface OrderRealtimeEvent {
@@ -30,7 +30,6 @@ export class RealtimeService implements OnDestroy {
   public events$ = this.eventsSubject.asObservable();
   private locationSubject = new BehaviorSubject<OrderRealtimeEvent | null>(null);
   public locationEvents$ = this.locationSubject.asObservable();
-  private orderSubscriptions = new Set<number>();
 
   constructor(private authService: AuthService) {}
 
@@ -41,25 +40,24 @@ export class RealtimeService implements OnDestroy {
     }
 
     const wsBaseUrl = API_BASE_URL.replace(/\/api\/?$/, '');
-    const sockJsUrl = `${wsBaseUrl}/ws`;
+    const sockJsUrl = `${wsBaseUrl}/ws?token=${encodeURIComponent(token)}`;
 
     this.client = new Client({
       webSocketFactory: () => new SockJS(sockJsUrl) as any,
       reconnectDelay: 5000,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
-      // The token travels in the STOMP CONNECT frame headers, not in the
-      // handshake URL: SockJS drops query params on XHR/iframe transports,
-      // and the CONNECT headers are the only reliable delivery channel.
-      connectHeaders: {
-        Authorization: `Bearer ${token}`
-      },
       debug: () => undefined,
       onConnect: () => {
         this.connected = true;
         const user: User | null = this.authService.getCurrentUser();
         if (this.client) {
-          this.client.subscribe('/topic/orders', (msg) => this.onMessage(msg));
+          // The global feeds (every order, every driver) are administrators-only. Everyone else
+          // receives their own orders' events, including live driver locations, on their private topic.
+          if (user?.role === UserRole.SUPER_ADMIN) {
+            this.client.subscribe('/topic/orders', (msg) => this.onMessage(msg));
+            this.client.subscribe('/topic/orders/location', (msg) => this.onMessage(msg));
+          }
           if (user && user.id) {
             this.client.subscribe(`/topic/users/${user.id}`, (msg) => this.onMessage(msg));
           }
@@ -88,21 +86,7 @@ export class RealtimeService implements OnDestroy {
       }
       this.client = null;
     }
-    this.orderSubscriptions.clear();
     this.connected = false;
-  }
-
-  /**
-   * Subscribes to a single order's topic. Live location and status events are
-   * scoped per-order, so pages tracking a specific order must subscribe here
-   * (on top of the per-user topic).
-   */
-  subscribeToOrder(orderId: number): void {
-    if (!this.client || !this.connected || this.orderSubscriptions.has(orderId)) {
-      return;
-    }
-    this.orderSubscriptions.add(orderId);
-    this.client.subscribe(`/topic/orders/${orderId}`, (msg) => this.onMessage(msg));
   }
 
   isConnected(): boolean {

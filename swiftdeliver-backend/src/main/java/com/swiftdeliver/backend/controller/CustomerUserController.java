@@ -7,7 +7,8 @@ import com.swiftdeliver.backend.service.SecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,10 +30,10 @@ import java.util.Map;
 @Tag(name = "Customer User Management", description = "APIs for managing customer user entities")
 public class CustomerUserController {
 
-    @Autowired
+    @Resource
     private CustomerUserService customerUserService;
 
-    @Autowired
+    @Resource
     private SecurityService securityService;
 
     private void assertSelfOrAdmin(Long id) {
