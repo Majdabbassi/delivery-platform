@@ -1,6 +1,5 @@
 package com.swiftdeliver.backend.util;
 
-import com.swiftdeliver.backend.util.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

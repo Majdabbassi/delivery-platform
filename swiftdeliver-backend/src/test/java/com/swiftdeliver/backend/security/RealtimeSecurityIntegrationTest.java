@@ -47,7 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
                 "spring.datasource.driver-class-name=org.h2.Driver",
                 "spring.jpa.hibernate.ddl-auto=create-drop",
                 "jwt.secret=test-only-secret-0123456789abcdef0123456789abcdef",
-                "spring.profiles.active=test"
+                "spring.profiles.active=dev",
+                "ADMIN_PASSWORD=admin123!"
         })
 class RealtimeSecurityIntegrationTest {
 

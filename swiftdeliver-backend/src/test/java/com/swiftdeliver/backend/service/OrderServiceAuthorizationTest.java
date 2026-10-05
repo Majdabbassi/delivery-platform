@@ -9,7 +9,7 @@ import com.swiftdeliver.backend.entity.User;
 import com.swiftdeliver.backend.entity.VendorCompany;
 import com.swiftdeliver.backend.entity.VendorOwner;
 import com.swiftdeliver.backend.repository.OrderRepository;
-import com.swiftdeliver.backend.util.JwtUtil;
+import com.swiftdeliver.backend.repository.UserRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -19,11 +19,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,17 +29,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceAuthorizationTest {
 
     @Mock private OrderRepository orderRepository;
+    @Mock private UserRepository userRepository;
     @Mock private RealtimeTrackingService realtimeTrackingService;
     @Mock private SecurityService securityService;
     @Mock private OrderAssignmentService orderAssignmentService;
@@ -52,7 +49,7 @@ class OrderServiceAuthorizationTest {
     @BeforeEach
     void setUp() {
         orderService = new OrderService(
-                orderRepository, realtimeTrackingService, securityService,
+                orderRepository, userRepository, realtimeTrackingService, securityService,
                 orderAssignmentService, orderPoolService);
         ReflectionTestUtils.setField(orderService, "autoAssignOnCreate", false);
         ReflectionTestUtils.setField(orderService, "orderCreateLimitPerMinute", 1000);
