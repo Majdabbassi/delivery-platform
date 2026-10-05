@@ -25,7 +25,7 @@ spring:
         format_sql: true
 
 server:
-  port: 8080
+  port: ${PORT:8080}   # hosts such as Render tell the app which port to listen on
   servlet:
     context-path: /
   error:
