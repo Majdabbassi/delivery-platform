@@ -4,6 +4,12 @@ A multi-tenant delivery marketplace. Vendors list products, customers order them
 
 **Spring Boot 4 · Java 21 · MySQL · JWT · STOMP/WebSocket · Angular 20 · Docker · Prometheus + Grafana**
 
+## Live demo
+
+**https://majdabbassi.github.io/delivery-platform/** (web app on GitHub Pages, API on Render, MySQL on TiDB Cloud, all free tiers)
+
+Sign in with a [demo account](#demo-accounts), for example `customer.karim` / `SwiftDeliver@2026!`. The free API sleeps when idle, so the first request after a pause can take up to a minute.
+
 | Super Admin dashboard | Partnerships between vendors and delivery companies |
 | --- | --- |
 | ![Admin dashboard](docs/screenshots/admin-dashboard.png) | ![Partnerships](docs/screenshots/admin-partnerships.png) |
