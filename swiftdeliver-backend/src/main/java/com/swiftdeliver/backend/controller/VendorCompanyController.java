@@ -31,7 +31,7 @@ public class VendorCompanyController {
     @Resource
     private VendorCompanyService vendorCompanyService;
 
-    @Autowired
+    @Resource
     private SecurityService securityService;
 
     // Create operations
