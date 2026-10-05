@@ -26,6 +26,7 @@ export interface OrderRealtimeEvent {
 export class RealtimeService implements OnDestroy {
   private client: Client | null = null;
   private connected = false;
+  private orderSubscriptions = new Set<number>();
   private eventsSubject = new BehaviorSubject<OrderRealtimeEvent | null>(null);
   public events$ = this.eventsSubject.asObservable();
   private locationSubject = new BehaviorSubject<OrderRealtimeEvent | null>(null);
@@ -50,6 +51,7 @@ export class RealtimeService implements OnDestroy {
       debug: () => undefined,
       onConnect: () => {
         this.connected = true;
+        this.orderSubscriptions.clear(); // a new connection has no subscriptions yet
         const user: User | null = this.authService.getCurrentUser();
         if (this.client) {
           // The global feeds (every order, every driver) are administrators-only. Everyone else
@@ -87,6 +89,19 @@ export class RealtimeService implements OnDestroy {
       this.client = null;
     }
     this.connected = false;
+    this.orderSubscriptions.clear();
+  }
+
+  /**
+   * Follow one order's feed (the server allows it only to people who may read that order).
+   * Pages tracking a specific order call this on top of the per-user topic.
+   */
+  subscribeToOrder(orderId: number): void {
+    if (!this.client || !this.connected || this.orderSubscriptions.has(orderId)) {
+      return;
+    }
+    this.orderSubscriptions.add(orderId);
+    this.client.subscribe(`/topic/orders/${orderId}`, (msg) => this.onMessage(msg));
   }
 
   isConnected(): boolean {

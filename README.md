@@ -115,7 +115,7 @@ The backend's full list of settings is in `swiftdeliver-backend/.env.example`. T
 
 ## Deploying
 
-`render.yaml` describes the API as a Docker web service on Render's free plan with an external MySQL (TiDB Serverless works) in demo mode (`dev` profile, which seeds the sample data), and `swiftdeliver-frontend/vercel.json` deploys the Angular app to Vercel pointing at that API (`.github/workflows/pages.yml` is an alternative for GitHub Pages). Secrets (`DATABASE_*`, `ADMIN_*`) are set in the Render dashboard; `JWT_SECRET` is generated.
+`render.yaml` describes the API as a Docker web service on Render's free plan with an external MySQL (TiDB Serverless works) in demo mode (`dev` profile, which seeds the sample data), and `swiftdeliver-frontend/vercel.json` deploys the Angular app to Vercel pointing at that API. Secrets (`DATABASE_*`, `ADMIN_*`) are set in the Render dashboard; `JWT_SECRET` is generated.
 
 ## Project layout
 

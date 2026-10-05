@@ -1,6 +1,6 @@
 # Render blueprint: the SwiftDeliver API on the free plan, built from its Dockerfile.
 # (Render has no native Java runtime, and the app speaks MySQL, so this uses Docker + an external MySQL.)
-# The web app is deployed separately to GitHub Pages (.github/workflows/pages.yml).
+# The web app is deployed separately to Vercel (swiftdeliver-frontend/vercel.json).
 services:
   - type: web
     name: swiftdeliver-api
