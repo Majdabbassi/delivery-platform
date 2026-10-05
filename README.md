@@ -80,11 +80,12 @@ cd swiftdeliver-backend
 ./mvnw test        # Windows: .\mvnw.cmd test
 ```
 
-22 tests that start the whole application on an in-memory database and call it over real HTTP, so they need no services:
+73 tests, none needing external services. Two suites start the whole application on an in-memory database and call it over real HTTP:
 
 - `AuthorizationMatrixIntegrationTest`: who may read or change what, across roles and tenants, including the exact attacks listed above.
 - `RealtimeSecurityIntegrationTest`: real STOMP clients; anonymous sockets refused, private topics, global feeds, per-order access, and the driver's position reaching the customer but not a stranger.
 - `JwtSecretGuardTest`: the startup check on the signing secret.
+- Unit and repository tests for order authorization, JWT handling and the partnership search queries.
 
 Each fix was mutation-checked: reintroducing the bug makes the matching test fail. CI (`.github/workflows/ci.yml`) runs the backend tests, builds the web app and validates the compose file on every push.
 
@@ -114,7 +115,7 @@ The backend's full list of settings is in `swiftdeliver-backend/.env.example`. T
 
 ## Deploying
 
-`render.yaml` describes the API as a Docker web service on Render's free plan with an external MySQL (TiDB Serverless works) and `prod` profile, and `.github/workflows/pages.yml` publishes the Angular app to GitHub Pages pointing at that API. Secrets (`DATABASE_*`, `ADMIN_*`) are set in the Render dashboard; `JWT_SECRET` is generated.
+`render.yaml` describes the API as a Docker web service on Render's free plan with an external MySQL (TiDB Serverless works) in demo mode (`dev` profile, which seeds the sample data), and `swiftdeliver-frontend/vercel.json` deploys the Angular app to Vercel pointing at that API (`.github/workflows/pages.yml` is an alternative for GitHub Pages). Secrets (`DATABASE_*`, `ADMIN_*`) are set in the Render dashboard; `JWT_SECRET` is generated.
 
 ## Project layout
 

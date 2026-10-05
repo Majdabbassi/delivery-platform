@@ -16,9 +16,10 @@ services:
         - swiftdeliver-backend/**
         - render.yaml
     envVars:
-      # "prod": the backend refuses to start with a weak or public JWT secret.
+      # "dev" = demo mode: seeds the Super Admin and the sample marketplace data on first start
+      # (profile "prod" seeds nothing). The JWT secret below is generated, so it is strong either way.
       - key: SPRING_PROFILES_ACTIVE
-        value: prod
+        value: dev
       # 512 MB instance: keep the heap small.
       - key: JAVA_TOOL_OPTIONS
         value: -Xmx320m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m
