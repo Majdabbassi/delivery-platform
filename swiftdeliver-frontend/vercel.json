@@ -1,5 +1,6 @@
 {
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }],
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/del/browser"
+  "installCommand": "npm ci --legacy-peer-deps",
+  "buildCommand": "printf 'window.__SWIFT_CONFIG__ = { apiUrl: \"%s/api\" };\n' \"${SWIFT_API_URL:-https://swiftdeliver-api.onrender.com}\" > public/config.js && npm run build",
+  "outputDirectory": "dist/del/browser",
+  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
 }
