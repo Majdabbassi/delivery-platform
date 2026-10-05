@@ -3,7 +3,7 @@ package com.swiftdeliver.backend.service;
 import com.swiftdeliver.backend.entity.*;
 import com.swiftdeliver.backend.repository.*;
 import com.swiftdeliver.backend.specification.PartnershipSpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,19 +24,19 @@ public class PartnershipDetectionService {
 
     // Logger removed as it was not being used
 
-    @Autowired
+    @Resource
     private PartnershipRepository partnershipRepository;
 
-    @Autowired
+    @Resource
     private VendorCompanyRepository vendorCompanyRepository;
 
-    @Autowired
+    @Resource
     private DeliveryCompanyRepository deliveryCompanyRepository;
 
-    @Autowired
+    @Resource
     private OrderRepository orderRepository;
 
-    @Autowired
+    @Resource
     private DeliveryCompanyService deliveryCompanyService;
 
     /**

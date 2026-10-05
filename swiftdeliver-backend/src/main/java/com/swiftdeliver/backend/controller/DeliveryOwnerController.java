@@ -2,7 +2,7 @@ package com.swiftdeliver.backend.controller;
 
 import com.swiftdeliver.backend.entity.DeliveryOwner;
 import com.swiftdeliver.backend.service.DeliveryOwnerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,7 +24,7 @@ import java.util.Optional;
 @RequestMapping("/api/delivery-owners")
 public class DeliveryOwnerController {
 
-    @Autowired
+    @Resource
     private DeliveryOwnerService deliveryOwnerService;
 
     // Create operations

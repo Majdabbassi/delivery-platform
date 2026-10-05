@@ -5,7 +5,7 @@ import com.swiftdeliver.backend.entity.VendorCompany;
 import com.swiftdeliver.backend.exception.ResourceNotFoundException;
 import com.swiftdeliver.backend.repository.ProductRepository;
 import com.swiftdeliver.backend.specification.ProductSpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -24,10 +24,10 @@ import java.util.Optional;
 @Transactional
 public class ProductService {
 
-    @Autowired
+    @Resource
     private ProductRepository productRepository;
 
-    @Autowired
+    @Resource
     private VendorCompanyService vendorCompanyService;
 
     // Create operations
@@ -296,6 +296,13 @@ public class ProductService {
     @Transactional(readOnly = true)
     public List<String> getAllTags() {
         return productRepository.findDistinctTags();
+    }
+
+    /** The owning vendor company's id, read inside a transaction (the relation is lazy). */
+    @Transactional(readOnly = true)
+    public Long getVendorCompanyIdOfProduct(Long productId) {
+        Product product = getProductById(productId);
+        return product.getVendorCompany() == null ? null : product.getVendorCompany().getId();
     }
 
     // Update operations

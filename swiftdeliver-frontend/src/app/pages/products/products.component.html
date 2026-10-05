@@ -150,7 +150,7 @@
           <td class="sku">{{ product.sku }}</td>
           <td class="category">
             <span class="category-badge">
-              {{ getCategoryIcon(product.category) }} {{ product.category }}
+              <i [class]="getCategoryIcon(product.category)"></i> {{ product.category }}
             </span>
           </td>
           <td class="brand">{{ product.brand }}</td>

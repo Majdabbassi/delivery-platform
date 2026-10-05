@@ -6,7 +6,7 @@ import com.swiftdeliver.backend.exception.ResourceNotFoundException;
 import com.swiftdeliver.backend.repository.ProductRepository;
 import com.swiftdeliver.backend.repository.VendorCompanyRepository;
 import com.swiftdeliver.backend.specification.VendorCompanySpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,13 +23,16 @@ import java.util.Optional;
 @Transactional
 public class VendorCompanyService {
 
-    @Autowired
+    @Resource
+    private SecurityService securityService;
+
+    @Resource
     private VendorCompanyRepository vendorCompanyRepository;
 
-    @Autowired
+    @Resource
     private VendorOwnerService vendorOwnerService;
 
-    @Autowired
+    @Resource
     private ProductRepository productRepository;
 
     // Create operations
@@ -256,7 +259,9 @@ public class VendorCompanyService {
 
     // Update operations
     public VendorCompany updateVendorCompany(Long id, VendorCompany updatedVendorCompany) {
-        VendorCompany existingVendorCompany = getVendorCompanyById(id);
+        // Owners may only edit their own company (this used to be open to every vendor owner).
+        VendorCompany existingVendorCompany = securityService.getOwnedVendorCompanyOrThrow(id);
+        boolean isAdmin = securityService.getCurrentRole() == com.swiftdeliver.backend.entity.User.Role.SUPER_ADMIN;
         
         // Update fields
         if (updatedVendorCompany.getCompanyName() != null) {
@@ -278,10 +283,11 @@ public class VendorCompanyService {
             existingVendorCompany.setBusinessDescription(updatedVendorCompany.getBusinessDescription());
         }
         // Note: serviceArea field does not exist in VendorCompany entity - removed
-        if (updatedVendorCompany.getCommissionRate() != null) {
+        // The platform's commission and the registration date are not the vendor's to change.
+        if (isAdmin && updatedVendorCompany.getCommissionRate() != null) {
             existingVendorCompany.setCommissionRate(updatedVendorCompany.getCommissionRate());
         }
-        if (updatedVendorCompany.getRegistrationDate() != null) {
+        if (isAdmin && updatedVendorCompany.getRegistrationDate() != null) {
             existingVendorCompany.setRegistrationDate(updatedVendorCompany.getRegistrationDate());
         }
         

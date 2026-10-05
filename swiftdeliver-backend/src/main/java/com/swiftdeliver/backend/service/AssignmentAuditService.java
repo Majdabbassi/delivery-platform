@@ -7,7 +7,7 @@ import com.swiftdeliver.backend.entity.DriverPerson;
 import com.swiftdeliver.backend.config.AssignmentConfigurationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -27,7 +27,7 @@ public class AssignmentAuditService {
     private static final Logger logger = LoggerFactory.getLogger(AssignmentAuditService.class);
     private static final Logger auditLogger = LoggerFactory.getLogger("ASSIGNMENT_AUDIT");
 
-    @Autowired
+    @Resource
     private AssignmentConfigurationProperties config;
 
     // In-memory metrics (in production, consider using a proper metrics store)

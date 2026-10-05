@@ -2,12 +2,10 @@ package com.swiftdeliver.backend.repository;
 
 import com.swiftdeliver.backend.entity.PooledOrder;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Set;
 
-@Repository
 public interface PooledOrderRepository extends JpaRepository<PooledOrder, Long> {
 
     List<PooledOrder> findByDeliveryCompanyId(Long deliveryCompanyId);

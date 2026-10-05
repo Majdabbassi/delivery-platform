@@ -20,7 +20,6 @@ services:
     image: phpmyadmin:latest
     container_name: swiftdeliver-phpmyadmin
     restart: unless-stopped
-    profiles: ["dev"]
     ports:
       - "127.0.0.1:8081:80"
     environment:
@@ -39,7 +38,7 @@ services:
     container_name: swiftdeliver-backend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       db:
         condition: service_healthy
@@ -47,9 +46,11 @@ services:
       DATABASE_URL: jdbc:mysql://db:3306/swiftdeliver_db_new
       DATABASE_USERNAME: root
       DATABASE_PASSWORD: ${MYSQL_ROOT_PASSWORD:-CHANGE_ME}
-      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set (see .env.example)}
+      # A development secret so the local quick start works; the app warns about it. Set JWT_SECRET in .env.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-0123456789abcdef}
+      MANAGEMENT_PORT: "8081"
       ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set (see .env.example)}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123!}
       SPRING_PROFILES_ACTIVE: dev
     networks:
       - swiftdeliver-net
@@ -58,7 +59,8 @@ services:
     build: ./swiftdeliver-frontend
     container_name: swiftdeliver-web
     restart: unless-stopped
-    profiles: ["deploy"]
+    ports:
+      - "127.0.0.1:4200:80"
     depends_on:
       - backend
     networks:
@@ -94,12 +96,15 @@ services:
     container_name: swiftdeliver-grafana
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-CHANGE_ME}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - grafana-data:/var/lib/grafana
+      # Datasource and dashboard are provisioned, so monitoring works on first start.
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
     networks:

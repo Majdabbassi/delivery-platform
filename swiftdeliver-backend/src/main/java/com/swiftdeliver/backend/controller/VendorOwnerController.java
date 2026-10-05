@@ -2,7 +2,7 @@ package com.swiftdeliver.backend.controller;
 
 import com.swiftdeliver.backend.entity.VendorOwner;
 import com.swiftdeliver.backend.service.VendorOwnerService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +25,7 @@ import java.util.Optional;
 @RequestMapping("/api/vendor-owners")
 public class VendorOwnerController {
 
-    @Autowired
+    @Resource
     private VendorOwnerService vendorOwnerService;
 
     // Create operations

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # The tests start the whole application on an in-memory database: no services needed.
+      - name: Run tests
+        working-directory: swiftdeliver-backend
+        run: ./mvnw -B test
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: swiftdeliver-frontend/package-lock.json
+      - name: Install
+        working-directory: swiftdeliver-frontend
+        run: npm ci --legacy-peer-deps
+      - name: Production build
+        working-directory: swiftdeliver-frontend
+        run: npm run build
+
+  compose:
+    name: Compose file is valid
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose --profile deploy config --quiet

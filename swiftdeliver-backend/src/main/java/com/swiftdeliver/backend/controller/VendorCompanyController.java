@@ -4,7 +4,7 @@ import com.swiftdeliver.backend.entity.User;
 import com.swiftdeliver.backend.entity.VendorCompany;
 import com.swiftdeliver.backend.service.SecurityService;
 import com.swiftdeliver.backend.service.VendorCompanyService;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +28,7 @@ import java.util.Optional;
 @RequestMapping("/api/vendor-companies")
 public class VendorCompanyController {
 
-    @Autowired
+    @Resource
     private VendorCompanyService vendorCompanyService;
 
     @Autowired

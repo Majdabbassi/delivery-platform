@@ -10,7 +10,7 @@ import com.swiftdeliver.backend.repository.PartnershipRepository;
 import com.swiftdeliver.backend.repository.ProductRepository;
 import com.swiftdeliver.backend.repository.VendorCompanyRepository;
 import com.swiftdeliver.backend.repository.VendorOwnerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,31 +21,31 @@ import java.util.Map;
 @Transactional
 public class DashboardService {
 
-    @Autowired
+    @Resource
     private CustomerUserRepository customerUserRepository;
 
-    @Autowired
+    @Resource
     private OrderRepository orderRepository;
 
-    @Autowired
+    @Resource
     private VendorCompanyRepository vendorCompanyRepository;
 
-    @Autowired
+    @Resource
     private VendorOwnerRepository vendorOwnerRepository;
 
-    @Autowired
+    @Resource
     private DeliveryCompanyRepository deliveryCompanyRepository;
 
-    @Autowired
+    @Resource
     private DeliveryOwnerRepository deliveryOwnerRepository;
 
-    @Autowired
+    @Resource
     private DriverPersonRepository driverPersonRepository;
 
-    @Autowired
+    @Resource
     private ProductRepository productRepository;
 
-    @Autowired
+    @Resource
     private PartnershipRepository partnershipRepository;
 
     @Transactional(readOnly = true)

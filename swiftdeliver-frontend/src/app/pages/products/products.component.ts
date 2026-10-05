@@ -209,21 +209,32 @@ export class ProductsComponent implements OnInit, OnDestroy {
       },
       error: (error: any) => {
         console.error('Error loading product statistics:', error);
-        // Fallback to local calculation if API fails
-        this.stats.total = this.products.length;
-        this.stats.active = this.products.filter(p => p.status === 'ACTIVE').length;
-        this.stats.available = this.products.filter(p => p.isAvailable).length;
-        this.stats.featured = this.products.filter(p => p.isFeatured).length;
-        this.stats.lowStock = this.products.filter(p => p.minStockLevel && p.stockQuantity <= p.minStockLevel && p.stockQuantity > 0).length;
-        this.stats.outOfStock = this.products.filter(p => p.stockQuantity === 0).length;
-        this.stats.highRated = this.products.filter(p => (p.rating || 0) >= 4.5).length;
-        this.stats.withDiscount = this.products.filter(p => (p.discount || 0) > 0).length;
-        this.stats.totalValue = this.products.reduce((sum, p) => sum + (p.price * p.stockQuantity), 0);
+        // Only Super Admins may read the global statistics: everyone else gets figures for what they can see
+        this.calculateLocalStats();
+      }
+    });
+    
+    this.subscriptions.push(subscription);
+  }
+
+  private calculateLocalStats(): void {
+    // One request for the whole catalogue, so the figures describe all products and not just this page
+    const subscription = this.productService.searchProducts({ page: 0, pageSize: 1000 }).subscribe({
+      next: (response) => {
+        const all = response.content;
+        this.stats.total = response.totalElements;
+        this.stats.active = all.filter(p => p.status === 'ACTIVE').length;
+        this.stats.available = all.filter(p => p.isAvailable).length;
+        this.stats.featured = all.filter(p => p.isFeatured).length;
+        this.stats.lowStock = all.filter(p => p.minStockLevel && p.stockQuantity <= p.minStockLevel && p.stockQuantity > 0).length;
+        this.stats.outOfStock = all.filter(p => p.stockQuantity === 0).length;
+        this.stats.highRated = all.filter(p => (p.rating || 0) >= 4.5).length;
+        this.stats.withDiscount = all.filter(p => (p.discount || 0) > 0).length;
+        this.stats.totalValue = all.reduce((sum, p) => sum + (p.price * p.stockQuantity), 0);
         this.stats.byCategory = {};
         this.stats.byStatus = {};
       }
     });
-    
     this.subscriptions.push(subscription);
   }
 

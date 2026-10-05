@@ -2,7 +2,8 @@ package com.swiftdeliver.backend.config;
 
 import com.swiftdeliver.backend.filter.JwtAuthenticationFilter;
 import com.swiftdeliver.backend.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+
+import jakarta.annotation.Resource;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,11 +33,15 @@ import java.util.List;
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
     
-    @Autowired
+    @Resource
     private SecurityHeadersConfig securityHeadersConfig;
 
     @Value("${app.cors.allowed-origins:http://localhost:4200}")
     private String allowedOrigins;
+
+    /** Set (docker-compose uses 8081) when actuator runs on its own, unpublished port. */
+    @Value("${management.server.port:}")
+    private String managementPort;
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -85,6 +90,14 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/api/users/register/**").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                // Browsers cannot send an Authorization header on a WebSocket / SockJS request, so the
+                // JWT travels as ?token=. It is verified by the STOMP handshake (anonymous sockets are
+                // refused there) and every subscription is authorised per topic.
+                .requestMatchers("/ws/**").permitAll()
+                // Metrics are open only when actuator lives on a separate, internal-only port. On the
+                // API port this path does not exist (404), and with a shared port it stays protected.
+                .requestMatchers(request -> !managementPort.isBlank()
+                        && request.getRequestURI().equals("/actuator/prometheus")).permitAll()
                 .anyRequest().authenticated()
             )
             .headers(headers -> headers

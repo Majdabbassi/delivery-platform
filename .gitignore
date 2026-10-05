@@ -1,13 +1,7 @@
-# Root environment / secrets — NEVER commit
+# Local configuration and secrets
 .env
-.env.*
-!.env.example
-*.pem
-*.p12
-*.jks
-*.key
 
-# OS / editor cruft
+# OS / editor
 .DS_Store
 Thumbs.db
 .idea/
@@ -15,6 +9,3 @@ Thumbs.db
 
 # Logs
 *.log
-
-# Docker local data
-mysql-data/

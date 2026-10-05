@@ -7,7 +7,7 @@ import com.swiftdeliver.backend.service.SecurityService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,10 +29,10 @@ import java.util.Map;
 @Tag(name = "Product Management", description = "APIs for managing products")
 public class ProductController {
 
-    @Autowired
+    @Resource
     private ProductService productService;
 
-    @Autowired
+    @Resource
     private SecurityService securityService;
 
     private static final String WRITE_ROLE = "hasAnyRole('SUPER_ADMIN','VENDOR_OWNER')";
@@ -52,11 +52,13 @@ public class ProductController {
         if (isAdmin()) {
             return;
         }
-        Product product = productService.getProductById(productId);
-        if (product.getVendorCompany() == null || product.getVendorCompany().getOwner() == null) {
+        // Reads the id through the service (inside a transaction): walking the lazy relation here,
+        // outside one, made every non-admin product write fail with "Could not initialize proxy".
+        Long vendorCompanyId = productService.getVendorCompanyIdOfProduct(productId);
+        if (vendorCompanyId == null) {
             throw new AccessDeniedException("Product is not linked to a vendor company");
         }
-        securityService.getOwnedVendorCompanyOrThrow(product.getVendorCompany().getId());
+        securityService.getOwnedVendorCompanyOrThrow(vendorCompanyId);
     }
 
     @PostMapping

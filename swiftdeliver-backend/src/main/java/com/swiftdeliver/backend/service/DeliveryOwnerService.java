@@ -5,7 +5,7 @@ import com.swiftdeliver.backend.exception.ResourceNotFoundException;
 import com.swiftdeliver.backend.repository.DeliveryCompanyRepository;
 import com.swiftdeliver.backend.repository.DeliveryOwnerRepository;
 import com.swiftdeliver.backend.specification.DeliveryOwnerSpecifications;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -23,13 +23,13 @@ import java.util.Optional;
 @Transactional
 public class DeliveryOwnerService {
 
-    @Autowired
+    @Resource
     private DeliveryOwnerRepository deliveryOwnerRepository;
 
-    @Autowired
+    @Resource
     private DeliveryCompanyRepository deliveryCompanyRepository;
 
-    @Autowired
+    @Resource
     private PasswordEncoder passwordEncoder;
 
     // Create operations

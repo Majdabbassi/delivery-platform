@@ -6,7 +6,7 @@ import com.swiftdeliver.backend.service.SuperAdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.beans.factory.annotation.Autowired;
+import jakarta.annotation.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -25,7 +25,7 @@ import java.util.Map;
 @Tag(name = "Super Admin Management", description = "APIs for managing super admin entities")
 public class SuperAdminController {
 
-    @Autowired
+    @Resource
     private SuperAdminService superAdminService;
 
     @PostMapping
