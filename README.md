@@ -2,7 +2,7 @@
 
 A multi-tenant delivery marketplace. Vendors list products and create delivery orders; delivery companies get those orders through a partnership, an automatic assignment engine or open bidding; drivers move the order through its lifecycle and report their position; customers follow it live. One platform, five kinds of user, each seeing only their own slice of the data.
 
-**Spring Boot 4.1 · Java 17 (runs on Java 21) · MySQL · JWT · STOMP/WebSocket · Angular 20 · Docker · Prometheus + Grafana**
+**Spring Boot 4.1 · Java 21 · MySQL · JWT · STOMP/WebSocket · Angular 20 · Docker · Prometheus + Grafana**
 
 ## Live demo
 
